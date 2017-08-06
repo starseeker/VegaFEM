@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC *
  * All rights reserved.                                                  *
@@ -115,6 +115,7 @@ public:
   inline int getNumElements() const { return numElements; }
   inline int getNumElementVertices() const { return numElementVertices; } 
   void renumberVertices(const std::vector<int> & permutation); // renumbers the vertices using the provided permutation
+  inline void setVertex(int i, const Vec3d & pos) { vertices[i] = pos; } // set the position of a vertex
 
   // === materials access === 
 

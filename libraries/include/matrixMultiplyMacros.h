@@ -1,30 +1,32 @@
+/*************************************************************************
+ *                                                                       *
+ * Vega FEM Simulation Library Version 3.1                               *
+ *                                                                       *
+ * "macros" include files, Copyright (C) 2007 CMU, 2009 MIT, 2016 USC    * 
+ * All rights reserved.                                                  *
+ *                                                                       *
+ * Code authors: Jernej Barbic, Yili Zhao                                *
+ * http://www.jernejbarbic.com/code                                      *
+ *                                                                       *
+ * Research: Jernej Barbic, Fun Shing Sin, Daniel Schroeder,             *
+ *           Doug L. James, Jovan Popovic                                *
+ *                                                                       *
+ * Funding: National Science Foundation, Link Foundation,                *
+ *          Singapore-MIT GAMBIT Game Lab,                               *
+ *          Zumberge Research and Innovation Fund at USC                 *
+ *                                                                       *
+ * This library is free software; you can redistribute it and/or         *
+ * modify it under the terms of the BSD-style license that is            *
+ * included with this library in the file LICENSE.txt                    *
+ *                                                                       *
+ * This library is distributed in the hope that it will be useful,       *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the file     *
+ * LICENSE.TXT for more details.                                         *
+ *                                                                       *
+ *************************************************************************/
+
 /*
-
-* Copyright (c) 2011, Jernej Barbic, Yili Zhao, University of Southern California
-* All rights reserved.
-*
-* Redistribution and use in source and binary forms, with or without
-* modification, are permitted provided that the following conditions are met:
-*     * Redistributions of source code must retain the above copyright
-*       notice, this list of conditions and the following disclaimer.
-*     * Redistributions in binary form must reproduce the above copyright
-*       notice, this list of conditions and the following disclaimer in the
-*       documentation and/or other materials provided with the distribution.
-*     * Neither the name of University of Southern California, nor the
-*       names of its contributors may be used to endorse or promote products
-*       derived from this software without specific prior written permission.
-*
-* THIS SOFTWARE IS PROVIDED BY JERNEJ BARBIC, YILI ZHAO AND UNIVERSITY OF SOUTHERN CALIFORNIA 
-* ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-* WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
-* IN NO EVENT SHALL JERNEJ BARBIC, YILI ZHAO OR UNIVERSITY OF SOUTHERN CALIFORNIA BE 
-* LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-* (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
   3x3 and 4x4 matrix multiplication macros
 
   This code was used in the following publication:

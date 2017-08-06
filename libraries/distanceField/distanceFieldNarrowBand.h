@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "distance field" library , Copyright (C) 2007 CMU, 2016 USC           *
  * All rights reserved.                                                  *
@@ -32,10 +32,9 @@
 #define _DISTANCEFIELDNARROWBAND_H_
 
 #include "objMesh.h"
-#include "objMeshOrientable.h"
-#include "objMeshOctree.h"
 #include "triple.h"
 #include "distanceFieldBase.h"
+#include "vegalong.h"
 #include <map>
 #include <float.h>
 
@@ -113,14 +112,14 @@ protected:
   //float * fieldData;
   std::map<gridPoint, float> distanceData;
 
-  long GetFilesize(const char *filename);
+  vegalong GetFilesize(const char *filename);
   
-  std::vector<long> surfaceGridPoints;
+  std::vector<vegalong> surfaceGridPoints;
 };
 
 inline float DistanceFieldNarrowBand::distance(int i, int j, int k)
 {
-  long index = (k * (resolutionY+1) + j) * (resolutionX + 1) + i;
+  vegalong index = (k * (resolutionY+1) + j) * (resolutionX + 1) + i;
 
   std::map<gridPoint, float>::iterator it = distanceData.find(gridPoint(i,j,k));
 

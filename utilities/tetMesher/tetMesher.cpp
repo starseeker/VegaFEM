@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "tet mesher" driver , Copyright (C) 2016 USC                          *
  * All rights reserved.                                                  *

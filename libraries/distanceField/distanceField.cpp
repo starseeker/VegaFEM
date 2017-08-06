@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "distance field" library , Copyright (C) 2007 CMU, 2016 USC           *
  * All rights reserved.                                                  *
@@ -78,15 +78,16 @@
 #include "boundingBox.h"
 #include "distanceField.h"
 #include "trilinearInterpolation.h"
+#include "vegalong.h"
 using namespace std;
 
 //#define GENERATE_DEBUG_DATA
 
-long DistanceField::GetFilesize(const char *filename)
+vegalong DistanceField::GetFilesize(const char *filename)
 {
   FILE * f = fopen(filename, "rb");  /* open the file in read only */
 
-  long size = 0;
+  vegalong size = 0;
   if (fseek(f,0,SEEK_END)==0) /* seek was successful */
       size = ftell(f);
   fclose(f);
@@ -877,7 +878,7 @@ void DistanceField::print()
 void DistanceField::computeFloodFillTag(ObjMesh* objMeshIn)
 {
   ObjMesh objMesh(*objMeshIn);
-  long int size = sizeof(char) * (resolutionX+1) * (resolutionY+1) * (resolutionZ+1);
+  vegalong size = sizeof(char) * (resolutionX+1) * (resolutionY+1) * (resolutionZ+1);
   if (floodFillTag != NULL)
     free(floodFillTag);
   floodFillTag = (char*) malloc(size);  
@@ -931,7 +932,7 @@ void DistanceField::computeFloodFillTag(ObjMesh* objMeshIn)
           //floodFillTag[(v.third * (resolutionY+1) + v.second) * (resolutionX + 1) + v.first] = 1;
 
           voxel neighbor;
-          long int index;
+          vegalong index;
           #define TAGNEIGHBOR(ii,jj,kk)\
           neighbor = voxel(v.first+(ii), v.second+(jj), v.third+(kk));\
           if ((neighbor.first <= resolutionX) &&\
@@ -1043,11 +1044,11 @@ double DistanceField::pointCCD(Vec3d startPos, Vec3d endPos)
 
 void DistanceField::offsetDistanceField(double offset)
 {
-  long int numGridPoints = (resolutionX+1) * (resolutionY+1) * (resolutionZ+1);
+  vegalong numGridPoints = (resolutionX+1) * (resolutionY+1) * (resolutionZ+1);
 
   printf("Applying offset %G to the distance field. Resolution is %d x %d x %d.\n", offset, resolutionX, resolutionY, resolutionZ);
 
-  for(long int i=0; i<numGridPoints; i++)
+  for(vegalong i=0; i<numGridPoints; i++)
     distanceData[i] += (float) offset;
 }
 

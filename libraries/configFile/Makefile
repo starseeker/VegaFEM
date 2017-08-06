@@ -8,7 +8,6 @@ endif
 R ?= ../..
 include $(R)/Makefile-headers/Makefile-header
 
-
 # the object files to be compiled for this library
 CONFIGFILE_OBJECTS=configFile.o
 
@@ -17,7 +16,6 @@ CONFIGFILE_LIBS=minivector
 
 # the headers in this library
 CONFIGFILE_HEADERS=configFile.h
-
 
 CONFIGFILE_OBJECTS_FILENAMES=$(addprefix $(L)/configFile/, $(CONFIGFILE_OBJECTS))
 CONFIGFILE_HEADER_FILENAMES=$(addprefix $(L)/configFile/, $(CONFIGFILE_HEADERS))

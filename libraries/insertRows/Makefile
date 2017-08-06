@@ -8,7 +8,6 @@ endif
 R ?= ../..
 include $(R)/Makefile-headers/Makefile-header
 
-
 # the object files to be compiled for this library
 INSERTROWS_OBJECTS=insertRows.o
 
@@ -17,7 +16,6 @@ INSERTROWS_LIBS=
 
 # the headers in this library
 INSERTROWS_HEADERS=insertRows.h
-
 
 INSERTROWS_OBJECTS_FILENAMES=$(addprefix $(L)/insertRows/, $(INSERTROWS_OBJECTS))
 INSERTROWS_HEADER_FILENAMES=$(addprefix $(L)/insertRows/, $(INSERTROWS_HEADERS))

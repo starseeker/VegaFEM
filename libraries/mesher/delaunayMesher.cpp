@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "mesher" library , Copyright (C) 2016 USC                             *
  * All rights reserved.                                                  *
@@ -56,9 +56,11 @@ void DelaunayMesher::clear()
 {
   for (BallIter itr = ballsToDelete.begin(); itr != ballsToDelete.end(); itr++)
     delete *itr;
+  ballsToDelete.clear();
   for (BallIter itr = balls.begin(); itr != balls.end(); itr++)
     delete *itr;
   balls.clear();
+  ballsAdded.clear(); // this is a subset of "balls", so no need to do a separate clearing for loop for it
   delete query;
   query = NULL;
   epsilon = 0.0;
@@ -104,7 +106,7 @@ bool DelaunayMesher::computeDelaunayTetrahedralization(const std::vector<Vec3d> 
 
   if (uniqueVertices.size() < 4)
   {
-    cout << "Unique vertices < 4. Cannot generate Delaunay." << endl;
+    cout << "Unique vertices < 4. Cannot generate Delaunay mesh." << endl;
     return false;
   }
 
@@ -374,7 +376,7 @@ void DelaunayMesher::getBallsContainingPoint(int vtx, BallSet & containingBalls)
         }
       }
       //if (ball->label == 120)
-        //cout << ball->contains(vtx) << ball->getPositon(1) << ball->getPositon(2) << ball->getPositon(3) << endl;
+        //cout << ball->contains(vtx) << ball->getPosition(1) << ball->getPosition(2) << ball->getPosition(3) << endl;
       containingBalls.insert(ball);
     }
   }
@@ -531,17 +533,17 @@ void DelaunayMesher::buildQuery()
   {
     // No scaling for floating point.
     query = new VerticesQuery(inputVertices.size(), inputVertices.data());
-    cout << "Using floating point precision" << endl;
+    //cout << "Using floating point precision" << endl;
   }
   else if (queryType == Query::RATIONAL)
   {
     query = new VerticesQueryRational(inputVertices.size(), inputVertices.data());
-    cout << "Using exact precision" << endl;
+    //cout << "Using exact precision" << endl;
   }
   else
   {
     query = new VerticesQueryFiltered(inputVertices.size(), inputVertices.data(), epsilon);
-    cout << "Using filtered precision with epsilon " << epsilon << endl;
+    //cout << "Using filtered precision with epsilon " << epsilon << endl;
   }
 }
 
@@ -745,12 +747,12 @@ bool DelaunayMesher::checkDelaunay() const
         cout << "point " << j << " " << inputVertices[j] << " is inside ball: ";
         if (ball->isRegular())
         {
-          cout << " center: " << ball->center << ", r=" << len(ball->getPositon(v[0]) - ball->center) << " lenth from point to center: " << len(inputVertices[j] - ball->center) << endl;
+          cout << " center: " << ball->center << ", r=" << len(ball->getPosition(v[0]) - ball->center) << " length from point to center: " << len(inputVertices[j] - ball->center) << endl;
           cout << "regular ball " << *ball << endl;
         }
         else
         {
-          cout << "Infite " << ball->v[1] << inputVertices[ball->v[1]] << " " << ball->v[2] << inputVertices[ball->v[2]] << " " << ball->v[3] << inputVertices[ball->v[3]] << endl;
+          cout << "Infinite " << ball->v[1] << inputVertices[ball->v[1]] << " " << ball->v[2] << inputVertices[ball->v[2]] << " " << ball->v[3] << inputVertices[ball->v[3]] << endl;
         }
         return false;
       }
@@ -810,8 +812,8 @@ DelaunayMesher::VoronoiEdge DelaunayMesher::DelaunayBall::getVoronoiEdge(int fac
       vedge.direction = parent.getFaceNormal(oface);
     }
   }
-  assert(vedge.end.hasNaN() == false);
-  assert(vedge.direction.hasNaN() == false);
+  //assert(vedge.end.hasNaN() == false);
+  //assert(vedge.direction.hasNaN() == false);
   return vedge;
 }
 
@@ -971,10 +973,14 @@ void DelaunayMesher::removeBall(DelaunayBall * ball)
 DelaunayMesher::DelaunayBall * DelaunayMesher::addBall(const int v0, const int v1, const int v2, const int v3)
 {
   DelaunayBall * ball = createBall(v0, v1, v2, v3);
-  if (v0 >= 0) vertex2ball[v0] = ball;
-  if (v1 >= 0) vertex2ball[v1] = ball;
-  if (v2 >= 0) vertex2ball[v2] = ball;
-  if (v3 >= 0) vertex2ball[v3] = ball;
+  if (v0 >= 0) 
+    vertex2ball[v0] = ball;
+  if (v1 >= 0) 
+    vertex2ball[v1] = ball;
+  if (v2 >= 0) 
+    vertex2ball[v2] = ball;
+  if (v3 >= 0) 
+    vertex2ball[v3] = ball;
   if (balls.find(ball) != balls.end())
     return ball;
   balls.insert(ball);
@@ -1166,7 +1172,7 @@ int DelaunayMesher::clearCounter(const DelaunayMesher::TetAroundEdge & tetsAroun
 
 int DelaunayMesher::getTetsAroundEdge(const OEdgeKey& edge, TetAroundEdge & tetsAroundEdge)
 {
-  if ((getOneBallBySegement(edge[0], edge[1]) & 255) != ON_VERTEX)
+  if ((getOneBallBySegment(edge[0], edge[1]) & 255) != ON_VERTEX)
   {
     return 0;
   }
@@ -1200,7 +1206,7 @@ int DelaunayMesher::getTetsAroundEdge(const OEdgeKey& edge, TetAroundEdge & tets
   return tetsAroundEdge.size();
 }
 
-int DelaunayMesher::flip32(const OEdgeKey& edge,  const TetAroundEdge & tetsAroundEdge)
+int DelaunayMesher::flip32(const OEdgeKey& edge, const TetAroundEdge & tetsAroundEdge)
 {
   vector <int> f;
   TetAroundEdge::const_iterator itr = tetsAroundEdge.begin();
@@ -1212,7 +1218,7 @@ int DelaunayMesher::flip32(const OEdgeKey& edge,  const TetAroundEdge & tetsArou
   f.push_back((itr++)->first);
 
   int v0, v1;
-  int flippalbeResult;
+  int flippableResult;
 
   v0 = edge[1]; v1 = edge[0];
   if (f[0] >= 0 && f[1] >= 0 && f[1] >= 0) // Regular face
@@ -1220,9 +1226,9 @@ int DelaunayMesher::flip32(const OEdgeKey& edge,  const TetAroundEdge & tetsArou
     swap(v0, v1);
   }
 
-  flippalbeResult = flippable(query, OTriKey(f.data()), v0, v1);
-  if (flippalbeResult != FLIPPABLE && flippalbeResult != SEMI_FLIPPABLE && flippalbeResult != SEMI_FLIPPABLE+1 && flippalbeResult != SEMI_FLIPPABLE+2)
-    return flippalbeResult;
+  flippableResult = flippable(query, OTriKey(f.data()), v0, v1);
+  if (flippableResult != FLIPPABLE && flippableResult != SEMI_FLIPPABLE && flippableResult != SEMI_FLIPPABLE+1 && flippableResult != SEMI_FLIPPABLE+2)
+    return flippableResult;
 
   // Remove 3 original tets and add 2 new tets
   removeBall(ball0);
@@ -1248,12 +1254,12 @@ int DelaunayMesher::getTwoBallsByFace(const OTriKey& face, std::pair<DelaunayBal
 DelaunayMesher::DelaunayBall* DelaunayMesher::getOneBallByFace(const OTriKey& face)
 {
   // Find the segment
-  int result = getOneBallBySegement(face[0], face[1]);
+  int result = getOneBallBySegment(face[0], face[1]);
   DelaunayBall * & ball = vertex2ball[face[0]];
 
   if ((result & 255) != ON_VERTEX) // the end point must be on the ball
   {
-    printf("Fail to find the segment (%d, %d) in tetmesh\n", face[0], face[1]);
+    printf("Failed to find the segment (%d, %d) in tetmesh\n", face[0], face[1]);
     cout << *ball << endl;
     return NULL;
   }
@@ -1291,7 +1297,7 @@ DelaunayMesher::DelaunayBall* DelaunayMesher::getOneBallByFace(const OTriKey& fa
  6: in the tet
  */
 
-int DelaunayMesher::getOneBallBySegement(const int start, const int end)
+int DelaunayMesher::getOneBallBySegment(const int start, const int end)
 {
   if (start == end) // it's not a segment
     return -6;
@@ -1305,11 +1311,11 @@ int DelaunayMesher::getOneBallBySegement(const int start, const int end)
   while (true)
   {
     if (!ball)
-      cout << "Null Pointer" << endl;
+      cout << "Null pointer" << endl;
     int originInd = ball->getInd(start);
       if (ball->isInfinite())
       {
-        printf("Infinite ball here\n");
+        printf("Infinite ball\n");
         return -2;
       }
       if (originInd == -1)
@@ -1376,46 +1382,62 @@ int DelaunayMesher::getOneBallBySegement(const int start, const int end)
   return -5;
 }
 
-
-int DelaunayMesher::segmentRecoveryUsingFlip(const OEdgeKey& edge, int depth)
+int DelaunayMesher::segmentRecoveryUsingFlip(const OEdgeKey & lineSegment, int depth)
 {
+  const int maxIterations = 100; // needed to avoid an infinite loop
+  int iter = -1;
   while (true)
   {
-    OEdgeKey removalEdge;
-    int result = getOneBallBySegement(edge[0], edge[1]);
+    iter++;
+    if (iter >= maxIterations)
+      return -3;
+
+    //printf("*"); fflush(NULL);
+    OEdgeKey edgeToBeRemoved;
+    // find a tet such that the vertex lineSegment[0] is a tet vertex, and the line segment goes through the tet
+    // result stores how the line segment goes through the tet
+    //    ON_VERTEX: the line segment goes down a tet edge and ends at another tet vertex
+    //    SECT_EDGE: the line segment goes down an interior of a tet face, and exits through an edge
+    //    SECT_FACE: the line segment goes through the interior of the tet, and exits through the opposite tet interior face
+    int result = getOneBallBySegment(lineSegment[0], lineSegment[1]); 
     int locationType = result & 255;
     if (locationType == ON_VERTEX)
     {
-      recoveredEdge.insert(UEdgeKey(edge[0], edge[1]));
-      return 0; // recovered
+      recoveredEdge.insert(UEdgeKey(lineSegment[0], lineSegment[1]));
+      return 0; // this edge is already recovered; no more work needed
     }
-    else if (locationType == SECT_FACE)
-    { // segment intersects the face, try flip23
-      int originIdx = vertex2ball[edge[0]]->getInd(edge[0]);
-      OTriKey face = vertex2ball[edge[0]]->oFaceKey(originIdx);
-      int flipResult = flip23(face, vertex2ball[edge[0]]->nbr[originIdx], vertex2ball[edge[0]]);
+    else if (locationType == SECT_FACE) 
+    { 
+      // line segment intersects the interior of the face, try flip23
+      int originIdx = vertex2ball[lineSegment[0]]->getInd(lineSegment[0]);
+      OTriKey face = vertex2ball[lineSegment[0]]->oFaceKey(originIdx);
+      int flipResult = flip23(face, vertex2ball[lineSegment[0]]->nbr[originIdx], vertex2ball[lineSegment[0]]);
       if (flipResult == FLIPPABLE)
         continue; // successfully flipped, search for the next face
       else
       {
+        // flip23 did not succeed
         if (flipResult >= SEMI_FLIPPABLE)
           flipResult -= SEMI_FLIPPABLE;
-        removalEdge = face.oEdgeKey(flipResult);
+        edgeToBeRemoved = face.oEdgeKey(flipResult);
       }
     }
     else if (locationType == SECT_EDGE)
     {
-      int v0 = vertex2ball[edge[0]]->getVtx((result >> 8) & 15);
-      int v1 = vertex2ball[edge[0]]->getVtx((result >> 12) & 15);
-      removalEdge = OEdgeKey(v0, v1);
+      int v0 = vertex2ball[lineSegment[0]]->getVtx((result >> 8) & 15);
+      int v1 = vertex2ball[lineSegment[0]]->getVtx((result >> 12) & 15);
+      edgeToBeRemoved = OEdgeKey(v0, v1);
     }
-    if (segmentRemovalUsingFlip(removalEdge, depth) != 0)
+
+    if (segmentRemovalUsingFlip(edgeToBeRemoved, depth) != 0)
     {
+      // removal failed
       return -2;
     }
   }
   return -1;
 }
+
 ostream & operator << (ostream &out, const UTriKey & key)
 {
   out << "(" << key[0] << ", " << key[1] << ", " << key[2] << ")";
@@ -1432,7 +1454,7 @@ int DelaunayMesher::segmentRemovalUsingFlip(const OEdgeKey & edge, int depth)
   TetAroundEdge tetsAroundEdge;
   if (getTetsAroundEdge(edge, tetsAroundEdge) < 3)
   {
-    assert(0);
+    //assert(0);
     return -1;
   }
   for (TetAroundEdge::iterator itr = tetsAroundEdge.begin(); itr != tetsAroundEdge.end(); itr++)
@@ -1538,7 +1560,7 @@ int DelaunayMesher::segmentRemovalUsingFlip(const OEdgeKey & edge, int depth)
 
 int DelaunayMesher::segmentRecoveryUsingSteinerPoint(const OEdgeKey& edge)
 {
-  int result = getOneBallBySegement(edge[0], edge[1]);
+  int result = getOneBallBySegment(edge[0], edge[1]);
   int locationType = result & 255;
 
   OEdgeKey removalEdge;
@@ -1661,8 +1683,8 @@ int DelaunayMesher::segmentRecoveryUsingSteinerPoint(const OEdgeKey& edge)
   for (itr = tetAroundEdge.begin(); itr != tetAroundEdge.end(); itr++)
   {
     DelaunayBall * ball = itr->third;
-    Vec3d c = (ball->getPositon(0) + ball->getPositon(1) + ball->getPositon(2) + ball->getPositon(3)) / 4;
-    double v = TetMesh::getTetVolume(ball->getPositon(0), ball->getPositon(1), ball->getPositon(2), ball->getPositon(3));
+    Vec3d c = (ball->getPosition(0) + ball->getPosition(1) + ball->getPosition(2) + ball->getPosition(3)) / 4;
+    double v = TetMesh::getTetVolume(ball->getPosition(0), ball->getPosition(1), ball->getPosition(2), ball->getPosition(3));
     assert(v > 0);
     center += c * v;
     volume += v;

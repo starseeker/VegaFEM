@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "reducedStvk" library , Copyright (C) 2007 CMU, 2009 MIT              *
  * All rights reserved.                                                  *
@@ -26,12 +26,12 @@
  *                                                                       *
  *************************************************************************/
 
+#include "matrixMacros.h"
+#include "StVKReducedStiffnessMatrix.h"
 #include "lapack-headers.h"
 #if defined(_WIN32) || defined(WIN32) || defined(linux)
   #include "mkl_service.h"
 #endif
-#include "matrixMacros.h"
-#include "StVKReducedStiffnessMatrix.h"
 
 StVKReducedStiffnessMatrix::~StVKReducedStiffnessMatrix()
 {

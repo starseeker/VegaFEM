@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "mesher" library , Copyright (C) 2016 USC                             *
  * All rights reserved.                                                  *
@@ -63,11 +63,11 @@ public:
   // compute the tet mesh, using constrained 3D Delaunay tetrahedralization, with refinement
   // refinementQuality is a scalar; one must use refinementQuality >= 1
   // the smaller the value, the more the mesh will be refined
+  // minDihedralAngle: the minimal dihedral angle in a tet on the result tet mesh should not be larger than "minDihedralAngle"
   // maxSteinerVertices controls how many vertices are added in the refinement process. < 0 means no limitation.
   // alpha: the smallest distance between a new Steiner vertex and the existing vertices should be larger than alpha times 
   // the average edge length of the input mesh
   // maxTimeSeconds: the routine will terminate if this computation time (in seconds) is exceeded. < 0 means no limitation.
-  // minDihedralAngle: the minimal dihedral angle in a tet on the result tet mesh should not be larger than "minDihedralAngle"
   TetMesh * compute(ObjMesh * surfaceMesh, double refinementQuality = 1.1, double alpha = 2.0, double minDihedralAngle = 0.0, 
       int maxSteinerVertices = -1, double maxTimeSeconds = -1.0);
 
@@ -130,14 +130,13 @@ protected:
     //friend class TetMesher;
   protected:
 
-    bool enabledAngleRefine;        // Whether the angle refinement is enabled
-    const DelaunayMesher & delaunayMesher;      // Reference to the delaunayMesher, used to get the positions of vertices
-    std::set<const DelaunayBallWithRefineInfo *, DelaunayBallEdgeRefineCMP> edgeRefineBalls;         // Sort the current delaunay ball by radius/minEdge descendingly
-    std::set<const DelaunayBallWithRefineInfo *, DelaunayBallAngleRefineCMP> angleRefineBalls;       // Sort the current delaunay ball by diheral angle  aescendingly
-    std::map<const DelaunayMesher::DelaunayBall *, EdgeRefineIterator, DelaunayMesher::DelaunayBallCompare> edgeRefineMap;       // Look up the iterator in edgeRefineSet by pointer
+    bool enabledAngleRefine; // Whether the angle refinement is enabled
+    const DelaunayMesher & delaunayMesher; // Reference to the delaunayMesher, used to get the positions of vertices
+    std::set<const DelaunayBallWithRefineInfo *, DelaunayBallEdgeRefineCMP> edgeRefineBalls; // Sort the current delaunay ball by radius/minEdge descendingly
+    std::set<const DelaunayBallWithRefineInfo *, DelaunayBallAngleRefineCMP> angleRefineBalls; // Sort the current delaunay ball by diheral angle  aescendingly
+    std::map<const DelaunayMesher::DelaunayBall *, EdgeRefineIterator, DelaunayMesher::DelaunayBallCompare> edgeRefineMap; // Look up the iterator in edgeRefineSet by pointer
     std::map<const DelaunayMesher::DelaunayBall *, AngleRefineIterator, DelaunayMesher::DelaunayBallCompare> angleRefineMap;     // Look up the iterator in angleRefineSet by pointer
   } resultTetMesh;
-
 
   // construct a constrained delaunay mesh, if recovery is true, the face recovery process will be done
   int initializeCDT(bool recovery = true);
@@ -163,7 +162,6 @@ protected:
 
   // Make sure the first four vertices of the triangle mesh are not on the same plane
   static bool renumberInitialVertices(ObjMesh * surfaceMesh);
-
 
   //remove all tetrahedrons that are outside the constrained delaunay mesh
   int removeOutside();
@@ -235,10 +233,12 @@ protected:
   // edges in the volumetric mesh, key is the edge and value is how many tets are associated with the edge
   std::map<UEdgeKey, unsigned> edgesInTet;
 
-  // The number of refine steiner points inserted
+  // the number of steiner points inserted (refinement)
   int numSteinerVertices;
 
+  // recursion depth for face recovery;
+  int faceRecoveryDepth;
 };
 
-#endif /* VOLUMETRICMESHER_H_ */
+#endif /* TETMESHER_H_ */
 

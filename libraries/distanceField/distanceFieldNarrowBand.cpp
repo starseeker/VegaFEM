@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "distance field" library , Copyright (C) 2007 CMU, 2016 USC           *
  * All rights reserved.                                                  *
@@ -37,14 +37,17 @@
 #include "triangle.h"
 #include "boundingBox.h"
 #include "distanceFieldNarrowBand.h"
+#include "objMeshOrientable.h"
+#include "objMeshOctree.h"
 #include "trilinearInterpolation.h"
+#include "vegalong.h"
 using namespace std;
 
-long DistanceFieldNarrowBand::GetFilesize(const char *filename)
+vegalong DistanceFieldNarrowBand::GetFilesize(const char *filename)
 {
   FILE * f = fopen(filename, "rb");  /* open the file in read only */
 
-  long size = 0;
+  vegalong size = 0;
   if (fseek(f, 0, SEEK_END) == 0) /* seek was successful */
       size = ftell(f);
   fclose(f);
@@ -91,9 +94,9 @@ int DistanceFieldNarrowBand::load(const std::string& filename)
 
   fin.read((char*)&resolutionZ, sizeof(int));
 
-  long size =  (resolutionZ + 1) * (resolutionY + 1) * (resolutionX + 1);
+  vegalong size =  (resolutionZ + 1) * (resolutionY + 1) * (resolutionX + 1);
   gridPointStatus = (char*) realloc (gridPointStatus, sizeof(char) * size);
-  for(long i=0; i<size; i++)
+  for(vegalong i=0; i<size; i++)
     gridPointStatus[i] = DistanceFieldNarrowBand::EXTERIOR_UNCOMPUTED;
 
   fin.read((char*)&(bmin_[0]), sizeof(double));
@@ -179,9 +182,9 @@ int DistanceFieldNarrowBand::saveToDistanceField(const std::string& filename, bo
   fout.write((char*)&(bmax_[2]),sizeof(double));
 
   int flag = 1;
-  for(long int k=0; k<=resolutionZ; k++)
-    for(long int j=0; j<=resolutionY; j++)
-      for(long int i=0; i<=resolutionX; i++)
+  for(vegalong k=0; k<=resolutionZ; k++)
+    for(vegalong j=0; j<=resolutionY; j++)
+      for(vegalong i=0; i<=resolutionX; i++)
       {
         float dist = distance(i,j,k);
         if (fabs(dist) != FLT_MAX)
@@ -223,7 +226,7 @@ int DistanceFieldNarrowBand::save(const std::string& filename, bool doublePrecis
   fout.write((char*)&(bmax_[1]),sizeof(double));
   fout.write((char*)&(bmax_[2]),sizeof(double));
 
-  long numGridPoints = distanceData.size();
+  vegalong numGridPoints = distanceData.size();
   fout.write((char*)&(numGridPoints),sizeof(int));
 
   for (map<gridPoint, float>::iterator it = distanceData.begin(); it != distanceData.end(); it++)
@@ -246,10 +249,10 @@ void DistanceFieldNarrowBand::finalizeGridPointStatus()
   // assumption: bounding box covers the entire geometry
 
   int flag = 1;
-  long index = 0;
-  for(long int k=0; k<=resolutionZ; k++)
-    for(long int j=0; j<=resolutionY; j++)
-      for(long int i=0; i<=resolutionX; i++)
+  vegalong index = 0;
+  for(vegalong k=0; k<=resolutionZ; k++)
+    for(vegalong j=0; j<=resolutionY; j++)
+      for(vegalong i=0; i<=resolutionX; i++)
       {
         float dist = distance(i,j,k);
         if ((dist == FLT_MAX) || (dist == -FLT_MAX))
@@ -653,7 +656,7 @@ void DistanceFieldNarrowBand::findSurfaceGridPoints(ObjMesh* objMeshIn)
           //floodFillTag[(v.third * (resolutionY+1) + v.second) * (resolutionX + 1) + v.first] = 1;
 
           gridPoint neighbor;
-          long int index;
+          vegalong index;
           #define TAGNEIGHBOR(ii,jj,kk)\
           neighbor = gridPoint(v.first+(ii), v.second+(jj), v.third+(kk));\
           if ((neighbor.first <= resolutionX) &&\

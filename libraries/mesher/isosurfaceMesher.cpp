@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "mesher" library , Copyright (C) 2016 USC                             *
  * All rights reserved.                                                  *
@@ -35,8 +35,6 @@ using namespace std;
 #include "delaunayMesher.h"
 #include "objMeshOrientable.h"
 #include "performanceCounter.h"
-
-static const int facet_vertex[4][3] = { { 1, 2, 3 }, { 0, 2, 3 }, { 0, 1, 3 }, { 0, 1, 2 } };
 
 #ifndef M_PI
   #define M_PI 3.1415926525897932384
@@ -338,19 +336,45 @@ bool IsosurfaceMesher::addOneTriangle(double * targetRadius)
     return false;
   }
 
-  const IsoFace & targetRadiusFace = *radiusSet.begin();
-  const IsoFace & targetAngleFace = *angleSet.begin();
+  //cout << radiusSet.size() << endl;
 
-  if (targetRadius)
-    *targetRadius = targetRadiusFace.radius;
-  if (targetRadiusFace.radius <= radialBound && targetAngleFace.maxCosAngle <= cosAngularBound) // requirement fulfilled
-    return false;
+  for (IsoFaceRadiusSet::iterator itr = radiusSet.begin(); itr != radiusSet.end(); itr++)
+  {
+    IsoFaceRadiusSet::iterator::value_type targetRadiusFace = *itr;
+    if (targetRadius)
+      *targetRadius = targetRadiusFace.radius;
+    if (targetRadiusFace.radius <= radialBound) // requirement fulfilled
+    {
+      //printf("Fulfilled\n");
+      break;
+    }
 
-  delaunay.addOnePoint(targetRadiusFace.isopoint);
-  return true;
+    if (delaunay.addOnePoint(targetRadiusFace.isopoint))
+      return true;
+    //else
+      //cout << targetRadiusFace.isopoint  << endl;
+  }
+
+  for (IsoFaceRadiusSet::iterator itr = angleSet.begin(); itr != angleSet.end(); itr++)
+  {
+    IsoFaceRadiusSet::iterator::value_type targetAngleFace = *itr;
+    if (targetRadius)
+      *targetRadius = targetAngleFace.radius;
+    if (targetAngleFace.maxCosAngle <= cosAngularBound) // requirement fulfilled
+    {
+      //printf("Fulfilled\n");
+      break;
+    }
+
+    if (delaunay.addOnePoint(targetAngleFace.isopoint))
+      return true;
+    //else
+      //cout << targetRadiusFace.isopoint  << endl;
+  }
+
+  return false;
 }
 
-// diagonal: diagonal of the distance field. Served as a limit on the search space
 ObjMesh * IsosurfaceMesher::computeOneMesh(ObjMesh * objMesh, int & maxNumberOfIterations, double & maxTimeSeconds, bool & timeout)
 {
   // repeat:
@@ -553,7 +577,7 @@ bool IsosurfaceMesher::intersectionUsingOctree(const Vec3d & segmentStart, const
 bool IsosurfaceMesher::enforceManifoldnessAndOrientNormals(ObjMesh* &objMesh)
 {
   bool flag1 = false, flag2 = false;
-  //remove unmanifold faces and edges
+  //remove non-manifold faces and edges
   do
   {
     flag1 = false;

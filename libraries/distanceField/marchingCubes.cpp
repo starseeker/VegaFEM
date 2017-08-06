@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "distance field" library , Copyright (C) 2007 CMU, 2016 USC           *
  * All rights reserved.                                                  *
@@ -393,36 +393,39 @@ ObjMesh * MarchingCubes::compute()
       for (int i = 0; i <= resX; i++)
       {
         float d = getDistance(i, j, k);
-        if ((d != FLT_MAX) && (d != -FLT_MAX))
+        size_t packedIndex = 3 * (j * (resX+1) + i); //local index for each slice
+
+        float dx = getDistance(i + 1, j, k);
+        float dy = getDistance(i, j + 1, k);
+        float dz = getDistance(i, j, k + 1);
+
+        Vec3d gridPoint = distanceFieldBase->getGridPosition(i,j,k);
+
+        #ifdef USE_OPENMP
+          vector<Vec3d> & allVertices = sliceVertices[k];
+        #endif
+        // assign vertex index in each slice and store vertex in each slice
+        // assign vertex index in each slice and store vertex in allVertices globally
+        if (d == 0)
         {
-          size_t packedIndex = 3 * (j * (resX+1) + i); //local index for each slice
-          
-          float dx = getDistance(i + 1, j, k);
-          float dy = getDistance(i, j + 1, k);
-          float dz = getDistance(i, j, k + 1);
-
-          Vec3d gridPoint = distanceFieldBase->getGridPosition(i,j,k);
-
-          #ifdef USE_OPENMP
-            vector<Vec3d> & allVertices = sliceVertices[k];
-          #endif
-          // assign vertex index in each slice and store vertex in each slice
-          // assign vertex index in each slice and store vertex in allVertices globally
-          if ((d > 0 && dx < 0) || (d < 0 && dx > 0))
-          {
-            sliceVerticesIndices[k][packedIndex] = allVertices.size(); // assign a global (if openmp, slice) index for each vertex
-            allVertices.push_back(Vec3d(gridPoint[0] + gridSize[0] * d / (d - dx), gridPoint[1], gridPoint[2]));
-          }
-          if ((d > 0 && dy < 0) || (d < 0 && dy > 0))
-          {
-            sliceVerticesIndices[k][packedIndex+1] = allVertices.size();
-            allVertices.push_back(Vec3d(gridPoint[0], gridPoint[1] + gridSize[1] * d / (d - dy), gridPoint[2]));
-          }
-          if ((d > 0 && dz < 0) || (d < 0 && dz > 0))
-          {
-            sliceVerticesIndices[k][packedIndex+2] = allVertices.size();
-            allVertices.push_back(Vec3d(gridPoint[0], gridPoint[1], gridPoint[2] + gridSize[2] * d / (d - dz)));
-          }
+          sliceVerticesIndices[k][packedIndex] = allVertices.size(); // assign a global (if openmp, slice) index for each vertex
+          allVertices.push_back(Vec3d(gridPoint[0], gridPoint[1], gridPoint[2]));
+          continue;
+        }
+        if ((d > 0 && dx < 0) || (d < 0 && dx > 0))
+        {
+          sliceVerticesIndices[k][packedIndex] = allVertices.size(); // assign a global (if openmp, slice) index for each vertex
+          allVertices.push_back(Vec3d(gridPoint[0] + gridSize[0] * d / (d - dx), gridPoint[1], gridPoint[2]));
+        }
+        if ((d > 0 && dy < 0) || (d < 0 && dy > 0))
+        {
+          sliceVerticesIndices[k][packedIndex+1] = allVertices.size();
+          allVertices.push_back(Vec3d(gridPoint[0], gridPoint[1] + gridSize[1] * d / (d - dy), gridPoint[2]));
+        }
+        if ((d > 0 && dz < 0) || (d < 0 && dz > 0))
+        {
+          sliceVerticesIndices[k][packedIndex+2] = allVertices.size();
+          allVertices.push_back(Vec3d(gridPoint[0], gridPoint[1], gridPoint[2] + gridSize[2] * d / (d - dz)));
         }
       }
 
@@ -565,7 +568,8 @@ ObjMesh * MarchingCubes::compute()
             // we can mark the index of this vertex as negative and defer its global index computation
             // this vertex will be stored in each thread's local vector: threadCenterVertices[k]
             // the index of this vertex, vtxIndices[12], stores two pieces of information: k and the index in k's threadCenterVertices
-            vtxIndices[12] = -(k + (resZ+1) * threadCenterVertices[k].size() + 2);
+            vtxIndices[12] = k + (resZ+1) * threadCenterVertices[k].size() + 2;
+            vtxIndices[12] = -vtxIndices[12];
             threadCenterVertices[k].push_back(c);
           #else
             // store this vertex globally in allVertices
@@ -582,8 +586,8 @@ ObjMesh * MarchingCubes::compute()
           int v2 = vtxIndices[triangles[3*p+1]];
           int v3 = vtxIndices[triangles[3*p+2]];
           assert(v1 != -1 && v2 != -1 && v3 != -1);
-          // if ((v1 < 0) || (v2 < 0) || (v3 < 0)) //this is for safety
-          // continue;
+          // if ((v1 == -1) || (v2 == -1) || (v3 == -1)) // this is for safety
+          //   continue;
           #ifdef USE_OPENMP
             threadTriangles[k].push_back(v1);
             threadTriangles[k].push_back(v2);
@@ -594,7 +598,7 @@ ObjMesh * MarchingCubes::compute()
             allTriangles.push_back(v3);
           #endif
         }
-      } // end for (distance loop
+      } // end for (distance loop)
 //  pc.StopCounter();
 //  cout << "Large loop: " << pc.GetElapsedTime() << endl;
 
@@ -602,7 +606,6 @@ ObjMesh * MarchingCubes::compute()
     // store all slice vertices into allVertices
     for(int i = 0; i <= resZ; i++)
       allVertices.insert(allVertices.end(), sliceVertices[i].begin(), sliceVertices[i].end());
-    int numEdgeVtx = allVertices.size();
 
     // store all slice triangles into allTriangles
     for(int i = 0; i <= resZ; i++)
@@ -630,7 +633,7 @@ ObjMesh * MarchingCubes::compute()
         assert(0 <= tid && tid < (resZ+1));
         assert(0 <= centeridx && (size_t)centeridx < threadCenterVertices[tid].size());
         allTriangles[i] = centerIndexCorrection[tid] + centeridx;
-        assert(allTriangles[i] >= numEdgeVtx);
+        assert(allTriangles[i] < (int)allVertices.size());
       }
     }
   #endif
@@ -642,7 +645,6 @@ ObjMesh * MarchingCubes::compute()
 //  cout << "build objMesh: " << pc.GetElapsedTime() << endl;
   return objMesh;
 }
-
 
 ObjMesh * MarchingCubes::compute(DistanceFieldBase * distanceFieldBase, double isoValue, int numThreads)
 {

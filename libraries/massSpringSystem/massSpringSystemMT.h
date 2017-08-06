@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "massSpringSystem" library, Copyright (C) 2007 CMU, 2009 MIT,         *
  *                                           2016 USC                    *
@@ -31,7 +31,6 @@
 #define _MASS_SPRING_SYSTEM_MT_H_
 
 #include "massSpringSystem.h"
-#include <vector>
 
 /*
    Multi-threaded version of the MassSpringSystem class. 
@@ -70,7 +69,7 @@ public:
 protected:
   int numThreads;
   int * startEdge, * endEdge;
-  std::vector<double> energyBuffer;
+  double * energyBuffer;
   double * internalForceBuffer;
   SparseMatrix ** sparseMatrixBuffer;
 

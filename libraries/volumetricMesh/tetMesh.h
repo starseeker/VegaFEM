@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC *
  * All rights reserved.                                                  *
@@ -123,7 +123,6 @@ public:
   void orient(); // orients the tets (re-orders vertices within each tet), so that each tet has positive orientation: ((v1 - v0) x (v2 - v0)) dot (v3 - v0) >= 0
 
 protected:
-  void computeElementMassMatrixHelper(Vec3d a, Vec3d b, Vec3d c, Vec3d d, double * buffer);
   static const VolumetricMesh::elementType elementType_;
   TetMesh(int numElementVertices): VolumetricMesh(numElementVertices) {}
 

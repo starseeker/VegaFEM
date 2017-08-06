@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "massSpringSystem" library, Copyright (C) 2007 CMU, 2009 MIT,         *
  *                                           2016 USC                    *
@@ -47,10 +47,10 @@ void RenderSprings::Render(MassSpringSystem * massSpringSystem, double * u)
     double posA[3] = { massSpringSystem->restPositions[3*vtxA+0] + u[3*vtxA+0], massSpringSystem->restPositions[3*vtxA+1] + u[3*vtxA+1], massSpringSystem->restPositions[3*vtxA+2] + u[3*vtxA+2] };
     double posB[3] = { massSpringSystem->restPositions[3*vtxB+0] + u[3*vtxB+0], massSpringSystem->restPositions[3*vtxB+1] + u[3*vtxB+1], massSpringSystem->restPositions[3*vtxB+2] + u[3*vtxB+2] };
 
-    glColor3f(color[0], color[1], color[2]);
+    glColor3d(color[0], color[1], color[2]);
     glBegin(GL_LINES);
-      glVertex3f(posA[0], posA[1], posA[2]);
-      glVertex3f(posB[0], posB[1], posB[2]);
+      glVertex3d(posA[0], posA[1], posA[2]);
+      glVertex3d(posB[0], posB[1], posB[2]);
     glEnd();
   }
 }

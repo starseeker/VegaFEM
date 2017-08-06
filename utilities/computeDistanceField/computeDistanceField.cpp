@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "distance field" driver , Copyright (C) 2007 CMU, 2016 USC            *
  * All rights reserved.                                                  *

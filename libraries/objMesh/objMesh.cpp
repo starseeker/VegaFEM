@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC        *
  * All rights reserved.                                                  *
@@ -4610,7 +4610,7 @@ int ObjMesh::loadFromBinary(void * binaryInputStream_, streamType stream, int ve
   if (stream == MEMORY_STREAM)
   {
     genericRead = &ObjMesh::readFromMemory;
-    binaryInputStream = &(binaryInputStream_); // a wrapper for input stream
+    binaryInputStream = &binaryInputStream_; // a wrapper for input stream
   }
   else
   {

@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * Merges several obj files into one.                                    *
  * Copyright (C) 2007 CMU, 2009 MIT, 2016 USC                            *

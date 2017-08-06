@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "mesher" library , Copyright (C) 2016 USC                             *
  * All rights reserved.                                                  *
@@ -102,7 +102,7 @@ public:
   // otherwise, all vertices in the Delaunay mesh are added to the resulting obj mesh
   ObjMesh * buildCurrentSurfaceMesh(bool keepAllDelaunayVtx = false) const;
 
-  // remove unmanifold faces and edges, orient faces
+  // remove non-manifold faces and edges, orient faces
   static bool enforceManifoldnessAndOrientNormals(ObjMesh * &objMesh);
 protected:
   IsosurfaceMesher(const IsosurfaceMesher &);

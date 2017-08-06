@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "corotational linear FEM" library , Copyright (C) 2016 USC            *
  * All rights reserved.                                                  *
@@ -188,12 +188,9 @@ void CorotationalLinearFEMMT::ComputeEnergyAndForceAndStiffnessMatrix(const doub
     memset(f, 0, sizeof(double) * numVertices3);
     for(int i=0; i<numThreads; i++)
     {
-       double * source = &internalForceBuffer[i * numVertices3];
-       if (f != NULL) 
-       {
-         for(int j=0; j<numVertices3; j++)
-           f[j] += source[j];
-       }
+      double * source = &internalForceBuffer[i * numVertices3];
+      for(int j=0; j<numVertices3; j++)
+        f[j] += source[j];
     }
   }
 

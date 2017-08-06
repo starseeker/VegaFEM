@@ -8,7 +8,6 @@ endif
 R ?= ../..
 include $(R)/Makefile-headers/Makefile-header
 
-
 # the object files to be compiled for this library
 UNIQUEINTEGERID_OBJECTS=uniqueIntegerID.o
 
@@ -17,7 +16,6 @@ UNIQUEINTEGERID_LIBS=
 
 # the headers in this library
 UNIQUEINTEGERID_HEADERS=uniqueIntegerID.h
-
 
 UNIQUEINTEGERID_OBJECTS_FILENAMES=$(addprefix $(L)/uniqueIntegerID/, $(UNIQUEINTEGERID_OBJECTS))
 UNIQUEINTEGERID_HEADER_FILENAMES=$(addprefix $(L)/uniqueIntegerID/, $(UNIQUEINTEGERID_HEADERS))

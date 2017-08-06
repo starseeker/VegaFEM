@@ -8,7 +8,6 @@ endif
 R ?= ../..
 include $(R)/Makefile-headers/Makefile-header
 
-
 # the object files to be compiled for this library
 MASSSPRINGSYSTEM_OBJECTS=massSpringSystemFromObjMeshConfigFile.o massSpringSystemFromObjMesh.o massSpringSystemFromTetMeshConfigFile.o massSpringSystemFromTetMesh.o massSpringSystemMT.o massSpringSystem.o renderSprings.o massSpringSystemFromCubicMesh.o massSpringSystemFromCubicMeshConfigFile.o
 

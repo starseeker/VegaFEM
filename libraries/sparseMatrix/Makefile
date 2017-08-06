@@ -8,7 +8,6 @@ endif
 R ?= ../..
 include $(R)/Makefile-headers/Makefile-header
 
-
 # the object files to be compiled for this library
 SPARSEMATRIX_OBJECTS=sparseMatrix.o sparseMatrixMT.o
 
@@ -17,7 +16,6 @@ SPARSEMATRIX_LIBS=
 
 # the headers in this library
 SPARSEMATRIX_HEADERS=sparseMatrix.h sparseMatrixMT.h
-
 
 SPARSEMATRIX_OBJECTS_FILENAMES=$(addprefix $(L)/sparseMatrix/, $(SPARSEMATRIX_OBJECTS))
 SPARSEMATRIX_HEADER_FILENAMES=$(addprefix $(L)/sparseMatrix/, $(SPARSEMATRIX_HEADERS))

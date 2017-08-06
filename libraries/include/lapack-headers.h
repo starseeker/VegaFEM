@@ -5,10 +5,15 @@
   #include "mkl_blas.h"
 #elif defined(__APPLE__)
   #include <Accelerate/Accelerate.h>
-  #if MAC_OS_X_VERSION_MIN_REQUIRED == MAC_OS_X_VERSION_10_9
-  // On one of our MacBook with Mac OS X 10.9, the following headers are required to find CBLAS routines.
-    #include <vecLib/cblas.h>
-    #include <vecLib/clapack.h>
+  #ifdef __GNUC__
+    #ifndef __clang__
+    // The following below applies to Mac OS X, when using the gcc compiler as opposed to clang.
+    // On our MacBooks with recent OS X versions, the following headers are required to find CBLAS routines when using gcc (as opposed to clang).
+      #if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_9
+        #include </System/Library/Frameworks/Accelerate.framework/Frameworks/vecLib.framework/Headers/cblas.h>
+        #include </System/Library/Frameworks/Accelerate.framework/Frameworks/vecLib.framework/Headers/clapack.h>
+      #endif
+    #endif
   #endif
 #endif
 

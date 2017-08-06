@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC *
  * All rights reserved.                                                  *
@@ -209,8 +209,8 @@ void TetMesh::computeElementMassMatrix(int el, double * massMatrix) const
 
 double TetMesh::getTetVolume(const Vec3d & a, const Vec3d & b, const Vec3d & c, const Vec3d & d)
 {
-  // volume = 1/6 * | (a-d) . ((b-d) x (c-d)) |
-  return (1.0 / 6 * fabs( dot(a - d, cross(b - d, c - d)) ));
+  // volume = 1/6 * | (d-a) . ((b-a) x (c-a)) |
+  return (1.0 / 6 * fabs(getTetDeterminant(a, b, c, d))); 
 }
 
 double TetMesh::getElementVolume(int el) const
@@ -321,18 +321,17 @@ void TetMesh::computeBarycentricWeights(int el, const Vec3d & pos, double * weig
 
 double TetMesh::getTetDeterminant(const Vec3d & a, const Vec3d & b, const Vec3d & c, const Vec3d & d)
 {
-  // computes the determinant of the 4x4 matrix
-  // [ a 1 ]
-  // [ b 1 ]
-  // [ c 1 ]
-  // [ d 1 ]
+  // computes det(A), for the 4x4 matrix A
+  //     [ 1 a ]
+  // A = [ 1 b ]
+  //     [ 1 c ]
+  //     [ 1 d ]
+  // It can be shown that det(A) = dot(d - a, cross(b - a, c - a))
+  // When det(A) > 0, the tet has positive orientation.
+  // When det(A) = 0, the tet is degenerate.
+  // When det(A) < 0, the tet has negative orientation.
 
-  Mat3d m0 = Mat3d(b, c, d);
-  Mat3d m1 = Mat3d(a, c, d);
-  Mat3d m2 = Mat3d(a, b, d);
-  Mat3d m3 = Mat3d(a, b, c);
-
-  return (-det(m0) + det(m1) - det(m2) + det(m3));
+  return dot(d - a, cross(b - a, c - a));
 }
 
 void TetMesh::interpolateGradient(int element, const double * U, int numFields, Vec3d pos, double * grad) const
@@ -428,8 +427,8 @@ void TetMesh::orient()
   for(int el=0; el<numElements; el++)
   {
     // a, b, c, d
-    // dot(b - a, cross(c - a, d - a))
-    double det = dot(getVertex(el, 1) - getVertex(el, 0), cross(getVertex(el, 2) - getVertex(el, 0), getVertex(el, 3) - getVertex(el, 0)));
+    // dot(d - a, cross(b - a, c - a))
+    double det = getTetDeterminant(getVertex(el, 0), getVertex(el, 1), getVertex(el, 2), getVertex(el, 3));
 
     if (det < 0)
     {

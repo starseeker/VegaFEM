@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "reducedStvk" library , Copyright (C) 2007 CMU, 2009 MIT              *
  * All rights reserved.                                                  *
@@ -26,9 +26,9 @@
  *                                                                       *
  *************************************************************************/
 
-#include "lapack-headers.h"
 #include "matrixMacros.h"
 #include "StVKReducedHessianTensor.h"
+#include "lapack-headers.h"
 
 StVKReducedHessianTensor::StVKReducedHessianTensor(StVKReducedStiffnessMatrix * stVKReducedStiffnessMatrix) : shallowCopy(0)
 {

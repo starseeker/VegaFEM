@@ -32,6 +32,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#define HAVE_STRUCT_TIMESPEC
 #include <pthread.h>
 #include <fcntl.h>
 #if defined(_WIN32) || defined(WIN32)

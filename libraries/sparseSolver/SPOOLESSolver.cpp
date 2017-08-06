@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "sparseSolver" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC   *
  * All rights reserved.                                                  *
@@ -176,7 +176,6 @@ SPOOLESSolver::SPOOLESSolver(const SparseMatrix * A, int verbose)
 
 SPOOLESSolver::~SPOOLESSolver()
 {
-  DisabledSolverError();
 }
 
 void SPOOLESSolver::DisabledSolverError()

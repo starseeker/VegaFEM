@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "reducedStvk" library , Copyright (C) 2007 CMU, 2009 MIT              *
  * All rights reserved.                                                  *
@@ -26,15 +26,15 @@
  *                                                                       *
  *************************************************************************/
 
-#include "lapack-headers.h"
 #include "matrixIO.h"
-#if defined(_WIN32) || defined(WIN32) || defined(linux)
-  #include "mkl_service.h"
-#endif
 #include "matrixMacros.h"
 #include "matrixProjection.h"
 #include "StVKReducedInternalForces.h"
 #include "volumetricMeshENuMaterial.h"
+#include "lapack-headers.h"
+#if defined(_WIN32) || defined(WIN32) || defined(linux)
+  #include "mkl_service.h"
+#endif
 
 StVKReducedInternalForces::StVKReducedInternalForces(int r, double * U, VolumetricMesh * volumetricMesh, StVKElementABCD * precomputedABCDIntegrals, int initOnly, bool addGravity_, double g_, int verbose_): precomputedIntegrals(precomputedABCDIntegrals), unitReducedGravityForce(NULL), reducedGravityForce(NULL), addGravity(addGravity_), g(g_), useSingleThread(0), shallowCopy(0), verbose(verbose_)
 {

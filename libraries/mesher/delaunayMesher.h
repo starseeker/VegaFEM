@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "mesher" library , Copyright (C) 2016 USC                             *
  * All rights reserved.                                                  *
@@ -29,15 +29,7 @@
 #ifndef _DELAUNAYMESHER_H_
 #define _DELAUNAYMESHER_H_
 
-#include <objMeshOctree.h>
-#include <query.h>
 #include <stddef.h>
-#include <tetKey.h>
-#include <triangle.h>
-#include <triKey.h>
-#include <triple.h>
-#include <vec3d.h>
-#include <vegalong.h>
 #include <cassert>
 #include <iostream>
 #include <list>
@@ -45,8 +37,15 @@
 #include <set>
 #include <utility>
 #include <vector>
-
+#include "objMeshOctree.h"
+#include "vec3d.h"
+#include "vegalong.h"
+#include "triangle.h"
+#include "triple.h"
 #include "tetMesh.h"
+#include "query.h"
+#include "tetKey.h"
+#include "triKey.h"
 
 class TetMesh;
 class VerticesQuery;
@@ -179,7 +178,7 @@ public:
     // get the array stores the 4 vtx indices
     inline const int * getVertices() const {return v;}
     // get the position of vertices
-    inline Vec3d getPositon(int ind) const { return parent.getVertex(v[ind]); }
+    inline Vec3d getPosition(int ind) const { return parent.getVertex(v[ind]); }
 
     inline bool isRegular() const { return v[0] >= 0; }
     inline bool isInfinite() const { return v[0] < 0; }
@@ -299,7 +298,7 @@ protected:
   int clearCounter(const DelaunayMesher::TetAroundEdge & tetsAroundEdge);
 
   // The origin of the return ball should be start
-  int getOneBallBySegement(const int start, const int end);
+  int getOneBallBySegment(const int start, const int end);
 
   //void debug() const;
 

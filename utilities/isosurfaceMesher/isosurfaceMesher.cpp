@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "isosurfaceMesher" utility , Copyright (C) 2016 USC                   *
  * All rights reserved.                                                  *
@@ -122,6 +122,7 @@ int main(int argc, char **argv)
       cout << "Failed to load distance field from " << fieldFilename << endl;
       return 1;
     }
+    pc.StopCounter();
     cout << "Time to load distance field: " << pc.GetElapsedTime() << endl;
 
     //  double gridX,gridY,gridZ;

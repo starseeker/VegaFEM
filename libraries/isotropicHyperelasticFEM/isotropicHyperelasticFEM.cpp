@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "isotropic hyperelastic FEM" library , Copyright (C) 2016 USC         *
  * All rights reserved.                                                  *
@@ -37,7 +37,8 @@ IsotropicHyperelasticFEM::IsotropicHyperelasticFEM(TetMesh * tetMesh_, Isotropic
   isotropicMaterial(isotropicMaterial_),
   inversionThreshold(inversionThreshold_),
   addGravity(addGravity_), 
-  g(g_)
+  g(g_),
+  enforceSPD(false)
 {
   if (tetMesh->getNumElementVertices() != 4)
   {
@@ -959,6 +960,14 @@ void IsotropicHyperelasticFEM::Compute_dPdF(int el, double dPdF[81], int clamped
   x3113 = beta13;
   x3223 = beta23;
 
+  if (enforceSPD)
+  {
+    FixPositiveIndefiniteness(x1111, x2211, x3311, x2222, x3322, x3333);
+    FixPositiveIndefiniteness(x2121, x2112);
+    FixPositiveIndefiniteness(x3131, x3113);
+    FixPositiveIndefiniteness(x3232, x3223);
+  }
+
   double dPdF_atFhat[81];
   memset(dPdF_atFhat, 0, sizeof(double) * 81);
   dPdF_atFhat[tensor9x9Index(0,0,0,0)] = x1111;
@@ -1080,6 +1089,62 @@ int IsotropicHyperelasticFEM::tensor9x9Index(int i, int j, int m, int n)
   int rowIndex_in9x9Matrix = rowMajorMatrixToTeran[3 * i + j];
   int columnIndex_in9x9Matrix = rowMajorMatrixToTeran[3 * m + n];
   return (9 * rowIndex_in9x9Matrix + columnIndex_in9x9Matrix);
+}
+
+void IsotropicHyperelasticFEM::FixPositiveIndefiniteness(double & B11, double & B12)
+{
+  Vec2d eigenValues(B11 - B12, B11 + B12);
+
+  bool hasNegativeEigenValues = false;
+  for(int i = 0; i < 2; i++)
+  {
+    if (eigenValues[i] < 0)
+      hasNegativeEigenValues = true;
+  }
+
+  if (hasNegativeEigenValues)
+  {
+    if (eigenValues[0] < 0)
+      eigenValues[0] = 0;
+
+    if (eigenValues[1] < 0)
+      eigenValues[1] = 0;
+
+    B11 = 0.5 * ( eigenValues[0] + eigenValues[1]);
+    B12 = 0.5 * (-eigenValues[0] + eigenValues[1]);
+  }
+}
+
+void IsotropicHyperelasticFEM::FixPositiveIndefiniteness(double & A11, double & A12, double & A13, double & A22, double & A23, double & A33)
+{
+  Mat3d mat(A11, A12, A13, A12, A22, A23, A13, A23, A33);
+  Vec3d eigenValues;
+  Vec3d eigenVectors[3];
+  eigen_sym(mat, eigenValues, eigenVectors);
+  bool hasNegativeEigenValues = false;
+  for(int i = 0; i < 3; i++)
+  {
+    if (eigenValues[i] < 0)
+    {
+      hasNegativeEigenValues = true;
+      eigenValues[i] = 0;
+    }
+  }
+
+  if (hasNegativeEigenValues)
+  {
+    Mat3d V(eigenVectors[0][0], eigenVectors[1][0], eigenVectors[2][0],
+            eigenVectors[0][1], eigenVectors[1][1], eigenVectors[2][1],
+            eigenVectors[0][2], eigenVectors[1][2], eigenVectors[2][2]);
+
+    Mat3d newMat = (V.multiplyDiagRight(eigenValues)) * trans(V);
+    A11 = newMat[0][0];
+    A22 = newMat[1][1];
+    A33 = newMat[2][2];
+    A12 = newMat[0][1];
+    A13 = newMat[0][2];
+    A23 = newMat[1][2];
+  }
 }
 
 /*

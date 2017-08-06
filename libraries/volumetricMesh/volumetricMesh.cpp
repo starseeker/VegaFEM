@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC *
  * All rights reserved.                                                  *
@@ -516,7 +516,7 @@ void VolumetricMesh::loadFromAscii(const char * filename, elementType * elementT
                 &R[0], &R[1], &R[2], &R[3], &R[4], &R[5], &R[6], &R[7], &R[8]) == 15)
               enoughParameters = true;
           }
-          else if(strcmp(subType,"_N3G3") == 0)
+          else if (strcmp(subType,"_N3G3") == 0)
           {
             // *ORTHOTROPIC_N3G3
             // parse nu12,nu23,nu31,G12,G23,G31
@@ -524,7 +524,7 @@ void VolumetricMesh::loadFromAscii(const char * filename, elementType * elementT
             if (sscanf(ch, "%lf,%lf,%lf,%lf,%lf,%lf", &nu12, &nu23, &nu31, &G12, &G23, &G31) == 6)
               enoughParameters = true;
           }
-          else if(strcmp(subType,"_N1G1R9") == 0)
+          else if (strcmp(subType,"_N1G1R9") == 0)
           {
             // *ORTHOTROPIC_N1G1R9
             // parse nu,G,R0,R1,R2,R3,R4,R5,R6,R7,R8
@@ -535,36 +535,36 @@ void VolumetricMesh::loadFromAscii(const char * filename, elementType * elementT
               enoughParameters = true;
             }
           }
-          else if(strcmp(subType, "_N1G1") == 0)
+          else if (strcmp(subType, "_N1G1") == 0)
           {
             // *ORTHOTROPIC_N1G1
             // parse nu,G
             // R is default (identity)
-            if(sscanf(ch, "%lf,%lf",&nu,&G) == 2)
+            if (sscanf(ch, "%lf,%lf",&nu,&G) == 2)
             {
               useNuAndG = true;
               enoughParameters = true;
             }
           }
-          else if(strcmp(subType,"_N1R9") == 0)
+          else if (strcmp(subType,"_N1R9") == 0)
           {
             // *ORTHOTROPIC_N1R9
             // parse nu,R0,R1,R2,R3,R4,R5,R6,R7,R8
             // G is default (1.0)
-            if(sscanf(ch,"%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf",
+            if (sscanf(ch,"%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf",
                 &nu, &R[0], &R[1], &R[2], &R[3], &R[4], &R[5], &R[6], &R[7], &R[8]) == 10)
             {
               useNuAndG = true;
               enoughParameters = true;
             }
           }
-          else if(strcmp(subType,"_N1") == 0)
+          else if (strcmp(subType,"_N1") == 0)
           {
             // *ORTHOTROPIC_N1
             // parse nu
             // G is default (1.0)
             // R is default (identity)
-            if(sscanf(ch,"%lf", &nu) == 1)
+            if (sscanf(ch,"%lf", &nu) == 1)
             {
               useNuAndG = true;
               enoughParameters = true;
@@ -576,7 +576,7 @@ void VolumetricMesh::loadFromAscii(const char * filename, elementType * elementT
             throw 14;
           }
 
-          if(useNuAndG && (nu > -1.0) && (nu < 0.5)) // if nu is not in this range, then G_ij is still 0, finally produce an error
+          if (useNuAndG && (nu > -1.0) && (nu < 0.5)) // if nu is not in this range, then G_ij is still 0, finally produce an error
           {
             // formulas from:
             // Yijing Li, Jernej Barbic: Stable Corotational Materials, Symposium on Computer Animation 2014
@@ -671,7 +671,7 @@ void VolumetricMesh::loadFromAscii(const char * filename, elementType * elementT
       // seek for setNameC
       int setNum = -1;
       map<string,int>::iterator it = setMap.find(string(setNameC));
-      if(it != setMap.end()) 
+      if (it != setMap.end())
       {
       	setNum = it->second;
       }
@@ -684,7 +684,7 @@ void VolumetricMesh::loadFromAscii(const char * filename, elementType * elementT
       // seek for materialNameC
       int materialNum = -1;
       it = materialMap.find(string(materialNameC));
-      if(it != materialMap.end()) 
+      if (it != materialMap.end())
       {
       	materialNum = it->second;
       }
@@ -715,7 +715,7 @@ void VolumetricMesh::loadFromAscii(const char * filename, elementType * elementT
       {
         int newElement = atoi(pch);
         int ind = newElement-oneIndexedElements;
-        if(ind >= numElements || ind < 0) 
+        if (ind >= numElements || ind < 0)
         {
           printf("Error: set element index: %d out of bounds.\n", newElement);
           throw 21;
@@ -2470,7 +2470,7 @@ void VolumetricMesh::exportMeshGeometry(int * numVertices_, double ** vertices_,
   if (numElementVertices_ != NULL) 
     *numElementVertices_ = numElementVertices;
 
-  if(vertices_ != NULL) 
+  if (vertices_ != NULL)
   {
     *vertices_ = (double*) malloc (sizeof(double) * 3 * numVertices);
     for(int i=0; i<numVertices; i++)
@@ -2482,7 +2482,7 @@ void VolumetricMesh::exportMeshGeometry(int * numVertices_, double ** vertices_,
     }
   }
 
-  if(elements_ != NULL) 
+  if (elements_ != NULL)
   {
     *elements_ = (int*) malloc (sizeof(int) * numElementVertices * numElements);
     for(int i=0; i<numElements; i++)
@@ -2616,7 +2616,7 @@ VolumetricMesh::VolumetricMesh(const VolumetricMesh & volumetricMesh, int numEle
 
     for(set<int> :: iterator iter = oldElements.begin(); iter != oldElements.end(); iter++)
     {
-      if(*iter < 0)
+      if (*iter < 0)
       {
         printf("Internal error 2.\n");
         exit(1);
@@ -2638,7 +2638,7 @@ VolumetricMesh::VolumetricMesh(const VolumetricMesh & volumetricMesh, int numEle
       Set * newSet = new Set(oldSet->getName());
       for(unsigned int j=0; j<newElements.size(); j++)
       {
-        if(newElements[j] < 0)
+        if (newElements[j] < 0)
         {
           printf("Internal error 3.\n");
           exit(1);
@@ -2907,5 +2907,183 @@ void VolumetricMesh::renumberVertices(const vector<int> & permutation)
   for (int i = 0; i < numElements; i++)
     for (int j = 0; j < numElementVertices; j++)
       elements[i][j] = permutation[elements[i][j]];
+}
+
+void VolumetricMesh::addMaterial(const Material * material, const Set & newSet, bool removeEmptySets, bool removeEmptyMaterials)
+{
+  // add new material to materials
+  numMaterials++;
+  materials = (Material**) realloc (materials, sizeof(Material*) * numMaterials);
+  materials[numMaterials - 1] = material->clone();
+
+  // remove indices in the sets that belong to the newSet
+  const set<int> & newElements = newSet.getElements();
+  for(int i = 0; i < numSets; i++)
+  {
+    set<int> & s = sets[i]->getElements();
+    // skip allElements
+    if (sets[i]->getName() == "allElements" && sets[i]->getNumElements() == numElements)
+      continue;
+    for(set<int>::iterator it = s.begin(); it != s.end(); )
+    {
+      int ele = *it;
+      if (newElements.find(ele) != newElements.end())
+      {
+        set<int>::iterator it2 = it;
+        it++;
+        s.erase(it2);
+      }
+      else
+        it++;
+    }
+  }
+
+  // add the new Set
+  numSets++;
+  sets = (Set**) realloc(sets, sizeof(Set *) * numSets);
+  sets[numSets-1] = new Set(newSet);
+
+  // create a new Region
+  numRegions++;
+  regions = (Region**) realloc (regions, sizeof(Region*) * numRegions);
+  regions[numRegions - 1] = new Region(numMaterials - 1, numSets - 1);
+
+  // modify elementMaterial
+  for(set<int>::const_iterator it = newElements.begin(); it != newElements.end(); it++)
+  {
+    int el = *it;
+    assert(el >= 0 && el < numElements);
+    elementMaterial[el] = numMaterials-1;
+  }
+
+  if (removeEmptySets)
+  {
+    bool hasEmptySet = false;
+    vector<int> setIndexChange(numSets, 0); // old set index -> new set index
+    int newIndex = 0;                       // store the next available set index
+    for(int i = 0; i < numSets; i++)
+    {
+      if (sets[i]->getNumElements() == 0)
+      {
+        setIndexChange[i] = -1; // this set will be deleted, so its new set index is -1
+        delete sets[i];
+        sets[i] = NULL;
+        hasEmptySet = true;
+      }
+      else
+      {
+        setIndexChange[i] = newIndex; // this set is remained, its new index is the next available index
+        if (newIndex != i)            // this means there's already at least one set deleted
+        {
+          assert(newIndex < i);
+          sets[newIndex] = sets[i];   // assign the pointer to the current set to the location at newIndex
+        }
+        newIndex++;
+      }
+    }
+
+    if (hasEmptySet)
+    {
+      assert(newIndex < numSets);
+      numSets = newIndex;
+      sets = (Set**) realloc(sets, sizeof(Set *) * numSets);
+
+      int newRegionIdx = 0;
+      for(int i = 0; i < numRegions; i++)
+      {
+        int oldSetIdx = regions[i]->getSetIndex();
+        assert((size_t)oldSetIdx < setIndexChange.size());
+        if (setIndexChange[oldSetIdx] == -1) // this set has been deleted
+        {
+          delete regions[i];
+          regions[i] = NULL;
+        }
+        else
+        {
+          regions[i]->setSetIndex(setIndexChange[oldSetIdx]);
+          if (newRegionIdx != i)
+            regions[newRegionIdx] = regions[i];
+          newRegionIdx++;
+        }
+      }
+      numRegions = newRegionIdx;
+      regions = (Region**) realloc (regions, sizeof(Region*) * numRegions);
+    } // end if (hasEmptySet)
+    else
+    {
+      assert(newIndex == numSets);
+    }
+  } // end if (removeEmptySets)
+
+  // remove material
+  if (removeEmptyMaterials)
+  {
+    // count #Elements for each material
+    vector<int> elementsWithMaterial(numMaterials, 0);
+
+    for(int i = 0; i < numElements; i++)
+    {
+      int matIdx = elementMaterial[i];
+      assert(matIdx >= 0 && matIdx < numMaterials);
+      elementsWithMaterial[matIdx]++;
+    }
+
+    int newMatIdx = 0;
+    vector<int> matIndexChange(numMaterials, 0); // old material index -> new material index
+    bool hasEmptyMat = false;
+    for(int i = 0; i < numMaterials; i++)
+    {
+      if (elementsWithMaterial[i] == 0)
+      {
+        matIndexChange[i] = -1;
+        delete materials[i];
+        materials[i] = NULL;
+        hasEmptyMat = true;
+      }
+      else
+      {
+        matIndexChange[i] = newMatIdx;
+        if (newMatIdx != i)
+          materials[newMatIdx] = materials[i];
+        newMatIdx++;
+      }
+    }
+
+    if (hasEmptyMat)
+    {
+      numMaterials = newMatIdx;
+      materials = (Material**) realloc (materials, sizeof(Material*) * numMaterials);
+
+      // we also need to modify and delete invalid regions
+      bool hasInvalidRegion = false;
+      int newRegionIdx = 0;
+      for(int i = 0; i < numRegions; i++)
+      {
+        int oldMatIndex = regions[i]->getMaterialIndex();
+        if (matIndexChange[oldMatIndex] < 0)
+        {
+          hasInvalidRegion = true;
+          delete regions[i];
+          regions[i] = NULL;
+        }
+        else
+        {
+          regions[i]->setMaterialIndex(matIndexChange[oldMatIndex]);
+          if (newRegionIdx != i)
+            regions[newRegionIdx] = regions[i];
+          newRegionIdx++;
+        }
+      }
+
+      if (hasInvalidRegion)
+      {
+        numRegions = newRegionIdx;
+        regions = (Region**) realloc (regions, sizeof(Region*) * numRegions);
+      }
+
+      // reassign the correct material index to each element
+      propagateRegionsToElements();
+    }
+  } // end if (removeEmptyMaterials)
 }
 

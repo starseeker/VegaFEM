@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "reducedStvk" library , Copyright (C) 2007 CMU, 2009 MIT              *
  * All rights reserved.                                                  *
@@ -26,12 +26,12 @@
  *                                                                       *
  *************************************************************************/
 
-#include <pthread.h>
-#include "lapack-headers.h"
 #include "matrixIO.h"
 #include "matrixMacros.h"
 #include "matrixProjection.h"
 #include "StVKReducedInternalForcesMT.h"
+#include <pthread.h>
+#include "lapack-headers.h"
 
 struct StVKReducedInternalForcesMT_threadArg
 {

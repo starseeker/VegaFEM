@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "rigidBodyDynamics" library , Copyright (C) 2007 CMU                  *
  * All rights reserved.                                                  *

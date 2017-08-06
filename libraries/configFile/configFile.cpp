@@ -520,7 +520,7 @@ void ConfigFile::strip(string & s)
     return;
   }
   size_t end = s.size() - 1;
-  for(; end >= 0 && isspace(s[end]); end--) ;
+  for(; isspace(s[end]); end--) ;
   assert(start <= end);
   s = s.substr(start, end - start + 1);
 }

@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "isotropic hyperelastic FEM" library , Copyright (C) 2016 USC         *
  * All rights reserved.                                                  *
@@ -96,6 +96,9 @@ public:
 
   void SetMaterial(IsotropicMaterial * isotropicMaterial_) { isotropicMaterial = isotropicMaterial_; }
 
+  // enforces the tangent stiffness matrix to be symmetric positive-definite (which is good for stability)
+  void EnforceSPD(bool enforceSPD) { this->enforceSPD = enforceSPD; }
+
   // === Advanced functions below; you normally do not need to use them: ===
   // Computes strain energy, internal forces, and/or tangent stiffness matrix, as requested by computationMode. It returns 0 on success, and non-zero on failure.
   // computationMode:
@@ -127,6 +130,8 @@ protected:
 
   bool addGravity;
   double g;
+
+  bool enforceSPD;
 
   // this is the b=(A1N1 + A2N2 + A3N3) in the paper,
   // see p.3 section 4
@@ -214,6 +219,16 @@ protected:
            | m20 m21 m22 |   | 6 7 8 |
   */
   int teranToRowMajorMatrix[9];
+
+  // enforce SPD:
+  // on the "A" matrix in Teran's paper, Section 8
+  // Aij is the entry in row i and column j of 3x3 matrix A (which is symmetric)
+  void FixPositiveIndefiniteness(double & A11, double & A12, double & A13,
+                                 double & A22, double & A23, double & A33);
+
+  // on the "B" matrix in Teran's paper, Section 8
+  // Bij is the entry in row i and column j of 2x2 matrix B (which is symmetric)
+  void FixPositiveIndefiniteness(double & B11, double & B12);
 };
 
 #endif

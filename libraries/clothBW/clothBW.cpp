@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "clothBW" library , Copyright (C) 2016 USC                            *
  * All rights reserved.                                                  *
@@ -42,41 +42,38 @@ ClothBW::ClothBW(int numVertices_, const double * restPositions_, const double *
     int numMaterialGroups_, const MaterialGroup * materialGroups_, int addGravity_)
   : addGravity(addGravity_), g(9.81)
 {
-  vector<double> triangleUVs_(3*2*numTriangles_);
-
+  // build triangle UVs
+  vector<double> triangleUVs(3 * 2 * numTriangles_);
   for (int i = 0 ; i < numTriangles_; i++)
   {	
-    int particleA = triangles_[3*i+0];
-    int particleB = triangles_[3*i+1];
-    int particleC = triangles_[3*i+2];
+    int vertexA = triangles_[3*i+0];
+    int vertexB = triangles_[3*i+1];
+    int vertexC = triangles_[3*i+2];
 
-    triangleUVs_[6*i+0] = 0.0;		// for the vertex A u
-    triangleUVs_[6*i+1] = 0.0;		// for the vertex A v
+    triangleUVs[6*i+0] = 0.0; // vertex A, u coordinate
+    triangleUVs[6*i+1] = 0.0; // vertex A, v coordinate
 
-    Vec3d x0; // vector from A to B (previously B to A)
-    x0[0] = restPositions_[3*particleA+0] - restPositions_[3*particleB+0];
-    x0[1] = restPositions_[3*particleA+1] - restPositions_[3*particleB+1]; 
-    x0[2] = restPositions_[3*particleA+2] - restPositions_[3*particleB+2];  
+    Vec3d x0; // vector from A to B
+    x0[0] = restPositions_[3*vertexA+0] - restPositions_[3*vertexB+0];
+    x0[1] = restPositions_[3*vertexA+1] - restPositions_[3*vertexB+1]; 
+    x0[2] = restPositions_[3*vertexA+2] - restPositions_[3*vertexB+2];  
 
     double lengthAB = len(x0);
+    triangleUVs[6*i+2] = lengthAB;	// vertex B, u coordinate
+    triangleUVs[6*i+3] = 0.0; // vertex B, v coordinate
 
-    triangleUVs_[6*i+2] = lengthAB;	// for the vertex B u
-    triangleUVs_[6*i+3] = 0.0;		// for the vertex B v
+    Vec3d x1; // vector from A to C
+    x1[0] = restPositions_[3*vertexA+0] - restPositions_[3*vertexC+0];
+    x1[1] = restPositions_[3*vertexA+1] - restPositions_[3*vertexC+1]; 
+    x1[2] = restPositions_[3*vertexA+2] - restPositions_[3*vertexC+2];    
 
-    Vec3d xn0 = norm(x0); //vector from A to B normalized
-
-    Vec3d x1; // vector from A to C (previously C to A)
-    x1[0] = restPositions_[3*particleA+0] - restPositions_[3*particleC+0];
-    x1[1] = restPositions_[3*particleA+1] - restPositions_[3*particleC+1]; 
-    x1[2] = restPositions_[3*particleA+2] - restPositions_[3*particleC+2];    
-
+    Vec3d xn0 = norm(x0); // normalized vector from A to B
     double lengthAC = len(x1);
-
-    triangleUVs_[6*i+4] = dot(xn0, x1); // for the vertex C u
-    triangleUVs_[6*i+5] = sqrt(lengthAC * lengthAC - triangleUVs_[6*i+4] * triangleUVs_[6*i+4]);	// for the vertex C v
-
+    triangleUVs[6*i+4] = dot(xn0, x1); // vertex C, u coordinate
+    triangleUVs[6*i+5] = sqrt(lengthAC * lengthAC - triangleUVs[6*i+4] * triangleUVs[6*i+4]);	// vertex C, v coordinate
   }
-  GenerateBW(numVertices_, restPositions_, masses_, numTriangles_, triangles_, triangleUVs_.data(), 
+
+  GenerateBW(numVertices_, restPositions_, masses_, numTriangles_, triangles_, triangleUVs.data(), 
     triangleGroups_, numMaterialGroups_, materialGroups_, addGravity_);
 }
 
@@ -91,7 +88,10 @@ ClothBW::ClothBW(int numVertices_, const double * restPositions_, const double *
 
 ClothBW::WuvInfo ClothBW::ComputeWuvInfo(const double triangleUV[6])
 {
-  double du1, du2, dv1, dv2;  // distance of neighboring vertices in planar coordinates. (delta_u1, delta_v1): planar vector from A to B; (delta_u2, delta_v2): planar vector from B to A.
+  // distance of neighboring vertices in planar coordinates. 
+  // (delta_u1, delta_v1): planar vector from A to B,
+  // (delta_u2, delta_v2): planar vector from B to A.
+  double du1, du2, dv1, dv2;  
   du1 = triangleUV[2] - triangleUV[0];
   dv1 = triangleUV[3] - triangleUV[1];
   du2 = triangleUV[4] - triangleUV[0];
@@ -148,7 +148,7 @@ void ClothBW::GenerateBW(int numVertices_, const double * restPositions_, const 
 {
   bu = 1.0;
   bv = 1.0;
-  //default to computing everything
+  // default to computing everything:
   cond[0] = true; // stretch&shear force
   cond[1] = true; // bend force
   cond[2] = true; // stretch&shear bend stiffness
@@ -160,12 +160,10 @@ void ClothBW::GenerateBW(int numVertices_, const double * restPositions_, const 
   numVertices = numVertices_;
   restPositions.resize(numVertices);
   for(int i = 0; i < numVertices; i++)
-    restPositions[i] = Vec3d(restPositions_ + 3*i);
+    restPositions[i] = Vec3d(&restPositions_[3*i]);
   numTriangles = numTriangles_;
   triangles.resize(3 * numTriangles);
   memcpy(triangles.data(), triangles_, sizeof(int) * 3 * numTriangles);
-//  triangleUVs.resize(3*2* numTriangles);
-//  memcpy(triangleUVs.data(), triangleUVs_, sizeof(double) * 3 * 2 * numTriangles);
 
   triangleGroups.resize(numTriangles);
   memcpy(triangleGroups.data(), triangleGroups_, sizeof(int) * numTriangles);
@@ -204,12 +202,13 @@ void ClothBW::GenerateBW(int numVertices_, const double * restPositions_, const 
     assert(trivtx[0] >= 0 &&& trivtx[1] >= 0 && trivtx[2] >= 0);
     assert(trivtx[0] < numVertices && trivtx[1] < numVertices && trivtx[2] < numVertices);
 
-    // compute alpha
+    // compute the triangle surface area in UV coordinates (called "alpha" in [Baraff and Witkin 1998])
     double surfaceArea = GetTriangleSurfaceArea(restPositions[trivtx[0]], restPositions[trivtx[1]], restPositions[trivtx[2]]);
+
     // In [Baraff and Witkin 1998], alpha is set to be the surface area in UV coordinates
-    //alphas[tri] = 1.0;
-    // In David Pritchard's report (2012), David found setting alpha = area^(3/4) is better for scale-invariance
-    alphas[tri] = pow(surfaceArea, 3.0/4.0);
+    //alphas[tri] = surfaceArea;
+    // In David Pritchard's report (2012), it is reported that setting alpha = area^(3/4) is better if one wishes for cloth to have resolution-invariance
+    alphas[tri] = pow(surfaceArea, 3.0 / 4.0);
 
     // compute wuv info
     wuvInfos[tri] = ComputeWuvInfo(&triangleUVs_[6*tri]);
@@ -225,8 +224,8 @@ void ClothBW::GenerateBW(int numVertices_, const double * restPositions_, const 
       {
         BendInfo info;
         TriOpVtx & previousTri = iter->second;
-        // if we already visited this bend edge before and created a BendInfo
-        // This means that there's an edge in the mesh that has three neighboring triangles
+        // If we already visited this bend edge before and created a BendInfo,
+        // there's an edge in the mesh that has three neighboring triangles.
         if (previousTri.first < 0) 
           throw 1;
 
@@ -235,7 +234,7 @@ void ClothBW::GenerateBW(int numVertices_, const double * restPositions_, const 
         info.v[2] = edge.second;        // index of the second edge vtx
         info.v[3] = oppositeVtx;        // index of the second triangle's vtx that is opposite to the edge
         info.tri[0] = previousTri.first; // index of the first triangle
-        info.tri[1] = tri;                 // index of the second triangle
+        info.tri[1] = tri;               // index of the second triangle
         quadComponentIndices.push_back(info);
         previousTri.first = -1; // mark this edge as visited
       }
@@ -248,7 +247,7 @@ void ClothBW::GenerateBW(int numVertices_, const double * restPositions_, const 
 
   iter = edgeInfo.begin();
 
-  // build the locations of non-zero entries in the stiffness matrix of size nxn
+  // build the locations of non-zero entries in the stiffness matrix of size n x n
   SparseMatrixOutline skeletonOutline(numVertices);
 
   for (int i=0; i<numVertices; i++) // protection for isolated vertices
@@ -264,22 +263,22 @@ void ClothBW::GenerateBW(int numVertices_, const double * restPositions_, const 
 
   for(int i = 0 ; i < numQuads; i++)
   {
-    int particleA = quadComponentIndices[i].v[0];
-    int particleB = quadComponentIndices[i].v[1];
-    int particleC = quadComponentIndices[i].v[2];
-    int particleD = quadComponentIndices[i].v[3];
+    int vertexA = quadComponentIndices[i].v[0];
+    int vertexB = quadComponentIndices[i].v[1];
+    int vertexC = quadComponentIndices[i].v[2];
+    int vertexD = quadComponentIndices[i].v[3];
 
-    skeletonOutline.AddEntry(particleA, particleD);
-    skeletonOutline.AddEntry(particleD, particleA);
+    skeletonOutline.AddEntry(vertexA, vertexD);
+    skeletonOutline.AddEntry(vertexD, vertexA);
 
     // --- compute bend stiffness ---
     bendStiffnesses[i] = ComputeBendingStiffness(quadComponentIndices[i], triangleUVs_);
 
     // --- compute Resting Angles ---
-    Vec3d restPositionA = restPositions[particleA];
-    Vec3d restPositionB = restPositions[particleB];
-    Vec3d restPositionC = restPositions[particleC];
-    Vec3d restPositionD = restPositions[particleD];
+    Vec3d restPositionA = restPositions[vertexA];
+    Vec3d restPositionB = restPositions[vertexB];
+    Vec3d restPositionC = restPositions[vertexC];
+    Vec3d restPositionD = restPositions[vertexD];
 
     Vec3d vecBA = restPositionB - restPositionA;
     Vec3d vecCA = restPositionC - restPositionA;
@@ -364,7 +363,7 @@ void ClothBW::AddStretchAndShear(const double * u, int startTriangle, int endTri
 {
   for(int tri = startTriangle; tri < endTriangle; tri++)
   {
-    int group = triangleGroups[tri];    // group index
+    int group = triangleGroups[tri]; // group index
 
     int p0 = triangles[3*tri+0]; // triangle vtx indices
     int p1 = triangles[3*tri+1];
@@ -547,7 +546,7 @@ void ClothBW::AddBend(const double * u, int startQuad, int endQuad, double * ene
     double sinTheta = dot(cross(nAN, nBN), eN);
     double cbend = atan2(sinTheta, cosTheta); // store theta into cbend
 
-    // account for resting angles?
+    // account for the rest angles?
     if (useRestAnglesForBendingForces)
       cbend -= restAngles[qua];
     // now cbend stores Cb = theta - theta0
@@ -563,7 +562,7 @@ void ClothBW::AddBend(const double * u, int startQuad, int endQuad, double * ene
     Mat3d phnApx[4], phnBpx[4], phepx[4];
     for(int vtx = 0; vtx < 4; vtx++)
     {
-      // Here we compute those derivatives based on approximation that the normal and edge vectors have constant magnitude
+      // Here we compute the derivatives based on approximation that the normal and edge vectors have constant magnitude
       // phnA/pxms = 1.0 / |nA| * S_s(qAm)
       phnApx[vtx] = invnAL * skewSymmetricMatrix(qA[vtx]); // now phnA/pxms = phnApx[m][s]
       phnBpx[vtx] = invnBL * skewSymmetricMatrix(qB[vtx]);
@@ -577,8 +576,8 @@ void ClothBW::AddBend(const double * u, int startQuad, int endQuad, double * ene
       pCospx[m] = phnApx[m] * nBN + phnBpx[m] * nAN;
       for(int s = 0; s < 3; s++)
       {
-        pSinpx[m][s] = dot(cross(phnApx[m][s], nBN) + cross(nAN, phnBpx[m][s]), eN)
-              + dot(cross(nAN, nBN), phepx[m][s]);
+        pSinpx[m][s] = dot(cross(phnApx[m][s], nBN) + cross(nAN, phnBpx[m][s]), eN) +
+                       dot(cross(nAN, nBN), phepx[m][s]);
         pThetapx[m][s] = cosTheta * pSinpx[m][s] - sinTheta * pCospx[m][s];
       }
 
@@ -679,11 +678,11 @@ void ClothBW::GenerateStiffnessMatrixTopology(SparseMatrix **K) const
   // for per quad, in addition to per triangle topology
   for( int i = 0 ; i < numQuads; i++ )
   {
-    int particleA = quadComponentIndices[i].v[0];
-    int particleD = quadComponentIndices[i].v[3];
+    int vertexA = quadComponentIndices[i].v[0];
+    int vertexD = quadComponentIndices[i].v[3];
 
-    KOutline.AddBlock3x3Entry(particleA, particleD);
-    KOutline.AddBlock3x3Entry(particleD, particleA);
+    KOutline.AddBlock3x3Entry(vertexA, vertexD);
+    KOutline.AddBlock3x3Entry(vertexD, vertexA);
   }
 
   *K = new SparseMatrix(&KOutline);

@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "massSpringSystem" library, Copyright (C) 2007 CMU, 2009 MIT,         *
  *                                           2016 USC                    *
@@ -64,6 +64,7 @@ MassSpringSystemMT::~MassSpringSystemMT()
 {
   free(startEdge);
   free(endEdge);
+  free(energyBuffer);
   free(internalForceBuffer);
   for(int i=0; i<numThreads; i++)
     delete(sparseMatrixBuffer[i]);
@@ -139,7 +140,7 @@ void * MassSpringSystemMT_WorkerThread(void * arg)
 
 void MassSpringSystemMT::Initialize()
 {
-  energyBuffer.resize(numThreads);
+  energyBuffer = (double*) malloc (sizeof(double) * numThreads);
   internalForceBuffer = (double*) malloc (sizeof(double) * numThreads * 3 * numParticles);
 
   // generate skeleton matrices
@@ -201,7 +202,7 @@ void MassSpringSystemMT::ComputeHelper(enum MassSpringSystemMT_computationTarget
     {
       for(int i=0; i<numThreads; i++)
         threadArgv[i].targetBuffer = (void*)(&energyBuffer[i]);
-      memset(energyBuffer.data(), 0, sizeof(double) * numThreads);
+      memset(energyBuffer, 0, sizeof(double) * numThreads);
     }
     break;
 
@@ -261,7 +262,7 @@ void MassSpringSystemMT::ComputeHelper(enum MassSpringSystemMT_computationTarget
       if (!addQuantity)
         *energy = 0.0;
       for(int i=0; i<numThreads; i++)
-          *energy += energyBuffer[i];
+        *energy += energyBuffer[i];
     }
     break;
 

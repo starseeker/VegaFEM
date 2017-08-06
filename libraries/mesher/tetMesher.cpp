@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "mesher" library , Copyright (C) 2016 USC                             *
  * All rights reserved.                                                  *
@@ -21,6 +21,7 @@
  *                                                                       *
  *************************************************************************/
 
+#include <limits.h>
 #include <vector>
 #include <cfloat>
 #include <stack>
@@ -50,7 +51,7 @@ TetMesh * TetMesher::compute(ObjMesh * inputMesh, double refinementQuality, doub
   // clean previous data
   delete objMesh;
   objMesh = NULL;
-  //depth = 0;
+  faceRecoveryDepth = 0;
   //hasMissing = false;
   numSteinerVertices = 0;
 
@@ -79,7 +80,7 @@ TetMesh * TetMesher::compute(ObjMesh * inputMesh, double refinementQuality, doub
   double cdtTime = counter.GetElapsedTime();
 
   if (maxSteinerVertices == -1)
-    maxSteinerVertices = 0x7fffffff;
+    maxSteinerVertices = INT_MAX;
 
   if ((maxTimeSeconds >= 0) && (cdtTime >= maxTimeSeconds))
     return delaunay.getMesh();
@@ -87,7 +88,7 @@ TetMesh * TetMesher::compute(ObjMesh * inputMesh, double refinementQuality, doub
   double maxRefinementTime = -1.0;
   if (maxTimeSeconds >= 0)
     maxRefinementTime = maxTimeSeconds - cdtTime;
-  printf("Start to refine the tetmesh.\n");
+  printf("Starting tet mesh refinement.\n");
 
   delaunay.buildCDT();
 
@@ -107,30 +108,36 @@ TetMesh * TetMesher::compute(ObjMesh * inputMesh, double refinementQuality, doub
 
   double averageEdgeLength = objMesh->computeAverageEdgeLength();
 
-  cout << "Average length: " << averageEdgeLength << endl;
+  //cout << "Average length: " << averageEdgeLength << endl;
 
   numSteinerVertices = 0;
   counter.StartCounter();
-  //First we use edge refine rules, the radius/minEdge
-  while (refineEdge(refinementQuality, alpha * averageEdgeLength) == 0 && numSteinerVertices < maxSteinerVertices)
+  //First we use edge refine rule (radius/minEdge)
+  while ((refineEdge(refinementQuality, alpha * averageEdgeLength) == 0) && (numSteinerVertices < maxSteinerVertices))
   {
+    printf("#"); fflush(NULL);
     counter.StopCounter();
     double elapsedTime = counter.GetElapsedTime();
     if ((maxRefinementTime >= 0) && (elapsedTime > maxRefinementTime))
       break;
   }
+  printf("\n");
 
   //Use minimal dihedral angle refinement
   if (minDihedral > 0)
   {
+    printf("Enforcing the minimum dihedral angle condition...\n");
     while (refineAngle(minDihedral, alpha * averageEdgeLength) == 0 && numSteinerVertices < maxSteinerVertices)
     {
+      printf("#"); fflush(NULL);
       counter.StopCounter();
       double elapsedTime = counter.GetElapsedTime();
       if ((maxRefinementTime >= 0) && (elapsedTime > maxRefinementTime))
         break;
     }
   }
+
+  printf("\n");
   cout << numSteinerVertices << " steiner points inserted." << endl;
   TetMesh * ret = resultTetMesh.getTetMesh();
   //ret->orient();
@@ -245,6 +252,7 @@ TetMesher::~TetMesher()
 
 int TetMesher::initializeCDT(bool recovery)
 {
+  //printf("Entering initializeCDT:\n"); fflush(NULL);
   unsigned nv;
   double *v = NULL;
   const ObjMesh::Group *group = objMesh->getGroupHandle(0);
@@ -292,8 +300,11 @@ int TetMesher::initializeCDT(bool recovery)
   }
   objMesh->exportGeometry((int *) &nv, &v);
   vector<Vec3d> objVertices;
-  for(size_t i = 0; i < nv; i++) objVertices.push_back(&v[3*i]);
+  for(size_t i = 0; i < nv; i++) 
+    objVertices.push_back(&v[3*i]);
+  //printf("Before computeDelaunayTetrahedralization:\n"); fflush(NULL);
   delaunay.computeDelaunayTetrahedralization(objVertices);
+  //printf("After computeDelaunayTetrahedralization:\n"); fflush(NULL);
   free(v);
   trianglesInTet.clear();
 
@@ -304,7 +315,9 @@ int TetMesher::initializeCDT(bool recovery)
       insertTet(ball->getVertices());
   }
 
+  //printf("Before segmentRecovery:\n"); fflush(NULL);
   segmentRecovery();
+  //printf("After segmentRecovery:\n"); fflush(NULL);
   flipSurface();
 
   lost.clear();
@@ -318,16 +331,15 @@ int TetMesher::initializeCDT(bool recovery)
     if (trianglesInTet.find(key) == trianglesInTet.end())
     {
       lost.push_back(key);
-      printf("Lost face (%d, %d %d)\n", key[0], key[1], key[2]);
+      //printf("Lost face (%d, %d %d)\n", key[0], key[1], key[2]);
     }
   }
 
-
-  cout << "Lost size: " << lost.size() << endl;
+  //cout << "Lost size: " << lost.size() << endl;
 
   //printf("\n");
   if (!lost.empty() && recovery)
-      faceRecovery();
+    faceRecovery();
   removeOutside();
   return lost.size();
 }
@@ -340,22 +352,22 @@ int TetMesher::refineAngle(const double angleBound, const double minmimalDist)
   {
     const DelaunayBallWithRefineInfo  * delaunayBallWithRefineInfo = *itr;
     if (delaunayBallWithRefineInfo->minDihedral > angleBound)
-      return 2;            //No bad tet to refine
+      return 2; // no bad tet to refine
 
     Vec3d r = delaunayBallWithRefineInfo->getCenter();
     if (delaunayBallWithRefineInfo->visibleTo(r) == false)
     {
-      continue;     //invisible, find a new bad tet to refine
+      continue; //invisible, find a new bad tet to refine
     }
 
     if (isTooCloseToOtherVertices(r, minmimalDist))
     {
       //cout << "Too close vertices" << endl;
-      continue;     //too close to other vertices, find a new bad tet to refine
+      continue; //too close to the other vertices, find a new bad tet to refine
     }
 
     int added = delaunay.addOnePoint(r);
-    if (added)         //One point added
+    if (added) // one point added
     {
       for (DelaunayMesher::BallIter itr = delaunay.getBallToDeleteSetBegin(); itr != delaunay.getBallToDeletelSetEnd(); itr++)
         resultTetMesh.remove(*itr);
@@ -410,7 +422,7 @@ int TetMesher::refineEdge(double refinementQuality, double minmimalDist)
   }
   return 1;
 }
-#include <fstream>
+
 int TetMesher::removeOutside()
 {
   const ObjMesh::Group *group = objMesh->getGroupHandle(0);
@@ -437,10 +449,13 @@ int TetMesher::removeOutside()
   set <DelaunayMesher::DelaunayBall*, DelaunayMesher::DelaunayBallCompare> removeSet;
 
   for (DelaunayMesher::BallCIter itr = delaunay.getBallSetBegin(); itr != delaunay.getBallSetEnd(); itr++)
+  {
     if ((*itr)->isInfinite())
     {
        removeSetCandidate.insert(*itr);
     }
+  }
+
   while (!removeSetCandidate.empty())
   {
     DelaunayMesher::DelaunayBall * ball = *removeSetCandidate.begin();
@@ -448,12 +463,22 @@ int TetMesher::removeOutside()
     removeSet.insert(ball);
     if (!ball)
       continue;
+
     for (int i = 0; i < 4; i++)
-      if (surfaceTri.find(ball->uFaceKey(i)) == surfaceTri.end() && removeSet.find(ball->getNeighbor(i)) == removeSet.end() && removeSetCandidate.find(ball->getNeighbor(i)) == removeSetCandidate.end())
+    {
+      DelaunayMesher::DelaunayBall * neighbor = ball->getNeighbor(i);
+      if (surfaceTri.find(ball->uFaceKey(i)) == surfaceTri.end() && removeSet.find(neighbor) == removeSet.end() && removeSetCandidate.find(neighbor) == removeSetCandidate.end())
       {
+        Vec3d center = (neighbor->getPosition(0) + neighbor->getPosition(1) + neighbor->getPosition(2) + neighbor->getPosition(3)) / 4;
+        double windingNumber = fabs(WindingNumber::computeWindingNumber(objMesh, center));
+        if (windingNumber > 0.5)
+            continue;
+
         removeSetCandidate.insert(ball->getNeighbor(i));
       }
+    }
   }
+
   for (DelaunayMesher::BallCIter itr = removeSet.begin(); itr != removeSet.end(); itr++)
     delaunay.removeBall(*itr);
 
@@ -545,7 +570,7 @@ void TetMesher::formRegion(int face, set<int> &region)
   {
     UTriKey neighborVertexIndices = getFace(neighborSurface[face][i]);
     UEdgeKey commonEdge = find_intersect(vertexIndices, neighborVertexIndices);
-    if (edgesInTet.find(commonEdge) == edgesInTet.end())      // The common edge is not in the tet
+    if (edgesInTet.find(commonEdge) == edgesInTet.end()) // The common edge is not in the tet
       formRegion(neighborSurface[face][i], region);
   }
 }
@@ -562,12 +587,12 @@ void TetMesher::faceRecovery()
   //tet->save("delaunay.veg");
   for (unsigned int face = 0; face < objMesh->getNumFaces(); face++)
   {
-    if (trianglesInTet.find(getFace(face)) != trianglesInTet.end())      //This face is not missing
+    if (trianglesInTet.find(getFace(face)) != trianglesInTet.end()) // This face is not missing
       continue;
     //printf("Missing\n");
     region.clear();
-    formRegion(face, region);         // Form a region that is connected missing triangles
-    vector<vector<Vec3d> > regionVertices;      // n*3 Vec3d array
+    formRegion(face, region); // Form a region that is connected missing triangles
+    vector<vector<Vec3d> > regionVertices; // n*3 Vec3d array
     regionVertices.resize(region.size());
     int tail = 0;
     for (set<int>::const_iterator i = region.begin(); i != region.end(); i++)
@@ -581,17 +606,16 @@ void TetMesher::faceRecovery()
     vector <DelaunayMesher::DelaunayBall*> intersectTet;
     intersectTet.clear();
 
-
     // Find all tets that intersect this region
     for (DelaunayMesher::BallCIter itr = delaunay.getBallSetBegin(); itr != delaunay.getBallSetEnd(); itr++)
     {
       DelaunayMesher::DelaunayBall * ball = *itr;
       if (ball->isInfinite())
-        continue;             // No check for infinite ball
-      Vec3d v0 = ball->getPositon(0);
-      Vec3d v1 = ball->getPositon(1);
-      Vec3d v2 = ball->getPositon(2);
-      Vec3d v3 = ball->getPositon(3);
+        continue; // No check for infinite ball
+      Vec3d v0 = ball->getPosition(0);
+      Vec3d v1 = ball->getPosition(1);
+      Vec3d v2 = ball->getPosition(2);
+      Vec3d v3 = ball->getPosition(3);
       for (unsigned j = 0; j < region.size(); j++)
       {
         if (TriangleTetIntersection::tetrahedronIntersectTriangle(v0, v1, v2, v3, regionVertices[j][0], regionVertices[j][1], regionVertices[j][2]))
@@ -610,7 +634,7 @@ void TetMesher::faceRecovery()
     calculateTriangleBoundary(region, missingBoundary);
     buildTriangleNeighbor(boundaryFace, neighbor);
     //bool patched = false;
-    if (intersectTet.empty())     //Impossible
+    if (intersectTet.empty()) // Impossible
       continue;
     formTwoCavities(boundaryFace, missingBoundary, neighbor);
     for (unsigned i = 0; i < intersectTet.size(); i++)
@@ -863,8 +887,6 @@ bool TetMesher::formTwoCavities(std::vector<UTriKey>& faceSet, std::set<std::pai
   return ret;
 }
 
-
-
 bool TetMesher::fillHole(std::vector<UTriKey>& holeBoundary)
 {
   vector<UTriKey> holeAndBottom;
@@ -960,9 +982,11 @@ bool TetMesher::fillHole(std::vector<UTriKey>& holeBoundary)
     mesh->addGroup(group_2);
   }
 
-  //if (depth < 3)
+  const int maxFaceRecoveryDepth = 10;
+  if (faceRecoveryDepth < maxFaceRecoveryDepth)
   {
     TetMesher mesher;
+    mesher.faceRecoveryDepth = faceRecoveryDepth + 1;
     mesher.objMesh = mesh;
     mesher.initializeCDT(false);
     for (DelaunayMesher::BallCIter itr = mesher.delaunay.getBallSetBegin(); itr != mesher.delaunay.getBallSetEnd(); itr++)
@@ -979,6 +1003,8 @@ bool TetMesher::fillHole(std::vector<UTriKey>& holeBoundary)
     }
     return true;
   }
+  else
+    return false;
 }
 
 TetMesher::DelaunayBallWithRefineInfo::DelaunayBallWithRefineInfo(const DelaunayMesher::DelaunayBall& parent)
@@ -1324,4 +1350,3 @@ int TetMesher::flipSurface()
   //objMesh->addGroup(group);
   //objMesh->save("flipped.obj");
 }
-

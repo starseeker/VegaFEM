@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "distance field" library , Copyright (C) 2007 CMU, 2016 USC           *
  * All rights reserved.                                                  *
@@ -73,6 +73,7 @@ bool SignedDistanceFieldFromPolygonSoup::ConstructPseudoNormalComponents(ObjMesh
   Vec3d pseudoNormals[7];
   for (unsigned int i=0; i<pseudoNormalObjMesh->getNumGroups(); ++i)
   {
+    triangleList[i].clear();
     for (unsigned int j=0; j<(pseudoNormalObjMesh->getGroupHandle(i))->getNumFaces(); ++j)
     {
       unsigned int index0 = pseudoNormalObjMesh->getVertexIndex(i, j, 0);
@@ -114,7 +115,7 @@ bool SignedDistanceFieldFromPolygonSoup::ConstructPseudoNormalComponents(ObjMesh
             ObjMesh::isNaN(pseudoNormals[normali][1]) ||
             ObjMesh::isNaN(pseudoNormals[normali][2]))
         {
-          printf("Error: nan encountered: %lf %lf %lf\n", pseudoNormals[normali][0], pseudoNormals[normali][1], pseudoNormals[normali][2]);
+          printf("Error: pseudonormal nan encountered: %lf %lf %lf\n", pseudoNormals[normali][0], pseudoNormals[normali][1], pseudoNormals[normali][2]);
           printf("Group: %d | Triangle: %d\n", i, j);
           printf("vtx0: %d | vtx1: %d | vtx2: %d\n",index0, index1, index2);
           return false;
@@ -159,7 +160,7 @@ bool SignedDistanceFieldFromPolygonSoup::CheckInAndOutViaNormalTest(vector<Trian
     {
       closestDistance2 = d2;
       closestFeature = closestLocalFeature;
-      closestTriangle = i;
+      closestTriangle = (int)i;
     }
   }
 
@@ -330,7 +331,7 @@ ObjMesh * SignedDistanceFieldFromPolygonSoup::ComputeIsosurface(DistanceFieldBas
 
   printf("Removing interior components...\n");
   ObjMesh * outputMesh = marchingCubesResult->splitIntoConnectedComponents(0);
-  printf("Detect %d groups in the isoMesh.\n", (int)outputMesh->getNumGroups());
+  printf("Detected %d groups in the isoMesh.\n", (int)outputMesh->getNumGroups());
   outputMesh = RemoveInteriorComponents(outputMesh);
 
   delete(marchingCubesResult);
@@ -470,7 +471,7 @@ DistanceFieldNarrowBand * SignedDistanceFieldFromPolygonSoup::ComputeDistanceFie
   ObjMesh * isoMesh = ComputeIsosurface(field, sigma);
   printf("********* Computing signed distance field (%d x %d x %d) *************\n", resolutionX, resolutionY, resolutionZ); fflush(NULL);
   field->offsetDistanceField(-sigma); // shift the computed signed distance field
-  code = field->computeInteriorSignedField(isoMesh, resolutionX, resolutionY, resolutionZ, (float) bandwidth + sigma, maxTriCount, maxDepth);
+  code = field->computeInteriorSignedField(isoMesh, resolutionX, resolutionY, resolutionZ, (float) (bandwidth + sigma), maxTriCount, maxDepth);
   delete isoMesh;
 
   if (code != 0)

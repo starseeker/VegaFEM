@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "clothBW" library , Copyright (C) 2016 USC                            *
  * All rights reserved.                                                  *
@@ -60,7 +60,7 @@ public:
   // creates the cloth elastic model, from a given triangle mesh
   // "masses" is an array of length "numVertices"
   // "restPositions" is an array of length 3x"numVertices"
-  // "triangles" is an integer array of length 3x"numTriangles" (giving integer indices of the three particle forming a triangle)
+  // "triangles" is an integer array of length 3x"numTriangles" (giving integer indices of the three vertices forming a triangle)
   // "triangleGroups" is an integer array of length "numTriangles" (giving the integer index of the material group to which each triangle belongs)
   // "triangleUVs" is an double array of length 3x2x"numTriangles", indicating the uv for every vertex; this array can be user-provided, or the constructor can compute it automatically
   // all indices in this class are 0-indexed
@@ -165,7 +165,6 @@ protected:
   std::vector<Vec3d> restPositions;
   int numTriangles;
   std::vector<int> triangles;
-//  std::vector<double> triangleUVs;
 
   std::vector<WuvInfo> wuvInfos;
   std::vector<int> inverseIndicesStretchAndShear;

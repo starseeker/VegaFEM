@@ -8,7 +8,6 @@ endif
 R ?= ../..
 include $(R)/Makefile-headers/Makefile-header
 
-
 # the object files to be compiled for this library
 GLSLPHONG_OBJECTS=glslPhong.o
 
@@ -17,7 +16,6 @@ GLSLPHONG_LIBS=
 
 # the headers in this library
 GLSLPHONG_HEADERS=glslPhong.h
-
 
 GLSLPHONG_OBJECTS_FILENAMES=$(addprefix $(L)/glslPhong/, $(GLSLPHONG_OBJECTS))
 GLSLPHONG_HEADER_FILENAMES=$(addprefix $(L)/glslPhong/, $(GLSLPHONG_HEADERS))

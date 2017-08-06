@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "sparseSolver" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC   *
  * All rights reserved.                                                  *
@@ -416,7 +416,6 @@ PardisoSolver::PardisoSolver(const SparseMatrix * A, int numThreads_, matrixType
 
 PardisoSolver::~PardisoSolver()
 {
-  DisabledSolverError();
 }
 
 void PardisoSolver::DisabledSolverError()

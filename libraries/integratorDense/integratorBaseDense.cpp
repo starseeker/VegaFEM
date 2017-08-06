@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC     *
  * All rights reserved.                                                  *
@@ -26,14 +26,14 @@
  *                                                                       *
  *************************************************************************/
 
-#include "lapack-headers.h"
-#include "integratorBaseDense.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <float.h>
 #include <cassert>
+#include "lapack-headers.h"
+#include "integratorBaseDense.h"
 #include "IPIVC.h"
 
 IntegratorBaseDense::IntegratorBaseDense(int r, double timestep, double * massMatrix, ReducedForceModel * reducedForceModel, double dampingMassCoef, double dampingStiffnessCoef) : IntegratorBase(r, timestep, dampingMassCoef, dampingStiffnessCoef), useStaticSolver(0), usePlasticDeformations(0), plasticThreshold2(DBL_MAX), plasticfq(NULL), totalfq(NULL)

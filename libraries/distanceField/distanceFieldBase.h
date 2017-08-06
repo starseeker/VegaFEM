@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "distance field" library , Copyright (C) 2007 CMU, 2016 USC           *
  * All rights reserved.                                                  *
@@ -71,8 +71,6 @@
 #define _DISTANCEFIELDBASE_H_
 
 #include "objMesh.h"
-#include "objMeshOrientable.h"
-#include "objMeshOctree.h"
 
 class DistanceFieldBase
 {

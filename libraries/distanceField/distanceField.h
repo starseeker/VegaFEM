@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "distance field" library , Copyright (C) 2007 CMU, 2016 USC           *
  * All rights reserved.                                                  *
@@ -74,6 +74,7 @@
 #include "objMeshOrientable.h"
 #include "objMeshOctree.h"
 #include "distanceFieldBase.h"
+#include "vegalong.h"
 
 class DistanceField : public DistanceFieldBase
 {
@@ -196,7 +197,7 @@ protected:
   //ObjMeshOctree<TriangleWithCollisionInfo> * objMeshOctree;
   //ObjMeshOctree<TriangleWithCollisionInfoAndPseudoNormals> * objMeshOrientedOctree;
   float minBoundaryDistance;
-  long GetFilesize(const char *filename);
+  vegalong GetFilesize(const char *filename);
 };
 
 inline void DistanceField::setComputationZRange(int zMin, int zMax)

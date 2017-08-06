@@ -16,7 +16,7 @@
  * We release our improvements to the wildMagic code under our standard  *
  * Vega FEM license, as follows:                                         *
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "improvements to the wildMagic library" , Copyright (C) 2016 USC      *
  * All rights reserved.                                                  *

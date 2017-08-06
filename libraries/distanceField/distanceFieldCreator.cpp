@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "distance field" library , Copyright (C) 2007 CMU, 2016 USC           *
  * All rights reserved.                                                  *
@@ -97,7 +97,7 @@ DistanceField * DistanceFieldCreator::ComputeDistanceField(int resolutionX, int 
         delete field;
         if (mode == BASIC)
         {
-          printf("Error computting signed distance field. Non-manifold geometry. \n");
+          printf("Error computing the signed distance field. Non-manifold geometry. \n");
           return NULL;
         }
 
@@ -160,7 +160,7 @@ DistanceFieldNarrowBand * DistanceFieldCreator::ComputeDistanceFieldNarrowBand(i
         delete field;
         if (mode == BASIC)
         {
-          printf("Error computting signed distance field. Non-manifold geometry. \n");
+          printf("Error computing the signed distance field. Non-manifold geometry. \n");
           return NULL;
         }
 

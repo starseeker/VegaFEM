@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC     *
  * All rights reserved.                                                  *
@@ -36,10 +36,12 @@
 
 EulerSparse::EulerSparse(int r, double timestep, SparseMatrix * massMatrix_, ForceModel * forceModel_, int symplectic_, int numConstrainedDOFs_, int * constrainedDOFs_, double dampingMassCoef, int numSolverThreads): IntegratorBaseSparse(r, timestep, massMatrix_, forceModel_, numConstrainedDOFs_, constrainedDOFs_, dampingMassCoef, 0.0), symplectic(symplectic_)
 {
+  systemMatrix = new SparseMatrix(*massMatrix);
+  systemMatrix->RemoveRowsColumns(numConstrainedDOFs, constrainedDOFs);
   #ifdef PARDISO
     printf("Creating Pardiso solver for M.\n");
-    pardisoSolver = new PardisoSolver(massMatrix, numSolverThreads, PardisoSolver::REAL_SPD);
-    int info = pardisoSolver->FactorMatrix(massMatrix);
+    pardisoSolver = new PardisoSolver(systemMatrix, numSolverThreads, PardisoSolver::REAL_SPD);
+    int info = pardisoSolver->FactorMatrix(systemMatrix);
     if (info != 0)
     {
       printf("Error: PARDISO solver returned non-zero exit code %d.\n", info);
@@ -50,15 +52,17 @@ EulerSparse::EulerSparse(int r, double timestep, SparseMatrix * massMatrix_, For
 
   #ifdef SPOOLES
     printf("Creating SPOOLES solver for M.\n");
-    spoolesSolver = new SPOOLESSolver(massMatrix);
+    spoolesSolver = new SPOOLESSolver(systemMatrix);
     printf("Solver created.\n");
   #endif
 
   #ifdef PCG
     printf("Creating Jacobi solver for M.\n");
-    jacobiPreconditionedCGSolver = new CGSolver(massMatrix);
+    jacobiPreconditionedCGSolver = new CGSolver(systemMatrix);
     printf("Solver created.\n");
   #endif
+
+  bufferConstrained = (double*)malloc(sizeof(double) * (r - numConstrainedDOFs));
 }
 
 EulerSparse::~EulerSparse()
@@ -74,6 +78,9 @@ EulerSparse::~EulerSparse()
   #ifdef PCG
     delete(jacobiPreconditionedCGSolver);
   #endif
+
+  delete(systemMatrix);
+  free(bufferConstrained);
 }
 
 // sets the state based on given q, qvel
@@ -127,24 +134,26 @@ int EulerSparse::DoTimestep()
     qresidual[i] = externalForces[i] - internalForces[i] - dampingForces[i];
   }
 
+  RemoveRows(r, bufferConstrained, qresidual, numConstrainedDOFs, constrainedDOFs);
+
   PerformanceCounter counterSystemSolveTime;
 
   // solve: M * qdelta = qresidual
 
-  memset(qdelta, 0, sizeof(double)*r);
+  memset(buffer, 0, sizeof(double)*r);
 
   #ifdef PARDISO
-    int info = pardisoSolver->SolveLinearSystem(qdelta, qresidual);
+    int info = pardisoSolver->SolveLinearSystem(buffer, bufferConstrained);
     char solverString[16] = "PARDISO";
   #endif
 
   #ifdef SPOOLES
-    int info = spoolesSolver->SolveLinearSystem(qdelta, qresidual);
+    int info = spoolesSolver->SolveLinearSystem(buffer, bufferConstrained);
     char solverString[16] = "SPOOLES";
   #endif
 
   #ifdef PCG
-    int info = jacobiPreconditionedCGSolver->SolveLinearSystemWithJacobiPreconditioner(qdelta, qresidual, 1e-6, 10000);
+    int info = jacobiPreconditionedCGSolver->SolveLinearSystemWithJacobiPreconditioner(buffer, bufferConstrained, 1e-6, 10000);
     if (info > 0)
       info = 0;
     char solverString[16] = "PCG";
@@ -159,6 +168,7 @@ int EulerSparse::DoTimestep()
   counterSystemSolveTime.StopCounter();
   systemSolveTime = counterSystemSolveTime.GetElapsedTime();
 
+  InsertRows(r, buffer, qdelta, numConstrainedDOFs, constrainedDOFs);
   // update state
   if (symplectic)
   {

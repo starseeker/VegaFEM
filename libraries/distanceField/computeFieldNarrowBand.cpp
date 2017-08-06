@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "distance field" library , Copyright (C) 2007 CMU, 2016 USC           *
  * All rights reserved.                                                  *
@@ -30,6 +30,7 @@
 
 #include <float.h>
 #include "performanceCounter.h"
+#include "vegalong.h"
 
 #ifdef COMPUTE_SIGNED_FIELD_NARROWBAND
    #ifdef COMPUTE_INTERIOR_FIELD_NARROWBAND
@@ -49,10 +50,10 @@
   resolutionY = resolutionY_;
   resolutionZ = resolutionZ_;
 
-  long size = (resolutionX + 1) * (resolutionY + 1) * (resolutionZ + 1);
+  vegalong size = (resolutionX + 1) * (resolutionY + 1) * (resolutionZ + 1);
   gridPointStatus = (char*) realloc(gridPointStatus, sizeof(char) * size);
   
-  for(long i = 0; i < size; i++)
+  for(vegalong i = 0; i < size; i++)
     gridPointStatus[i] = DistanceFieldNarrowBand::EXTERIOR_UNCOMPUTED;
   
   #ifdef COMPUTE_SIGNED_FIELD_NARROWBAND
@@ -139,7 +140,7 @@
         for(std::map<gridPoint, float>::iterator it = distanceDataCopy.begin(); it != distanceDataCopy.end(); it++)
         {
           gridPoint v = it->first;
-          long index = (v.third * (resolutionY+1) + v.second) * (resolutionX + 1) + v.first;
+          vegalong index = (v.third * (resolutionY+1) + v.second) * (resolutionX + 1) + v.first;
           if (gridPointStatus[index] != DistanceFieldNarrowBand::COMPUTED)
           {
             distanceData.insert(*it);
@@ -193,12 +194,12 @@
 
   std::set<gridPoint> scheduledGridPoints;
   
-  long mul = (resolutionX + 1) * (resolutionY + 1);
+  vegalong mul = (resolutionX + 1) * (resolutionY + 1);
   for(unsigned int p = 0; p < surfaceGridPoints.size(); p++)
   {
-    long int index = surfaceGridPoints[p];
+    vegalong index = surfaceGridPoints[p];
 
-    int k = index / mul;
+    vegalong k = index / mul;
     if ((k >= zLo) && (k <= zHi))
     {
       int i = index % (resolutionX + 1);
@@ -263,7 +264,7 @@
 
       if (triangleList.size() <= 0) 
       { // should never happen... but to stay robust
-        cout << "Warning: range query didn't find any triangles. Radius = " << radius << " . Incresing radius by a factor of 2 and re-trying." << endl;
+        cout << "Warning: range query didn't find any triangles. Radius = " << radius << " . Increasing radius by a factor of 2 and re-trying." << endl;
         radius *= 2;
       }
     }    
@@ -349,7 +350,7 @@
     }
     
     distanceData.insert(pair<gridPoint, float>(v, closestDistance));
-    long index = (v.third * (resolutionY + 1) + v.second) * (resolutionX + 1)+ v.first;
+    vegalong index = (v.third * (resolutionY + 1) + v.second) * (resolutionX + 1)+ v.first;
     gridPointStatus[index] = DistanceFieldNarrowBand::COMPUTED;
 
     counter ++;

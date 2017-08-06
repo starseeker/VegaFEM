@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "matrix" library , Copyright (C) 2007 CMU, 2009 MIT                   *
  * All rights reserved.                                                  *
@@ -76,7 +76,7 @@ public:
   Matrix (int m, int n, bool freeDataInDestructor = true);
   // create a m x n matrix of constant entries
   Matrix (int m, int n, real constEntry, bool freeDataInDestructor = true);
-  // create a m x m diagonal matrix with all the diagonal entries equalling "diagonal"
+  // create a m x m diagonal matrix with all the diagonal entries equaling "diagonal"
   Matrix (int m, real diagonal, bool freeDataInDestructor = true);
   // create a m x m diagonal matrix with the diagonal entries specified by the array diagonal (of length m)
   Matrix (int m, const real * diagonal, bool freeDataInDestructor = true);

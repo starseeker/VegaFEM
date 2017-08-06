@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "Large Modal Deformation Factory",                                    *
  * a pre-processing utility for model reduction of                       *
@@ -58,8 +58,9 @@ void MyFrame::OnVoxelize(wxCommandEvent& event)
        wxALIGN_CENTER, _T( "staticText"));
 
   int maxResolution = 16384;
+  int resCtlSize = 90;
   wxSpinCtrl * resolutionControl = new wxSpinCtrl(dlg, -1, 
-      wxEmptyString, wxDefaultPosition, wxSize(70,-1), wxSP_ARROW_KEYS, 
+      wxEmptyString, wxDefaultPosition, wxSize(resCtlSize,-1), wxSP_ARROW_KEYS, 
       1, maxResolution, uiState.cubicMeshResolution, _T("wxSpinCtrl"));
   resolutionControl->SetValue(uiState.cubicMeshResolution);
 

@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "StVK" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC           *
  * All rights reserved.                                                  *
@@ -75,7 +75,7 @@ void StVKTetABCD::StVKSingleTetABCD(Vec3d vtx[4], elementData * target)
           columns[countJ][countI] = vtx[ii][jj];
           countJ++;
         }
-        int sign = (((i + j) % 2) == 0) ? 1 : -1;
+        int sign = (((i + j) % 2) == 0) ? -1 : 1;
         target->Phig[i][j] = 1.0 * sign * dot(Vec3d(1,1,1), cross(columns[0],columns[1])) / det;
         countI++;
       }

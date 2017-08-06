@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "distance field" library , Copyright (C) 2007 CMU, 2016 USC           *
  * All rights reserved.                                                  *
@@ -30,6 +30,7 @@
 
 #include <float.h>
 #include "objMeshGraph.h"
+#include "vegalong.h"
 
 #ifdef COMPUTE_SIGNED_FIELD
   #ifdef COMPUTE_FLOOD_FIELD
@@ -145,15 +146,15 @@
   
   #ifndef COMPUTE_FLOOD_FIELD
     //distanceData = (float*) malloc (sizeof(float)*(resolutionX+1)*(resolutionY+1)*(resolutionZ+1));
-    long int size = sizeof(float)*(resolutionX+1)*(resolutionY+1)*(zMax - zMin +1);
+    vegalong size = sizeof(float)*(resolutionX+1)*(resolutionY+1)*(zMax - zMin +1);
     distanceData = (float*) realloc (distanceData, size);
      
     // initialize to FLT_MAX
-    for(long int ii=0; ii<=resolutionX; ii++)
-      for(long int jj=0; jj<=resolutionY; jj++)
-        for(long int kk=zMin; kk<=zMax; kk++)
+    for(vegalong ii=0; ii<=resolutionX; ii++)
+      for(vegalong jj=0; jj<=resolutionY; jj++)
+        for(vegalong kk=zMin; kk<=zMax; kk++)
         {
-          long int index = (kk-zMin) * (resolutionX+1) * (resolutionY+1) + jj * (resolutionX+1) + ii;
+          vegalong index = (kk-zMin) * (resolutionX+1) * (resolutionY+1) + jj * (resolutionX+1) + ii;
           distanceData[index] = FLT_MAX;
         }
   #else
@@ -263,7 +264,7 @@
   #endif
 
   // do the zig-zag
-  long int i=0, j=0, k=0;
+  vegalong i=0, j=0, k=0;
   k = zLo;
   
   int diri=1;
@@ -276,7 +277,7 @@
   needtoCheckFlag = needtoCheckFlag; // just for removing warnings
   do
   {
-    long int index = (k-zMin) * (resolutionX+1) * (resolutionY+1) + j * (resolutionX+1) + i;
+    vegalong index = (k-zMin) * (resolutionX+1) * (resolutionY+1) + j * (resolutionX+1) + i;
     skipFlag = 0;
     #ifdef COMPUTE_FLOOD_FIELD
     if(!needtoCheckFlag && floodFillTag[index] == 0)
@@ -302,7 +303,7 @@
 
         if (triangleList.size() <= 0) 
         { // should never happen... but to stay robust
-          cout << "Warning: range query didn't find any triangles. Incresing radius by a factor of 2 and re-trying." << endl;
+          cout << "Warning: range query didn't find any triangles. Increasing radius by a factor of 2 and re-trying." << endl;
           radius *= 2;
         }
 
@@ -402,7 +403,7 @@
       distanceData[index] = closestDistance;
     
       #ifdef COMPUTE_CLOSEST_POINT
-        int dataIndex = 3 * (k * (resolutionX+1) * (resolutionY+1) + j * (resolutionX+1) + i);
+        vegalong dataIndex = 3 * (k * (resolutionX+1) * (resolutionY+1) + j * (resolutionX+1) + i);
         closestPointData[dataIndex+0] = closestPosition[0];
         closestPointData[dataIndex+1] = closestPosition[1];
         closestPointData[dataIndex+2] = closestPosition[2];
@@ -427,11 +428,9 @@
 
     closestDistance = distanceData[index];
    
-    
-
-    int oldi = i;
-    int oldj = j;
-    int oldk = k;
+    vegalong oldi = i;
+    vegalong oldj = j;
+    vegalong oldk = k;
 
     // increment i,j,k
     i += diri; 

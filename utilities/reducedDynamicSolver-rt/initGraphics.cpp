@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 3.0                               *
+ * Vega FEM Simulation Library Version 3.1                               *
  *                                                                       *
  * "Reduced deformable dynamics" real-time driver application.           *
  * Uses model reduction to rapidly simulate deformable objects           *
