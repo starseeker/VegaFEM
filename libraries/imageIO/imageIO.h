@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "imageIO" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC        *
+ * "imageIO" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Yili Zhao, Jernej Barbic                                 *
@@ -54,6 +54,7 @@ public:
   inline unsigned int getHeight() { return height; }
   inline unsigned int getBytesPerPixel() { return bytesPerPixel; }
   inline unsigned char * getPixels() { return pixels; }
+  inline unsigned char getPixel(int x, int y, int channel) { return pixels[(y * width + x) * bytesPerPixel + channel]; }
 
   // error codes
   typedef enum { OK, INVALID_FILE_FORMAT, IO_ERROR, MEMORY_ERROR, OTHER_ERROR } errorType;

@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -49,7 +49,8 @@ public:
   // numVertices x numVertices).
   static void computeMassMatrix(VolumetricMesh * volumetricMesh, SparseMatrix ** massMatrix, bool inflate3Dim = false);
   // computes the mass belonging to each vertex, by lumping the mass matrix
-  static void computeVertexMasses(VolumetricMesh * volumetricMesh, double * masses);
+  // masses has size of volumetricMesh->getNumVertices() if (inflat3Dim == false) or 3 * n if (inflate3Dim == true)
+  static void computeVertexMasses(VolumetricMesh * volumetricMesh, double * masses, bool inflate3Dim = false);
 
 protected:
 };

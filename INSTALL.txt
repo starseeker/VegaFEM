@@ -20,5 +20,5 @@ Quick start, model reduction (Linux, Mac OS X):
 5. Go to the subfolder "utilities/reducedDynamicSolver-rt" and launch "./run_A". LMB = apply force on model, RMB = camera movement
 
 --------
-Jernej Barbic, USC, 2015
+Jernej Barbic, USC, 2016
 

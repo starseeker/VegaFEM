@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -50,7 +50,7 @@ CubicMesh::CubicMesh(const char * filename, fileFormatType fileFormat, int verbo
   } 
 
   // set cube size
-  cubeSize = len(*getVertex(0,1) - *getVertex(0,0));
+  cubeSize = len(getVertex(0,1) - getVertex(0,0));
   SetInverseCubeSize();
 }
 
@@ -64,7 +64,7 @@ CubicMesh::CubicMesh(void * binaryStream, int memoryLoad) :
   } 
 
   // set cube size
-  cubeSize = len(*getVertex(0,1) - *getVertex(0,0));
+  cubeSize = len(getVertex(0,1) - getVertex(0,0));
   SetInverseCubeSize();
 }
 
@@ -74,7 +74,7 @@ CubicMesh::CubicMesh(int numVertices, double * vertices,
   VolumetricMesh(numVertices, vertices, numElements, 8, elements, E, nu, density), parallelepipedMode(0)
 {
   if (numElements > 0)
-    cubeSize = len(*getVertex(0,1) - *getVertex(0,0));
+    cubeSize = len(getVertex(0,1) - getVertex(0,0));
   else
     cubeSize = 0.0;
 
@@ -89,7 +89,7 @@ CubicMesh::CubicMesh(int numVertices, double * vertices,
   VolumetricMesh(numVertices, vertices, numElements, 8, elements, numMaterials, materials, numSets, sets, numRegions, regions), parallelepipedMode(0)
 {
   if (numElements > 0)
-    cubeSize = len(*getVertex(0,1) - *getVertex(0,0));
+    cubeSize = len(getVertex(0,1) - getVertex(0,0));
   else
     cubeSize = 0.0;
 
@@ -209,8 +209,8 @@ bool CubicMesh::containsVertex(int element, Vec3d pos) const
 {
 /*
   AABB version
-  Vec3d bmin = *(getVertex(element, 0));
-  Vec3d bmax = *(getVertex(element, 6));
+  Vec3d bmin = (getVertex(element, 0));
+  Vec3d bmax = (getVertex(element, 6));
 
   return (pos[0] >= bmin[0]) && (pos[1] >= bmin[1]) && (pos[2] >= bmin[2]) &&
          (pos[0] <= bmax[0]) && (pos[1] <= bmax[1]) && (pos[2] <= bmax[2]);
@@ -258,10 +258,10 @@ int CubicMesh::interpolateData(double * vertexData, int numInterpolationLocation
       int assignedZero = 0;
       for(int ii=0; ii< numElementVertices; ii++)
       {
-        Vec3d * vpos = getVertex(element, ii);
-        if (len(*vpos-pos) < minDistance)
+        const Vec3d & vpos = getVertex(element, ii);
+        if (len(vpos-pos) < minDistance)
         {
-          minDistance = len(*vpos-pos);
+          minDistance = len(vpos-pos);
         }
       }
 
@@ -280,7 +280,7 @@ int CubicMesh::interpolateData(double * vertexData, int numInterpolationLocation
     }
 
     // compute barycentric coordinates
-    Vec3d w = pos - *(getVertex(element, 0));
+    Vec3d w = pos - getVertex(element, 0);
     double alpha = w[0] * invCubeSize;
     double beta = w[1] * invCubeSize;
     double gamma = w[2] * invCubeSize;
@@ -364,10 +364,10 @@ int CubicMesh::normalCorrection(double * vertexData, int numInterpolationLocatio
       int assignedZero = 0;
       for(int ii=0; ii< numElementVertices; ii++)
       {
-        Vec3d * vpos = getVertex(element, ii);
-        if (len(*vpos-pos) < minDistance)
+        const Vec3d & vpos = getVertex(element, ii);
+        if (len(vpos-pos) < minDistance)
         {
-          minDistance = len(*vpos-pos);
+          minDistance = len(vpos-pos);
         }
       }
 
@@ -387,7 +387,7 @@ int CubicMesh::normalCorrection(double * vertexData, int numInterpolationLocatio
     }
 
     // compute barycentric coordinates
-    Vec3d w = pos - *(getVertex(element, 0));
+    Vec3d w = pos - getVertex(element, 0);
     double alpha = w[0] * invCubeSize;
     double beta = w[1] * invCubeSize;
     double gamma = w[2] * invCubeSize;
@@ -459,7 +459,7 @@ int CubicMesh::normalCorrection(double * vertexData, int numInterpolationLocatio
 void CubicMesh::interpolateGradient(int element, const double * U, int numFields, Vec3d pos, double * grad) const
 {
   // compute barycentric coordinates
-  Vec3d w = pos - *(getVertex(element, 0));
+  Vec3d w = pos - getVertex(element, 0);
   double alpha = w[0] * invCubeSize;
   double beta = w[1] * invCubeSize;
   double gamma = w[2] * invCubeSize;
@@ -529,10 +529,10 @@ void CubicMesh::computeAlphaBetaGamma(int el, Vec3d pos, double * alpha, double 
   if (parallelepipedMode)
   {
     // general, parallelepied version (supports rotated cubes, and even cubes deformed via linear transformations; although the class "officially" only supports axis-aligned cubes)
-    Vec3d v0 = *(getVertex(el, 0));
-    Vec3d v1 = *(getVertex(el, 1));
-    Vec3d v3 = *(getVertex(el, 3));
-    Vec3d v4 = *(getVertex(el, 4));
+    const Vec3d & v0 = getVertex(el, 0);
+    const Vec3d & v1 = getVertex(el, 1);
+    const Vec3d & v3 = getVertex(el, 3);
+    const Vec3d & v4 = getVertex(el, 4);
 
     Vec3d axis0 = v1 - v0;
     Vec3d axis1 = v3 - v0;
@@ -570,7 +570,7 @@ void CubicMesh::computeAlphaBetaGamma(int el, Vec3d pos, double * alpha, double 
   else
   {
     // AABB mode
-    Vec3d v0 = *(getVertex(el, 0));
+    const Vec3d & v0 = getVertex(el, 0);
     Vec3d p = pos - v0;
     *alpha = p[0] * invCubeSize;
     *beta = p[1] * invCubeSize;
@@ -578,7 +578,7 @@ void CubicMesh::computeAlphaBetaGamma(int el, Vec3d pos, double * alpha, double 
   }
 }
 
-void CubicMesh::computeBarycentricWeights(int el, Vec3d pos, double * weights) const
+void CubicMesh::computeBarycentricWeights(int el, const Vec3d & pos, double * weights) const
 {
   // compute barycentric coordinates
   double alpha, beta, gamma;
@@ -689,7 +689,7 @@ void CubicMesh::subdivide()
   vector<Vec3d> newVertices;
   for(int el=0; el<numElements; el++)
   {
-    Vec3d * v0 = getVertex(el, 0);   
+    const Vec3d & v0 = getVertex(el, 0);   
 
     // create the 8 children cubes
     for(int child=0; child<8; child++)
@@ -699,7 +699,7 @@ void CubicMesh::subdivide()
       int childVtx[8];
       for(int vtx=0; vtx<8; vtx++)
       {
-        Vec3d pos = (*v0) + 0.5 * cubeSize * Vec3d(mask[child][vtx][0], mask[child][vtx][1], mask[child][vtx][2]);
+        Vec3d pos = v0 + 0.5 * cubeSize * Vec3d(mask[child][vtx][0], mask[child][vtx][1], mask[child][vtx][2]);
         //printf("%G %G %G\n", pos[0], pos[1], pos[2]);
         // search for vertex
         int found = -1;
@@ -728,15 +728,12 @@ void CubicMesh::subdivide()
   cubeSize *= 0.5;
 
   // deallocate old vertices
-  for(int i=0; i<numVertices; i++)
-    delete(vertices[i]);
-  free(vertices);
+  delete [] vertices;
 
   // copy new vertices into place
   numVertices = (int)newVertices.size();
-  vertices = (Vec3d**) malloc (sizeof(Vec3d*) * numVertices);
-  for(int i=0; i<numVertices; i++)
-    vertices[i] = new Vec3d(newVertices[i]);
+  vertices = new Vec3d [numVertices];
+  memcpy(vertices, newVertices.data(), sizeof(Vec3d) * numVertices);
 
   // deallocate old elements
   for(int i=0; i<numElements; i++)
@@ -761,6 +758,12 @@ void CubicMesh::subdivide()
 
     delete(sets[setIndex]);
     sets[setIndex] = newSet;
+  }
+
+  if(numElements > 0)
+  {
+    elementMaterial = (int *) realloc(elementMaterial, sizeof(int) * numElements);
+    memset(elementMaterial, 0, sizeof(int) * numElements);
   }
 
   propagateRegionsToElements();

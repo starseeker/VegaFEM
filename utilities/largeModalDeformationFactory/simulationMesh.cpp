@@ -1,12 +1,12 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
  * "Large Modal Deformation Factory",                                    *
  * a pre-processing utility for model reduction of                       *
  * deformable objects undergoing large deformations.                     *
  *                                                                       *
- *  Copyright (C) 2007 CMU, 2009 MIT, 2015 USC                           *
+ *  Copyright (C) 2007 CMU, 2009 MIT, 2016 USC                           *
  *                                                                       *
  * All rights reserved.                                                  *
  *                                                                       *
@@ -38,6 +38,8 @@
 #include "volumetricMeshENuMaterial.h"
 #include "objMeshOffsetVoxels.h"
 #include "largeModalDeformationFactory.h"
+
+using namespace std;
 
 void MyFrame::OnVoxelize(wxCommandEvent& event)
 {
@@ -346,11 +348,9 @@ void MyFrame::OnMaterialProperties(wxCommandEvent & event)
   if (precomputationState.simulationMesh->getNumMaterials() > 1)
   {
     wxMessageDialog * confirmationDialog = new wxMessageDialog
-      (this, _T(
-        "Warning: existing simulation mesh has more than one material. "
-        "This dialog can only edit one material; other materials will be deleted. "
-        "Do you want to continue?"
-        ),
+      (this, _T("Warning: existing simulation mesh has more than one material. ")
+      _T("This dialog can only edit one material; other materials will be deleted. ")
+      _T("Do you want to continue?"),
       _T("More than one material encountered"), 
       wxYES_NO | wxICON_QUESTION);
 

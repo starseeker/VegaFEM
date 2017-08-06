@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "corotational linear FEM" library , Copyright (C) 2015 USC            *
+ * "corotational linear FEM" library , Copyright (C) 2016 USC            *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -44,7 +44,7 @@ public:
   CorotationalLinearFEMMT(TetMesh * tetMesh, int numThreads=1);
   virtual ~CorotationalLinearFEMMT();
 
-  virtual void ComputeForceAndStiffnessMatrix(double * vertexDisplacements, double * internalForces, SparseMatrix * stiffnessMatrix, int warp=1);
+  virtual void ComputeEnergyAndForceAndStiffnessMatrix(const double * vertexDisplacements, double * energy, double * internalForces, SparseMatrix * stiffnessMatrix, int warp=1);
 
   int GetStartElement(int rank);
   int GetEndElement(int rank);
@@ -52,12 +52,12 @@ public:
 protected:
   int numThreads;
   int * startElement, * endElement;
+  double * energyBuffer;
   double * internalForceBuffer;
   SparseMatrix ** stiffnessMatrixBuffer;
 
   void Initialize();
   void ComputeHelper(double * u, double * uSecondary, void * target, bool addQuantity);
-
 };
 
 #endif

@@ -21,7 +21,7 @@ LIBRARIES_DIR=$(L)
 
 # argument $(1) is a list of library names (e.g. "integrator minivector")
 GET_LIB_MAKEFILES=$(addsuffix /Makefile, $(addprefix $(R)/libraries/, $(1)))
-GET_LIB_FILENAMES=$(join $(addprefix $(R)/libraries/, $(1)), $(addsuffix .a, $(addprefix /lib, $(1))))
+GET_LIB_FILENAMES=$(join $(addprefix $(R)/libraries/, $(1)), $(addsuffix .a, $(addprefix /lib, $(notdir $(1)) )))
 
 INCLUDE=-I$(LIBRARIES_DIR)/include -I/usr/X11R6/include -I/usr/include
 
@@ -42,6 +42,8 @@ GLUI_LIB=-L$(GLUI_DIR)/lib -lglui
 PARDISO_DIR=
 PARDISO_INCLUDE=
 PARDISO_LIB=
+# You can use the following website to figure out the Pardiso link options for your system:
+# https://software.intel.com/en-us/articles/intel-mkl-link-line-advisor
 # set this for 32-bit system:
 #PARDISO_EXT=ia32
 #PARDISO_LIB_EXT=
@@ -110,7 +112,7 @@ BLASLAPACK_LIB=$(PARDISO_LIB)
 CG_LIBS_DIR=
 CG_LIBS=
 #CG_LIBS_DIR=/usr/lib
-#CG_LIBS=-lCg -lCgGL -L$(CG_LIBS_DIR)
+#CG_LIBS=-L$(CG_LIBS_DIR) -lCg -lCgGL
 
 # === needed for large sparse eigenvalue analysis and the LargeModalDeformationFactory ===
 

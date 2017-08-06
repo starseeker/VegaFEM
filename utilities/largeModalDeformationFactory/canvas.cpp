@@ -1,12 +1,12 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
  * "Large Modal Deformation Factory",                                    *
  * a pre-processing utility for model reduction of                       *
  * deformable objects undergoing large deformations.                     *
  *                                                                       *
- *  Copyright (C) 2007 CMU, 2009 MIT, 2015 USC                           *
+ *  Copyright (C) 2007 CMU, 2009 MIT, 2016 USC                           *
  *                                                                       *
  * All rights reserved.                                                  *
  *                                                                       *
@@ -472,8 +472,8 @@ void MyGLCanvas::OnMouse( wxMouseEvent& event )
 
           for(int j=0; j<precomputationState->simulationMesh->getNumVertices(); j++)
           {
-            Vec3d * vertexPos = precomputationState->simulationMesh->getVertex(j);
-            Vec3d direction = (*vertexPos) - cameraPos;
+            Vec3d vertexPos = precomputationState->simulationMesh->getVertex(j);
+            Vec3d direction = vertexPos - cameraPos;
 
             bool insidePyramid = true;
             for(int jj=0; jj<4; jj++)

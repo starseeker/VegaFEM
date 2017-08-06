@@ -5,8 +5,8 @@ ifndef CLEANFOLDER
 CLEANFOLDER=SCENEOBJECTREDUCED
 endif
 
-include ../../Makefile-headers/Makefile-header
 R ?= ../..
+include $(R)/Makefile-headers/Makefile-header
 
 # the object files to be compiled for this library
 SCENEOBJECTREDUCED_OBJECTS=sceneObjectReduced.o sceneObjectReduced6DOF.o sceneObjectReducedCPU.o sceneObjectReducedCPU6DOF.o

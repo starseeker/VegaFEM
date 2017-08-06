@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
  * "insertRows" library , Copyright (C) 2007 CMU, 2009 MIT               *
  * All rights reserved.                                                  *
@@ -25,7 +25,7 @@
 #include "stdio.h"
 #include "stdlib.h"
 
-void InsertRows(int mFull, double * xConstrained, double * x, int numFixedRows, int * fixedRows, int oneIndexed)
+void InsertRows(int mFull, const double * xConstrained, double * x, int numFixedRows, const int * fixedRows, int oneIndexed)
 {
   int destRow = 0; // current row in the dest matrix
   int sourceRow = 0; // in source
@@ -61,7 +61,7 @@ void InsertRows(int mFull, double * xConstrained, double * x, int numFixedRows, 
   }
 }
 
-void RemoveRows(int mFull, double * xConstrained, double * x, int numFixedRows, int * fixedRows, int oneIndexed)
+void RemoveRows(int mFull, double * xConstrained, const double * x, int numFixedRows, const int * fixedRows, int oneIndexed)
 {
   int numrows = 0;
   int row = 0;
@@ -107,7 +107,7 @@ void RemoveRows(int mFull, double * xConstrained, double * x, int numFixedRows, 
   }
 }
 
-void FullDOFsToConstrainedDOFs(int mFull, int numDOFs, int * DOFsConstrained, int * DOFs, int numFixedRows, int * fixedRows, int oneIndexed)
+void FullDOFsToConstrainedDOFs(int mFull, int numDOFs, int * DOFsConstrained, const int * DOFs, int numFixedRows, const int * fixedRows, int oneIndexed)
 {
   if (numDOFs == 0)
     return;

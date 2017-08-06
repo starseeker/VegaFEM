@@ -30,6 +30,7 @@ public:
   void meshID(int graphVertex, int & siteType, int meshVtxData[3]);
 
   // converts distance-field style (face, siteIndex) pair to the graph vertex ID
+  // siteIndex:
   //  0: vertex0
   //  1: vertex1
   //  2: vertex2
@@ -43,7 +44,7 @@ public:
   // Face clique:
   // 0: connect every vertex to the next and previous vertex along the face perimeter (but not to other vertices of that face)
   // 1: connect every vertex to all other face vertices
-  static Graph * GenerateVertexGraph(ObjMesh * objMesh, int faceClique=0);
+  static Graph * GenerateVertexGraph(const ObjMesh * objMesh, int faceClique=0);
 
 protected:
   int nObj, eObj, fObj;

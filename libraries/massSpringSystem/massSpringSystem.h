@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
  * "massSpringSystem" library, Copyright (C) 2007 CMU, 2009 MIT,         *
- *                                           2015 USC                    *
+ *                                           2016 USC                    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -88,21 +88,24 @@ public:
   // creates the mass matrix (diagonal); each diagonal entry is expanded into a diagonal submatrix of size 'expanded' (typically, for 3D simulations, expanded should be 3)
   void GenerateMassMatrix(SparseMatrix ** M, int expanded=3);
 
+  // compute the elastic energy, under deformation u
+  virtual double ComputeEnergy(const double * u);
+
   // compute the internal elastic force, under deformation u
   // important: the force f has the same sign as in the other deformable models in Vega, i.e., 
   //   it appears on the left side in equation M u'' + D u' + f = f_ext.
   //   If you want f to be interpreted as an external mass-spring force acting
   //   on the particles, you must flip the sign of f.
   //   Same comment applies to damping forces, stiffness matrices and their Hessian corrections.
-  virtual void ComputeForce(double * u, double * f, bool addForce=false); // if addForce, f will be not be reset to zero prior to adding the forces
+  virtual void ComputeForce(const double * u, double * f, bool addForce=false); // if addForce, f will be not be reset to zero prior to adding the forces
 
   // compute the damping force (it damps any relative velocities along each edge)
-  virtual void ComputeDampingForce(double * uvel, double * f, bool addForce=false); 
+  virtual void ComputeDampingForce(const double * uvel, double * f, bool addForce=false); 
   // compute the tangent stiffness matrix
   void GetStiffnessMatrixTopology(SparseMatrix ** stiffnessMatrixTopology); // call once to establish the location of sparse entries of the stiffness matrix
-  virtual void ComputeStiffnessMatrix(double * u, SparseMatrix * K, bool addMatrix=false);
+  virtual void ComputeStiffnessMatrix(const double * u, SparseMatrix * K, bool addMatrix=false);
   // computes an approximation to dK, using the Hessian of internal forces, assuming the deformations change from u to u + du
-  virtual void ComputeStiffnessMatrixCorrection(double * u, double * du, SparseMatrix * dK, bool addMatrix=false);
+  virtual void ComputeStiffnessMatrixCorrection(const double * u, double * du, SparseMatrix * dK, bool addMatrix=false);
 
   // computes the gravitational force (result goes into f)
   void ComputeGravity(double * f, bool addForce=false);
@@ -114,10 +117,11 @@ public:
 
   // == advanced routines below ===
 
-  void AddForce(double * u, double * f, int startEdge, int endEdge); 
-  void AddStiffnessMatrix(double * u, SparseMatrix * K, int startEdge, int endEdge);
-  void AddDampingForce(double * uvel, double * f, int startEdge, int endEdge); 
-  void AddHessianApproximation(double * u, double * du, SparseMatrix * dK, int startEdge, int endEdge);
+  void AddEnergy(const double * u, double * energy, int startEdge, int endEdge); 
+  void AddForce(const double * u, double * f, int startEdge, int endEdge); 
+  void AddStiffnessMatrix(const double * u, SparseMatrix * K, int startEdge, int endEdge);
+  void AddDampingForce(const double * uvel, double * f, int startEdge, int endEdge); 
+  void AddHessianApproximation(const double * u, double * du, SparseMatrix * dK, int startEdge, int endEdge);
 
 protected:
 

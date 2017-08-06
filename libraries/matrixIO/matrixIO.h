@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
  * "matrix" library , Copyright (C) 2007 CMU, 2009 MIT                   *
  * All rights reserved.                                                  *
@@ -63,20 +63,20 @@ void ReadMatrixSizeFromDisk_(const char * filename, int * m, int * n);
 void ChangeMatrixHeader(const char * filename, int numRows, int numColumns); // overwrites any previous header; keeps data intact
 
 template <class real>
-int WriteMatrixToDisk(const char * filename, int m, int n, real * matrix);
+int WriteMatrixToDisk(const char * filename, int m, int n, const real * matrix);
 template <class real>
-int WriteMatrixToDisk_(const char * filename, int m, int n, real * matrix);
+int WriteMatrixToDisk_(const char * filename, int m, int n, const real * matrix);
 
 template <class real>
-int AppendMatrixToDisk(const char * filename, int m, int n, real * matrix);
+int AppendMatrixToDisk(const char * filename, int m, int n, const real * matrix);
 template <class real>
-int AppendMatrixToDisk_(const char * filename, int m, int n, real * matrix);
+int AppendMatrixToDisk_(const char * filename, int m, int n, const real * matrix);
 
 template <class real>
 int ReadMatrixFromDiskTextFile(const char * filename, int * m, int * n, real ** matrix);
 
 template <class real>
-int WriteMatrixToDiskTextFile(const char * filename, int m, int n, real * matrix);
+int WriteMatrixToDiskTextFile(const char * filename, int m, int n, const real * matrix);
 
 // "fileList" is a filename of a text file that contains the matrices to be loaded (concatenated column-wise) into the matrix, one text entry per line of "fileList"
 template <class real>
@@ -101,7 +101,7 @@ void Abort_(const char * reason, int exitCode);
 int OpenFile_(const char * filename, FILE ** fin, const char * mode);
 
 template <class real>
-int WriteMatrixToStream(FILE * file, int m, int n, real * matrix);
+int WriteMatrixToStream(FILE * file, int m, int n, const real * matrix);
 
 int WriteMatrixHeaderToStream(FILE * file, int m, int n);
 

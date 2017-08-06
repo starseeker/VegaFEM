@@ -30,16 +30,9 @@
   This class implements a 3x3 matrix, with elementary algebra,
   including the computation of eigenvalues and eigenvectors of a *symmetric* 3x3 matrix.
   (using a public domain external routine; see mat3d.cpp and eig3.h)
-
-  Note: this code was inspired by Andrew Willmott's VL and SVL Libraries:
-    http://www.cs.cmu.edu/afs/cs/user/ajw/www/software/index.html#VL
-    (these two libraries contain a lot of useful functionality and
-     are highly recommended)
-    My library offers just the basic functionality, hence "minivector".
-    It was written from scratch for a course project at CMU.
-
-  Version: 1.2
 */
+
+
 
 #ifndef _MINIMAT3D_H_
 #define _MINIMAT3D_H_
@@ -60,8 +53,8 @@ public:
                double x3, double x4, double x5,
                double x6, double x7, double x8);
   inline Mat3d(const double mat[9]); // "mat" must be given in row-major order
-  inline Mat3d(Vec3d rows[3]); 
-  inline Mat3d(Vec3d row0, Vec3d row1, Vec3d row2);
+  inline Mat3d(const Vec3d rows[3]); 
+  inline Mat3d(const Vec3d & row0, const Vec3d & row1, const Vec3d & row2);
   inline Mat3d(double diag); // create a diagonal matrix with all entries "diag" (can create zero matrix by passing 0.0)
 
   inline void set(double x0, double x1, double x2,
@@ -71,17 +64,20 @@ public:
 
   inline Mat3d & operator=(const Mat3d & source); 
 
-  inline Mat3d operator+ (const Mat3d & );
+  inline Mat3d operator+ (const Mat3d & ) const;
   inline Mat3d & operator+= (const Mat3d & );
 
-  inline Mat3d operator- (const Mat3d & );
+  inline Mat3d operator- (const Mat3d & ) const;
   inline Mat3d & operator-= (const Mat3d & );
 
   inline Mat3d & operator*= (double scalar);
   inline Mat3d & operator/= (double scalar);
 
+  inline bool operator== (const Mat3d &) const;
+  inline bool operator!= (const Mat3d &) const;
+
   friend inline Mat3d operator* (double scalar, const Mat3d & mat2);
-  friend inline Mat3d operator/ (double scalar, const Mat3d & mat2);
+  friend inline Mat3d operator/ (const Mat3d & mat2, double scalar);
 
   inline Mat3d & multiplyDiagRight(Vec3d & v); // M = M * diag(v)
   inline Mat3d & multiplyDiagLeft(Vec3d & v); // M = diag(v) * M
@@ -92,8 +88,10 @@ public:
   friend inline double det(const Mat3d & mat); // determinant
   friend inline Mat3d trans(const Mat3d & mat); // transpose
 
+  inline double maxAbsEntry() const;
+  inline bool hasNaN() const;
   friend inline std::ostream &operator << (std::ostream &s, const Mat3d &v);
-  inline void print();
+  inline void print() const;
 
   inline Vec3d & operator[] (int index); // M[i] returns i-th row
   inline const Vec3d & operator[] (int index) const; // M[i] returns i-th row
@@ -152,9 +150,17 @@ public:
   */
   friend int SVD(Mat3d & M, Mat3d & U, Vec3d & Sigma, Mat3d & V, double singularValue_eps, int modifiedSVD);
 
+  const static Mat3d Identity;
+  const static Mat3d Zero;
 protected:
   Vec3d elt[3]; // the three rows of the matrix
 };
+
+// Computes eigenvalues and eigenvectors of a 3x3 matrix M
+// Assumes symmetric matrix; contents of matrix "M" are not modified by the routine
+// Eigenvalues are sorted in decreasing order (not decreasing absolute-value order)
+// Returned eigenvectors are unit length
+void eigen_sym(Mat3d & M, Vec3d & eig_val, Vec3d eig_vec[3]=NULL);
 
 // inverse of a 3x3 matrix (suitable when A is given by a pointer to the 9 entries)
 // input: A (row-major)
@@ -183,14 +189,14 @@ inline Mat3d::Mat3d(const double mat[9])
   elt[2] = Vec3d(mat[6],mat[7],mat[8]);
 }
 
-inline Mat3d::Mat3d(Vec3d rows[3]) 
+inline Mat3d::Mat3d(const Vec3d rows[3]) 
 {
   elt[0] = rows[0];
   elt[1] = rows[1];
   elt[2] = rows[2];
 }
 
-inline Mat3d::Mat3d(Vec3d row0, Vec3d row1, Vec3d row2)
+inline Mat3d::Mat3d(const Vec3d & row0, const Vec3d & row1, const Vec3d & row2)
 {
   elt[0] = row0;
   elt[1] = row1;
@@ -237,7 +243,7 @@ inline Mat3d & Mat3d::operator=(const Mat3d & source)
   return *this;
 }
 
-inline Mat3d Mat3d::operator+ (const Mat3d & mat2)
+inline Mat3d Mat3d::operator+ (const Mat3d & mat2) const
 {
   Mat3d sum = *this;
   sum.elt[0] += mat2.elt[0];
@@ -255,7 +261,7 @@ inline Mat3d & Mat3d::operator+= (const Mat3d & mat2)
   return *this;
 }
 
-inline Mat3d Mat3d::operator- (const Mat3d & mat2)
+inline Mat3d Mat3d::operator- (const Mat3d & mat2) const
 {
   Mat3d sum = *this;
   sum.elt[0] -= mat2.elt[0];
@@ -291,6 +297,16 @@ inline Mat3d & Mat3d::operator*= (double scalar)
   elt[2] *= scalar;
 
   return *this;
+}
+
+inline bool Mat3d::operator== (const Mat3d & mat2) const
+{
+  return elt[0] == mat2.elt[0] && elt[1] == mat2.elt[1] && elt[2] == mat2.elt[2]; 
+}
+
+inline bool Mat3d::operator!= (const Mat3d & mat2) const
+{
+  return elt[0] != mat2.elt[0] || elt[1] != mat2.elt[1] || elt[2] != mat2.elt[2];
 }
 
 inline Mat3d & Mat3d::multiplyDiagRight(Vec3d & v) // M = M * diag(v)
@@ -329,7 +345,7 @@ inline Mat3d operator* (double scalar, const Mat3d & mat2)
   return result;
 }
 
-inline Mat3d operator/ (double scalar, const Mat3d & mat2)
+inline Mat3d operator/ (const Mat3d & mat2, double scalar)
 {
   Mat3d result = mat2;
   result.elt[0] /= scalar;
@@ -339,7 +355,7 @@ inline Mat3d operator/ (double scalar, const Mat3d & mat2)
   return result;
 }
  
-inline Mat3d tensorProduct(Vec3d & vecA, Vec3d & vecB)
+inline Mat3d tensorProduct(const Vec3d & vecA, const Vec3d & vecB)
 {
   Mat3d result(vecA[0]*vecB[0],vecA[0]*vecB[1],vecA[0]*vecB[2],
 	       vecA[1]*vecB[0],vecA[1]*vecB[1],vecA[1]*vecB[2],
@@ -431,6 +447,16 @@ inline Mat3d trans(const Mat3d & mat)
               mat[0][2], mat[1][2], mat[2][2] );
 }
 
+// compute [  0  -v2  v1 ]
+//         [  v2  0  -v0 ]
+//         [ -v1  v0  0  ]
+inline Mat3d skewSymmetricMatrix(const Vec3d & vec)
+{
+  return Mat3d(0, -vec[2], vec[1], 
+               vec[2], 0, -vec[0],
+               -vec[1], vec[0], 0);
+}
+
 inline void Mat3d::convertToArray(double * array) const // in row-major order
 {
   array[0] = elt[0][0]; array[1] = elt[0][1]; array[2] = elt[0][2];
@@ -451,7 +477,7 @@ inline std::ostream &operator << (std::ostream &s, const Mat3d &v)
   );
 }
 
-inline void Mat3d::print()
+inline void Mat3d::print() const
 {
   double a00 = elt[0][0]; double a01 = elt[0][1]; double a02 = elt[0][2];
   double a10 = elt[1][0]; double a11 = elt[1][1]; double a12 = elt[1][2];
@@ -460,6 +486,23 @@ inline void Mat3d::print()
   printf("[%G %G %G;\n", a00, a01, a02);
   printf(" %G %G %G;\n", a10, a11, a12);
   printf(" %G %G %G]\n", a20, a21, a22);
+}
+
+inline double Mat3d::maxAbsEntry() const
+{
+  double maxAbsEntry = 0.0;
+  for(int i = 0; i < 3; i++)
+    for(int j = 0; j < 3; j++)
+    {
+       if (fabs(elt[i][j]) > maxAbsEntry)
+         maxAbsEntry = fabs(elt[i][j]);
+    }
+  return maxAbsEntry;
+}
+
+inline bool Mat3d::hasNaN() const
+{
+  return elt[0].hasNaN() || elt[1].hasNaN() || elt[2].hasNaN();
 }
 
 #endif

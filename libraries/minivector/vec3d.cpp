@@ -27,8 +27,6 @@
 * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-  Version: 1.2
 */
 
 #include "vec3d.h"
@@ -36,7 +34,7 @@
 /*
   Given an input vector v, find a unit vector that is orthogonal to it 
 */
-Vec3d Vec3d::findOrthonormalVector()
+Vec3d Vec3d::findOrthonormalVector() const
 {
   // find smallest abs component of v
   int smallestIndex = 0;

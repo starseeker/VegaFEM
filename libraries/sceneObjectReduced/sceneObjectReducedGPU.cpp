@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC    *
+ * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -61,7 +61,7 @@ void SceneObjectReducedGPU::Construct(int GPUMethod)
     {
       #if defined(_WIN32) || defined(WIN32)
         render_uUq = new ObjMeshGPUDeformer_uUq_pbuffer();
-        render_uUq->Construct(mesh, meshRender, r, modalMatrix->GetMatrix(), renderMode);
+        render_uUq->Init(mesh, meshRender, r, modalMatrix->GetMatrix(), renderMode);
       #else
         throw 10;
       #endif

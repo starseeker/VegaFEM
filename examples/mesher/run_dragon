@@ -1,0 +1,3 @@
+../../utilities/computeDistanceField/computeDistanceField ../../models/dragon-77k/dragon-77k.obj 256 256 256 -n -r -w 0.1 -s -m 0 -o dragon_256.dist
+../../utilities/isosurfaceMesher/isosurfaceMesher dragon_256.dist 0.15 dragon.obj -e -n -i0.05 -a30
+../../utilities/tetMesher/tetMesher dragon.obj dragon.veg -q 1.1 -a 1.5 

@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "forceModel" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC     *
+ * "forceModel" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -35,9 +35,16 @@ CorotationalLinearFEMForceModel::CorotationalLinearFEMForceModel(CorotationalLin
 
 CorotationalLinearFEMForceModel::~CorotationalLinearFEMForceModel() {}
 
+double CorotationalLinearFEMForceModel::GetElasticEnergy(double * u)
+{
+  double energy = 0.0;
+  corotationalLinearFEM->ComputeEnergyAndForceAndStiffnessMatrix(u, &energy, NULL, NULL, warp);
+  return energy;
+}
+
 void CorotationalLinearFEMForceModel::GetInternalForce(double * u, double * internalForces)
 {
-  corotationalLinearFEM->ComputeForceAndStiffnessMatrix(u, internalForces, NULL, warp);
+  corotationalLinearFEM->ComputeEnergyAndForceAndStiffnessMatrix(u, NULL, internalForces, NULL, warp);
 }
 
 void CorotationalLinearFEMForceModel::GetTangentStiffnessMatrixTopology(SparseMatrix ** tangentStiffnessMatrix)
@@ -47,11 +54,11 @@ void CorotationalLinearFEMForceModel::GetTangentStiffnessMatrixTopology(SparseMa
 
 void CorotationalLinearFEMForceModel::GetTangentStiffnessMatrix(double * u, SparseMatrix * tangentStiffnessMatrix)
 {
-  corotationalLinearFEM->ComputeForceAndStiffnessMatrix(u, NULL, tangentStiffnessMatrix, warp);
+  corotationalLinearFEM->ComputeEnergyAndForceAndStiffnessMatrix(u, NULL, NULL, tangentStiffnessMatrix, warp);
 } 
 
 void CorotationalLinearFEMForceModel::GetForceAndMatrix(double * u, double * internalForces, SparseMatrix * tangentStiffnessMatrix)
 {
-  corotationalLinearFEM->ComputeForceAndStiffnessMatrix(u, internalForces, tangentStiffnessMatrix, warp);
+  corotationalLinearFEM->ComputeEnergyAndForceAndStiffnessMatrix(u, NULL, internalForces, tangentStiffnessMatrix, warp);
 }
 

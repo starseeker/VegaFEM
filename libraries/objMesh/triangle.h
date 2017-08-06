@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder      *
@@ -44,25 +44,26 @@ class TriangleBasic
 {
 public:
 
-  TriangleBasic(Vec3d first_g, Vec3d second_g, Vec3d third_g): 
+  TriangleBasic(const Vec3d & first_g, const Vec3d & second_g, const Vec3d & third_g): 
 	first_(first_g), second_(second_g), third_(third_g), index_(0) {}
 
   // accessors
-  inline Vec3d first() {return first_ ;}
-  inline Vec3d second() {return second_ ;}
-  inline Vec3d third() {return third_ ;}
-  inline int index() { return index_; }
+  inline const Vec3d & first() const {return first_ ;}
+  inline const Vec3d & second() const {return second_ ;}
+  inline const Vec3d & third() const {return third_ ;}
+  inline int index() const { return index_; }
 
   // index can be used to keep track of what triangle this is
   inline void setIndex(int index_) { this->index_ = index_; }
 
   // squared 3d distance to a point
-  double distanceToPoint2(Vec3d point) { std::cout << "Unimplemented..." << std::endl; return 1;} // unimplemented (it is implemented in class "TriangleWithCollisionInfo" below)
-  double distanceToPoint(Vec3d point) { return sqrt(distanceToPoint2(point));}
+  double distanceToPoint2(const Vec3d & point) const { std::cout << "Unimplemented..." << std::endl; return 1;} // unimplemented (it is implemented in class "TriangleWithCollisionInfo" below)
+  double distanceToPoint(const Vec3d & point) const { return sqrt(distanceToPoint2(point));}
   
-  bool doesIntersectBox(BoundingBox & bbox);
+  bool doesIntersectBox(const BoundingBox & bbox) const;
 
-  int lineSegmentIntersection(Vec3d segmentStart, Vec3d segmentEnd, Vec3d * intersectionPoint);
+  // int lineSegmentIntersection(Vec3d segmentStart, Vec3d segmentEnd, Vec3d * intersectionPoint);
+  int lineSegmentIntersection(const Vec3d & segmentStart, const Vec3d & segmentEnd, Vec3d * intersectionPoint) const;
     //    Output: intersection point (when it exists)
     //    Return: -1 = triangle is degenerate (a segment or point)
     //             0 = disjoint (no intersect)
@@ -70,10 +71,10 @@ public:
     //             2 = are in the same plane
 
 
-  void render();
-  void renderEdges();
+  void render() const;
+  void renderEdges() const;
 
-  Vec3d getBarycentricLocation(double alpha, double beta, double gamma) { return alpha * first_ + beta * second_ + gamma * third_; }
+  Vec3d getBarycentricLocation(double alpha, double beta, double gamma) const { return alpha * first_ + beta * second_ + gamma * third_; }
 
 protected:
 
@@ -83,15 +84,15 @@ protected:
 
 // makes the triangle list unique, using the "index_" field of the <TriangleClass>
 template<class TriangleClass>
-void makeUniqueList(std::vector<TriangleClass*> &triangleList, std::vector<TriangleClass*> & uniqueList);
+void makeUniqueList(const std::vector<TriangleClass*> & triangleList, std::vector<TriangleClass*> & uniqueList);
 
 template<class TriangleClass>
-void makeUniqueList(std::vector<TriangleClass*> &triangleList); // overwrites triangleList with the unique list
+void makeUniqueList(std::vector<TriangleClass*> & triangleList); // overwrites triangleList with the unique list
 
 class TriangleWithCollisionInfo : public TriangleBasic
 {
 public:
-  TriangleWithCollisionInfo(Vec3d first_g, Vec3d second_g, Vec3d third_g):
+  TriangleWithCollisionInfo(const Vec3d & first_g, const Vec3d & second_g, const Vec3d & third_g):
         TriangleBasic(first_g,second_g,third_g) { ComputeCollisionInfo(); }
 
   // squared 3d distance to a point
@@ -103,8 +104,8 @@ public:
   //  4: edge among 12
   //  5: edge among 20
   //  6: the face itself
-  double distanceToPoint2(Vec3d point, int * closestFeature);
-  double distanceToPoint2(Vec3d point, int * closestFeature, double * alpha, double * beta, double * gamma); // also returns the barycentric coordinates of the closest point
+  double distanceToPoint2(const Vec3d & point, int * closestFeature) const;
+  double distanceToPoint2(const Vec3d & point, int * closestFeature, double * alpha, double * beta, double * gamma) const; // also returns the barycentric coordinates of the closest point
 
 protected:
 
@@ -125,15 +126,15 @@ class TriangleWithCollisionInfoAndPseudoNormals : public TriangleWithCollisionIn
 {
 public:
   // pseudoNormals is a caller-provided list of 7 normals, indexed the same as closest features below
-  TriangleWithCollisionInfoAndPseudoNormals(Vec3d first_g, Vec3d second_g, Vec3d third_g, Vec3d * pseudoNormals);
+  TriangleWithCollisionInfoAndPseudoNormals(const Vec3d & first_g, const Vec3d & second_g, const Vec3d & third_g, const Vec3d pseudoNormals[7]);
 
-  inline Vec3d pseudoNormal(int closestFeature) { return pseudoNormal_[closestFeature]; }
-  inline Vec3d interpolatedVertexPseudoNormal(double alpha, double beta, double gamma) { return norm(alpha * pseudoNormal_[0] + beta * pseudoNormal_[1] + gamma * pseudoNormal_[2]); }
+  inline const Vec3d & pseudoNormal(int closestFeature) const { return pseudoNormal_[closestFeature]; }
+  inline Vec3d interpolatedVertexPseudoNormal(double alpha, double beta, double gamma) const { return norm(alpha * pseudoNormal_[0] + beta * pseudoNormal_[1] + gamma * pseudoNormal_[2]); }
 
   // for vertices, returns the vertex itself
   // for edges, returns the midpoint of the edge (for the purposes of distance sign test, this could be any point on the edge)
   // for faces, returns the face centroid
-  inline Vec3d pseudoClosestPosition(int closestFeature) { return pseudoClosestPosition_[closestFeature]; }
+  inline const Vec3d & pseudoClosestPosition(int closestFeature) const { return pseudoClosestPosition_[closestFeature]; }
 
 protected:
   Vec3d pseudoNormal_[7];

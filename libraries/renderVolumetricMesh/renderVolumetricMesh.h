@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
  * "renderVolumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT,    *
- *                                                          2015 USC     *
+ *                                                          2016 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -43,6 +43,8 @@ public:
   void RenderWireframe(VolumetricMesh * volumetricMesh);
   void RenderSolidAndWireframe(VolumetricMesh * volumetricMesh);
 
+  void RenderElement(VolumetricMesh * volumetricMesh, int el, int wireframe=0);
+
   void RenderVertices(VolumetricMesh * volumetricMesh);
   void RenderVertices(VolumetricMesh * volumetricMesh, int * vertices, int numVertices, bool oneIndexed=true);
   void RenderVertices(VolumetricMesh * volumetricMesh, std::set<int> * vertices, bool oneIndexed=true);
@@ -63,10 +65,6 @@ public:
   void SetFlatRenderingMode(); // all colored white
   void SetGradedRenderingMode(VolumetricMesh * volumetricMesh); // colored graded, according to numerical values of E, nu, density
   void SetDiscreteRenderingMode(); // different material groups colored with distinct colors (default)
-
-  static void UnitCube();
-  static void UnitCubeWireframe();
-
 protected:
   double maxE;
   double maxnu;

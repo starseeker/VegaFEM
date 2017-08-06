@@ -1,12 +1,12 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
  * "Reduced deformable dynamics" real-time driver application.           *
  * Uses model reduction to rapidly simulate deformable objects           *
  * undergoing large deformations.                                        *
  *                                                                       *
- * Copyright (C) 2007 CMU, 2009 MIT, 2015 USC                            *
+ * Copyright (C) 2007 CMU, 2009 MIT, 2016 USC                            *
  *                                                                       *
  * All rights reserved.                                                  *
  *                                                                       *
@@ -711,12 +711,12 @@ void initScene()
   else
     extraSceneGeometry = NULL;
 
+/*
   // compute lowest frequency of the system (smallest eigenvalue of K)
   double * K = (double*) malloc (sizeof(double) * r * r);
   double * zero = (double*) calloc (r, sizeof(double));
   stVKReducedStiffnessMatrix->Evaluate(zero, K);
 
-/*
   // find smallest eigenvalue of K
   Matrix<double> KM(r, r, K, false, false);
   Matrix<double> EigenVectors(r,r);

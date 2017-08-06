@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "StVK" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC           *
+ * "StVK" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC           *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -48,8 +48,8 @@ public:
   StVKInternalForcesMT(VolumetricMesh * volumetricMesh, StVKElementABCD * precomputedABCDIntegrals, bool addGravity, double g, int numThreads);
   virtual ~StVKInternalForcesMT();
 
-  virtual void ComputeForces(double * vertexDisplacements, double * internalForces);
-  virtual double ComputeEnergy(double * vertexDisplacements); 
+  virtual void ComputeForces(const double * vertexDisplacements, double * internalForces);
+  virtual double ComputeEnergy(const double * vertexDisplacements); 
 
   // advanced function (tells what range of volumetric mesh elements is assigned to each thread)
   int GetStartElement(int rank);
@@ -62,7 +62,7 @@ protected:
   double * energyBuffer;
   double * energyAuxBuffer;
 
-  void Compute(int computationTarget, double * vertexDisplacements, double * internalForces);
+  void Compute(int computationTarget, const double * vertexDisplacements, double * internalForces);
 };
 
 #endif

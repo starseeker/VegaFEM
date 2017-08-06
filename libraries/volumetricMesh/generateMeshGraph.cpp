@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -30,7 +30,7 @@
 using namespace std;
 #include "generateMeshGraph.h"
 
-Graph * GenerateMeshGraph::Generate(VolumetricMesh * volumetricMesh)
+Graph * GenerateMeshGraph::Generate(const VolumetricMesh * volumetricMesh)
 {
   // Generate springs:
   typedef pair<int,int> edge;

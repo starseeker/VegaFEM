@@ -1,0 +1,50 @@
+# Lighting example file
+# by Jernej Barbic
+# There are two lights in this example (both are point lights).
+# Lighting is two-sided, and the specular term is disabled.
+
+*globalAmbientIntensity
+0.0
+
+*localViewer
+true
+
+*twoSidedLighting
+true
+
+*enableAmbientTerm
+true
+
+*enableDiffuseTerm
+true
+
+*enableSpecularTerm
+false
+
+#### light 0
+
+*lightEnabled_0
+true
+
+*position_0_X
+0
+*position_0_Y
+5.0
+*position_0_Z
+5.0
+
+*lightIntensity_0
+2.0
+
+#### light 1
+
+*lightEnabled_1
+true
+
+*position_1_X
+-5.0
+*position_1_Y
+5.0
+*position_1_Z
+5.0
+

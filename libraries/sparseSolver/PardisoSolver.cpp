@@ -1,11 +1,11 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "sparseSolver" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC   *
+ * "sparseSolver" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC   *
  * All rights reserved.                                                  *
  *                                                                       *
- * Code author: Jernej Barbic                                            *
+ * Code authors: Jernej Barbic, Yijing Li, Hongyi Xu                     *
  * http://www.jernejbarbic.com/code                                      *
  *                                                                       *
  * Research: Jernej Barbic, Fun Shing Sin, Daniel Schroeder,             *
@@ -25,17 +25,6 @@
  * LICENSE.TXT for more details.                                         *
  *                                                                       *
  *************************************************************************/
-
-/*
-
-  Solves A * x = rhs, where A is sparse, usually large, and positive definite.
-  Uses a multi-threaded approach to perform the solve.
-
-  The solution is obtained using the the Pardiso library .
-
-  Jernej Barbic, MIT, 2007-2009
-
-*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,7 +48,7 @@
   #define PARDISO pardiso
 #endif
 
-PardisoSolver::PardisoSolver(const SparseMatrix * A, int numThreads_, int positiveDefinite_, int directIterative_, int verbose_) : numThreads(numThreads_), positiveDefinite(positiveDefinite_), directIterative(directIterative_), verbose(verbose_)
+PardisoSolver::PardisoSolver(const SparseMatrix * A, int numThreads_, matrixType mtype_, reorderingType rtype_, int directIterative_, int verbose_): numThreads(numThreads_), mtype(mtype_), rtype(rtype_), directIterative(directIterative_), verbose(verbose_)
 {
   mkl_set_num_threads(numThreads);
 
@@ -68,85 +57,126 @@ PardisoSolver::PardisoSolver(const SparseMatrix * A, int numThreads_, int positi
   if (verbose >= 1)
     printf("Converting matrix to Pardiso format...\n");
 
-  int numUpperTriangleEntries = A->GetNumUpperTriangleEntries();
-
-  a = (double*) malloc (sizeof(double) * numUpperTriangleEntries);  
+  int numEntries;
+  int upperTriangleOnly;  
+  if ((mtype == REAL_SPD) || (mtype == REAL_SYM_INDEFINITE))  // matrix is symmetric
+  {
+    numEntries = A->GetNumUpperTriangleEntries();
+    upperTriangleOnly = 1;
+  }
+  else  
+  {
+    // structural symmetric or unsymmetric
+    numEntries = A->GetNumEntries();
+    upperTriangleOnly = 0;
+  }
+  a = (double*) malloc (sizeof(double) * numEntries);  
   ia = (int*) malloc (sizeof(int) * (A->GetNumRows() + 1));  
-  ja = (int*) malloc (sizeof(int) * numUpperTriangleEntries);  
-
-  int upperTriangleOnly = 1;
+  ja = (int*) malloc (sizeof(int) * numEntries);  
   int oneIndexed = 1;
   A->GenerateCompressedRowMajorFormat(a, ia, ja, upperTriangleOnly, oneIndexed);
 
   if (verbose >= 2)
-    printf("numUpperTriEntries: %d\n", numUpperTriangleEntries);
+    printf("numEntries: %d\n", numEntries);
 
   // permute & do symbolic factorization
 
-  mtype = positiveDefinite ? 2 : -2;
-  nrhs = 1; /* Number of right hand sides. */
-  maxfct = 1; /* Maximum number of numerical factorizations. */
-  mnum = 1; /* Which factorization to use. */
-  msglvl = verbose >= 1 ? verbose-1 : 0; /* Print statistical information in file */
-  error = 0; /* Initialize error flag */
+  nrhs = 1; // Number of right hand sides.
+  maxfct = 1; // Maximum number of numerical factorizations.
+  mnum = 1; // Which factorization to use.
+  msglvl = verbose >= 1 ? verbose - 1 : 0; // Print statistical information to the output file
+  error = 0; // Initialize error flag
 
   for (int i = 0; i < 64; i++) 
     iparm[i] = 0;
-  iparm[0] = 1; // No solver default
-  iparm[1] = 2; // 0=minimum degree ordering, 2=Fill-in reordering from METIS
-  iparm[2] = numThreads; // Numbers of processors, value of OMP_NUM_THREADS
-  iparm[3] = directIterative ? 62 : 0; //62; // No iterative-direct algorithm
+
+  iparm[0] = 1; // Do not use the solver default values (use custom values, provided below)
+  iparm[1] = rtype; // matrix re-ordering algorithm
+  iparm[2] = 0; // unused 
+
+  // use iterative-direct algorithm if requested
+  if (directIterative)
+  {
+    if (mtype == REAL_SPD)  
+      iparm[3] = 62; // matrix is symmetric positive-definite; use CGS iteration for symmetric positive-definite matrices
+    else
+      iparm[3] = 61; // use CGS iteration
+  }
+  else
+    iparm[3] = 0; 
+
   iparm[4] = 0; // No user fill-in reducing permutation
   iparm[5] = 0; // Write solution into x
-  iparm[6] = 0; // Not in use
-  iparm[7] = 2; // Max numbers of iterative refinement steps
-  iparm[8] = 0; // Not in use
-  iparm[9] = 8; //13; // Perturb the pivot elements with 1E-13
-  iparm[10] = 0; //1; // Use nonsymmetric permutation and scaling MPS
-  iparm[11] = 0; // Not in use
-  iparm[12] = 0; // matchings for highly indefinite symmetric matrices
+  iparm[6] = 0; // Output: number of iterative refinement steps performed
+  iparm[7] = 0; // Max numbers of iterative refinement steps (used during the solving stage). Value of 0 (default) means: The solver automatically performs two steps of iterative refinement when perturbed pivots are obtained during the numerical factorization.
+  iparm[8] = 0; // Reserved. Must set to 0.
+
+  // Pivoting perturbation; the values below are Pardiso's default values
+  // Pivoting only applies to REAL_UNSYM and REAL_SYM_INDEFINITE
+  if (mtype == REAL_UNSYM)
+    iparm[9] = 13; // For non-symmetric matrices, perturb the pivot elements with 1E-13
+  else 
+    iparm[9] = 8; // Use 1.0E-8 for symmetric indefinite matrices
+  
+  // Scaling and matching. The following below are the Pardiso defaults.
+  if (mtype == REAL_UNSYM)  // unsymmetric matrices
+  {
+    iparm[10] = 1; // enable scaling
+    iparm[12] = 1; // enable matching
+  }
+  else
+  {
+    iparm[10] = 0; // disable scaling
+    iparm[12] = 0; // disable matching
+  }
+
+  iparm[11] = 0; // Solve with transposed or conjugate transposed matrix A. Not in use here.
+
   iparm[13] = 0; // Output: Number of perturbed pivots
-  iparm[14] = 0; // Not in use
-  iparm[15] = 0; // Not in use
-  iparm[16] = 0; // Not in use
-  iparm[17] = -1; // Output: Number of nonzeros in the factor LU
-  iparm[18] = 0; // no Output: Mflops for LU factorization
-  iparm[19] = 0; // Output: Numbers of CG Iterations
-  iparm[20] = 1; // pivoting method
+  iparm[14] = 0; // Output: Peak memory on symbolic factorization (in KB)
+  iparm[15] = 0; // Output: Permanent memory on symbolic factorization (in KB)
+  iparm[16] = 0; // Output: Size of factors/Peak memory on numerical factorization and solution (in KB)
+  
+  iparm[17] = -1; // Output: Report the number of non-zero elements in the factors.
+  iparm[18] = 0; // Report number of floating point operations (in 10^6 floating point operations) that are necessary to factor the matrix A. Disabled.
+  iparm[19] = 0; // Output: Report CG/CGS diagnostics.
+  iparm[20] = 1; // Pivoting for symmetric indefinite matrices: Apply 1x1 and 2x2 Bunch-Kaufman pivoting during the factorization process.
+  iparm[21] = 0; // Output: Inertia: number of positive eigenvalues.
+  iparm[22] = 0; // Output: Inertia: number of negative eigenvalues.
 
-/*
-  iparm[0] = 0;
-  iparm[2] = numThreads;
-*/
+  iparm[23] = 0; // Parallel factorization control. Use default.
+  iparm[24] = 0; // Parallel forward/backward solve control. Intel MKL PARDISO uses a parallel algorithm for the solve step.
 
-  /* -------------------------------------------------------------------- */
-  /* .. Initialize the internal solver memory pointer. This is only */
-  /* necessary for the FIRST call of the PARDISO solver. */
-  /* -------------------------------------------------------------------- */
+  // the other iparms (above 24) are left at 0
+
+  /* -------------------------------------------------------------------- *\
+     .. Initialize the internal solver memory pointer. This is only 
+     necessary for the FIRST call of the PARDISO solver. 
+  \* -------------------------------------------------------------------- */
   for (int i=0; i<64; i++) 
     pt[i] = 0;
 
   if (verbose >= 1)
-    printf("Reordering matrix...\n");
+    printf("Reordering and symbolically factorizing the matrix...\n");
 
-  /* -------------------------------------------------------------------- */
-  /* .. Reordering and Symbolic Factorization. This step also allocates */
-  /* all memory that is necessary for the factorization. */
-  /* -------------------------------------------------------------------- */
+  /* -------------------------------------------------------------------- *\
+     .. Reordering and Symbolic Factorization. This step also allocates 
+     all memory that is necessary for the factorization.
+  \* -------------------------------------------------------------------- */
   phase = 11;
-  PARDISO (pt, &maxfct, &mnum, &mtype, &phase,
-           &n, a, ia, ja, NULL, &nrhs,
-          iparm, &msglvl, NULL, NULL, &error);
+  PARDISO (pt, &maxfct, &mnum, (MKL_INT*)&mtype, &phase,
+    &n, a, ia, ja, NULL, &nrhs,
+    iparm, &msglvl, NULL, NULL, &error);
 
   if (error != 0)
   {
-    printf("Error: Pardiso matrix re-ordering returned non-zero exit code %d.\n", error);
+    printf("Error: Pardiso matrix re-ordering/symbolic factorization returned non-zero exit code %d.\n", error);
     throw error;
   }
 
   if (verbose >= 2)
   {
-    printf("\nReordering completed ...\n");
+    printf("\nReordering and symbolic factorization completed...\n");
     printf("Number of nonzeros in factors = %d\n", iparm[17]);
     printf("Number of factorization MFLOPS = %d\n", iparm[18]);
   }
@@ -155,7 +185,7 @@ PardisoSolver::PardisoSolver(const SparseMatrix * A, int numThreads_, int positi
 PardisoSolver::~PardisoSolver()
 {
   phase = -1;
-  PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &n, a, ia, ja, NULL, &nrhs, iparm, &msglvl, NULL, NULL, &error);
+  PARDISO(pt, &maxfct, &mnum, (MKL_INT*)&mtype, &phase, &n, a, ia, ja, NULL, &nrhs, iparm, &msglvl, NULL, NULL, &error);
 
   if (error != 0)
     printf("Error: Pardiso Cholesky dealloacation returned non-zero exit code %d.\n", error);
@@ -167,22 +197,29 @@ PardisoSolver::~PardisoSolver()
 
 void PardisoSolver::DisabledSolverError() {}
 
-MKL_INT PardisoSolver::ComputeCholeskyDecomposition(const SparseMatrix * A)
+MKL_INT PardisoSolver::FactorMatrix(const SparseMatrix * A)
 {
   if (directIterative)
     return 0;
 
+  mkl_set_num_threads(numThreads);
+
   // compute the factorization
   if (verbose >= 1)
-    printf("Factoring the %d x %d matrix (%d threads)...\n",n,n, numThreads);
+    printf("Factoring the %d x %d matrix (%d threads)...\n", n, n, numThreads);
 
   int upperTriangleOnly = 1;
   int oneIndexed = 1;
+
+  if ((mtype == REAL_SPD) || (mtype == REAL_SYM_INDEFINITE))  // matrix is symmetric
+    upperTriangleOnly = 1;    // symmetric matrix can only be represented by its upper triangle elements
+  else  // structural symmetric or unsymmetric
+    upperTriangleOnly = 0;    // unsymmetric matrix must store all its elements
   A->GenerateCompressedRowMajorFormat(a, NULL, NULL, upperTriangleOnly, oneIndexed);
 
   // factor 
   phase = 22;
-  PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &n, a, ia, ja, NULL, &nrhs, iparm, &msglvl, NULL, NULL,  &error);
+  PARDISO(pt, &maxfct, &mnum, (MKL_INT*)&mtype, &phase, &n, a, ia, ja, NULL, &nrhs, iparm, &msglvl, NULL, NULL,  &error);
 
   if (error != 0)
     printf("Error: Pardiso Cholesky decomposition returned non-zero exit code %d.\n", error);
@@ -201,11 +238,13 @@ int PardisoSolver::SolveLinearSystem(double * x, const double * rhs)
     return 101;
   }
 
+  mkl_set_num_threads(numThreads); 
+
   if (verbose >= 2)
-    printf("Solving linear system...(%d threads, using previously computed LU)\n", numThreads);
+    printf("Solving linear system...(%d threads)\n", numThreads);
 
   phase = 33;
-  PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &n, a, ia, ja, NULL, &nrhs, iparm, &msglvl, (double*)rhs, x, &error);
+  PARDISO(pt, &maxfct, &mnum, (MKL_INT*)&mtype, &phase, &n, a, ia, ja, NULL, &nrhs, iparm, &msglvl, (double*)rhs, x, &error);
 
   if (error != 0)
     printf("Error: Pardiso solve returned non-zero exit code %d.\n", error);
@@ -216,7 +255,6 @@ int PardisoSolver::SolveLinearSystem(double * x, const double * rhs)
   return (int)error;
 }
 
-
 MKL_INT PardisoSolver::ForwardSubstitution(double * y, const double * rhs)
 {
   if (directIterative != 0)
@@ -226,13 +264,15 @@ MKL_INT PardisoSolver::ForwardSubstitution(double * y, const double * rhs)
   }
 
   if (verbose >= 2)
-    printf("Performing forward substitution...(%d threads, using previously computed LU)\n", numThreads);
+    printf("Performing forward substitution...(%d threads)\n", numThreads);
+
+  mkl_set_num_threads(numThreads); 
 
   int maxIterRefinementSteps = iparm[7];
   iparm[7] = 0;
 
   phase = 331;
-  PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &n, a, ia, ja, NULL, &nrhs, iparm, &msglvl, (double*)rhs, y, &error);
+  PARDISO(pt, &maxfct, &mnum, (MKL_INT*)&mtype, &phase, &n, a, ia, ja, NULL, &nrhs, iparm, &msglvl, (double*)rhs, y, &error);
 
   iparm[7] = maxIterRefinementSteps;
 
@@ -253,20 +293,22 @@ MKL_INT PardisoSolver::DiagonalSubstitution(double * v, const double * y)
     return 101;
   }
 
-  if (positiveDefinite == 1)
+  if (mtype == REAL_SPD)
   {
     printf("Error: diagonal substitution should not be used for positive-definite matrices.\n");
     return 102;
   }
 
+  mkl_set_num_threads(numThreads); 
+
   if (verbose >= 2)
-    printf("Performing forward substitution...(%d threads, using previously computed LU)\n", numThreads);
+    printf("Performing forward substitution...(%d threads)\n", numThreads);
 
   int maxIterRefinementSteps = iparm[7];
   iparm[7] = 0;
 
   phase = 332;
-  PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &n, a, ia, ja, NULL, &nrhs, iparm, &msglvl, (double*)y, v, &error);
+  PARDISO(pt, &maxfct, &mnum, (MKL_INT*)&mtype, &phase, &n, a, ia, ja, NULL, &nrhs, iparm, &msglvl, (double*)y, v, &error);
 
   iparm[7] = maxIterRefinementSteps;
 
@@ -287,14 +329,16 @@ MKL_INT PardisoSolver::BackwardSubstitution(double * x, const double * y)
     return 101;
   }
 
+  mkl_set_num_threads(numThreads); 
+
   if (verbose >= 2)
-    printf("Performing forward substitution...(%d threads, using previously computed LU)\n", numThreads);
+    printf("Performing forward substitution...(%d threads)\n", numThreads);
 
   int maxIterRefinementSteps = iparm[7];
   iparm[7] = 0;
 
   phase = 333;
-  PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &n, a, ia, ja, NULL, &nrhs, iparm, &msglvl, (double*)y, x, &error);
+  PARDISO(pt, &maxfct, &mnum, (MKL_INT*)&mtype, &phase, &n, a, ia, ja, NULL, &nrhs, iparm, &msglvl, (double*)y, x, &error);
 
   iparm[7] = maxIterRefinementSteps;
 
@@ -316,11 +360,12 @@ MKL_INT PardisoSolver::SolveLinearSystemMultipleRHS(double * x, const double * r
   }
 
   if (verbose >= 2)
-    printf("Solving linear system...(%d threads, using previously computed LU)\n", numThreads);
+    printf("Solving linear system...(%d threads)\n", numThreads);
+
+  mkl_set_num_threads(numThreads); 
 
   phase = 33;
-
-  PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &n, a, ia, ja, NULL, &numRHS, iparm, &msglvl, (double*)rhs, x, &error);
+  PARDISO(pt, &maxfct, &mnum, (MKL_INT*)&mtype, &phase, &n, a, ia, ja, NULL, &numRHS, iparm, &msglvl, (double*)rhs, x, &error);
 
   if (error != 0)
     printf("Error: Pardiso solve returned non-zero exit code %d.\n", error);
@@ -339,15 +384,17 @@ MKL_INT PardisoSolver::SolveLinearSystemDirectIterative(const SparseMatrix * A, 
     return 102;
   }
 
+  mkl_set_num_threads(numThreads); 
+
   if (verbose >= 2)
     printf("Solving linear system...(%d threads, direct-iterative)\n", numThreads);
 
   int upperTriangleOnly = 1;
   int oneIndexed = 1;
   A->GenerateCompressedRowMajorFormat(a, NULL, NULL, upperTriangleOnly, oneIndexed);
-  phase = 23;
 
-  PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &n, a, ia, ja, NULL, &nrhs, iparm, &msglvl, (double*)rhs, x, &error);
+  phase = 23;
+  PARDISO(pt, &maxfct, &mnum, (MKL_INT*)&mtype, &phase, &n, a, ia, ja, NULL, &nrhs, iparm, &msglvl, (double*)rhs, x, &error);
 
   if (error != 0)
     printf("Error: Pardiso solve returned non-zero exit code %d.\n", error);
@@ -362,7 +409,7 @@ MKL_INT PardisoSolver::SolveLinearSystemDirectIterative(const SparseMatrix * A, 
 
 // Pardiso Solver is not available
 
-PardisoSolver::PardisoSolver(const SparseMatrix * A, int numThreads_, int positiveDefinite_, int directIterative_, int verbose_) : numThreads(numThreads_), positiveDefinite(positiveDefinite_), directIterative(directIterative_), verbose(verbose_) 
+PardisoSolver::PardisoSolver(const SparseMatrix * A, int numThreads_, matrixType mtype_, reorderingType rtype_, int directIterative_, int verbose_): numThreads(numThreads_), mtype(mtype_), rtype(rtype_), directIterative(directIterative_), verbose(verbose_)
 {
   DisabledSolverError();
 }
@@ -378,7 +425,7 @@ void PardisoSolver::DisabledSolverError()
   throw 1;
 }
 
-MKL_INT PardisoSolver::ComputeCholeskyDecomposition(const SparseMatrix * A)
+MKL_INT PardisoSolver::FactorMatrix(const SparseMatrix * A)
 {
   DisabledSolverError();
   return 1;

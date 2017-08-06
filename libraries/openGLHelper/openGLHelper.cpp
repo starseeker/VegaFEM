@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "openGLHelper" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC   *
+ * "openGLHelper" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC   *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -28,14 +28,13 @@
 
 #include "openGLHelper.h"
 
-void *font = GLUT_BITMAP_9_BY_15;
-void *fonts[] =
-{
-  GLUT_BITMAP_9_BY_15,
-  GLUT_BITMAP_TIMES_ROMAN_10,
-  GLUT_BITMAP_TIMES_ROMAN_24
-};
-
+static void * font = GLUT_BITMAP_9_BY_15;
+//static void * fonts[] =
+//{
+//  GLUT_BITMAP_9_BY_15,
+//  GLUT_BITMAP_TIMES_ROMAN_10,
+//  GLUT_BITMAP_TIMES_ROMAN_24
+//};
 
 void UnitCube()
 {
@@ -183,7 +182,7 @@ void RenderSphere(float x, float y, float z)
   glPopMatrix();
 }
 
-void OutputText(int x, int y, const char *string)
+void OutputText(float x, float y, const char *string)
 {
   int len, i;
   glRasterPos2f(x, y);
@@ -453,3 +452,49 @@ char * DuplicateString(const char * s)
   return p;
 }
 
+
+void RenderAxes(double axisLength) 
+{
+  glDisable(GL_LIGHTING);
+  glEnable(GL_COLOR_MATERIAL);
+  glBegin(GL_LINES);
+  for (int i = 0; i<3; i++) 
+  {
+    float color[3] = { 0, 0, 0 };
+    color[i] = 1.0;
+    glColor3fv(color);
+    float vertex[3] = {0, 0, 0};
+    vertex[i] = axisLength;
+    glVertex3fv(vertex);
+    glVertex3f(0, 0, 0);
+  }
+  glEnd();
+}
+
+void unprojectPointFromScreen(int x, int y, double worldPosition[3], GLubyte * stencilValue)
+{
+  GLdouble model[16], proj[16];
+  glGetDoublev (GL_MODELVIEW_MATRIX, model);
+  glGetDoublev (GL_PROJECTION_MATRIX, proj);
+
+  GLint view[4];
+  glGetIntegerv (GL_VIEWPORT, view);
+
+  int winX = x;
+  int winY = view[3]-1-y;
+
+  float zValue = 0;
+  glReadPixels(winX,winY,1,1, GL_DEPTH_COMPONENT, GL_FLOAT, &zValue);
+
+  if(stencilValue )
+  {
+    *stencilValue = 0;
+    glReadPixels(winX, winY, 1, 1, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, stencilValue);
+  }
+
+  GLdouble worldX, worldY, worldZ;
+  gluUnProject(winX, winY, zValue, model, proj, view, &worldX, &worldY, &worldZ);
+  worldPosition[0] = worldX;
+  worldPosition[1] = worldY;
+  worldPosition[2] = worldZ;
+}

@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC     *
+ * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -62,7 +62,7 @@ public:
   // constrainedDOFs is an integer array of degrees of freedom that are to be fixed to zero (e.g., to permanently fix a vertex in a deformable simulation)
   // constrainedDOFs are 0-indexed (separate DOFs for x,y,z), and must be pre-sorted (ascending)
   // dampingMatrix is optional and provides damping (in addition to mass damping)
-  EulerSparse(int r, double timestep, SparseMatrix * massMatrix, ForceModel * forceModel, int symplectic=0, int numConstrainedDOFs=0, int * constrainedDOFs=NULL, double dampingMassCoef=0.0);
+  EulerSparse(int r, double timestep, SparseMatrix * massMatrix, ForceModel * forceModel, int symplectic=0, int numConstrainedDOFs=0, int * constrainedDOFs=NULL, double dampingMassCoef=0.0, int numSolverThreads=1);
 
   virtual ~EulerSparse();
 

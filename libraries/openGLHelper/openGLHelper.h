@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "openGLHelper" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC   *
+ * "openGLHelper" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC   *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -41,14 +41,14 @@
 #include <assert.h>
 
 #include "macros.h"
-#include "matrixIO.h"
-
 #include "openGL-headers.h"
 
-void OutputText(int x, int y, const char *string);
+void OutputText(float x, float y, const char *string);
 
+// call glBegin()... glEnd() to render a unit cube / cube wireframe. No color specified
 void UnitCube();
 void UnitCubeWireframe();
+
 void RenderWireframeBox(double bmin[3], double bmax[3]);
 
 void DrawArrow( float px, float py, float pz,
@@ -66,6 +66,11 @@ void TransparentSphere(GLuint solidSphereList, GLuint wireSphereList, double x, 
 char * DuplicateString(const char * s);
 
 void PrintGLerror( const char *msg );
+
+void RenderAxes(double axisLength);
+
+// given (x,y) from mouseButtonActivity callback, get unprojected world position and optionally stencil value
+void unprojectPointFromScreen(int x, int y, double worldPosition[3], GLubyte * stencilValue = NULL);
 
 #endif
 

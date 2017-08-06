@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -75,7 +75,7 @@ TetMesh::TetMesh(const char * filename, int specialFileType, int verbose): Volum
   if (dim != 3)
     throw 3;
 
-  vertices = (Vec3d**) malloc (sizeof(Vec3d*) * numVertices);
+  vertices = new Vec3d [numVertices];
 
   for(int i=0; i<numVertices; i++)
   {
@@ -85,7 +85,7 @@ TetMesh::TetMesh(const char * filename, int specialFileType, int verbose): Volum
     sscanf(lineBuffer, "%d %lf %lf %lf", &index, &x, &y, &z);
     if (index != (i+1))
       throw 3;
-    vertices[i] = new Vec3d(x,y,z);
+    vertices[i] = Vec3d(x,y,z);
   }
   
   parser.close();
@@ -207,27 +207,27 @@ void TetMesh::computeElementMassMatrix(int el, double * massMatrix) const
 */
 }
 
-double TetMesh::getTetVolume(Vec3d * a, Vec3d * b, Vec3d * c, Vec3d * d)
+double TetMesh::getTetVolume(const Vec3d & a, const Vec3d & b, const Vec3d & c, const Vec3d & d)
 {
   // volume = 1/6 * | (a-d) . ((b-d) x (c-d)) |
-  return (1.0 / 6 * fabs( dot(*a - *d, cross(*b - *d, *c - *d)) ));
+  return (1.0 / 6 * fabs( dot(a - d, cross(b - d, c - d)) ));
 }
 
 double TetMesh::getElementVolume(int el) const
 {
-  Vec3d * a = getVertex(el, 0);
-  Vec3d * b = getVertex(el, 1);
-  Vec3d * c = getVertex(el, 2);
-  Vec3d * d = getVertex(el, 3);
+  const Vec3d & a = getVertex(el, 0);
+  const Vec3d & b = getVertex(el, 1);
+  const Vec3d & c = getVertex(el, 2);
+  const Vec3d & d = getVertex(el, 3);
   return getTetVolume(a, b, c, d);
 }
 
 void TetMesh::getElementInertiaTensor(int el, Mat3d & inertiaTensor) const
 {
-  Vec3d a = *getVertex(el, 0);
-  Vec3d b = *getVertex(el, 1);
-  Vec3d c = *getVertex(el, 2);
-  Vec3d d = *getVertex(el, 3);
+  Vec3d a = getVertex(el, 0);
+  Vec3d b = getVertex(el, 1);
+  Vec3d c = getVertex(el, 2);
+  Vec3d d = getVertex(el, 3);
 
   Vec3d center = getElementCenter(el);
   a -= center;
@@ -265,7 +265,7 @@ bool TetMesh::containsVertex(int el, Vec3d pos) const // true if given element c
   return ((weights[0] >= 0) && (weights[1] >= 0) && (weights[2] >= 0) && (weights[3] >= 0));
 }
 
-void TetMesh::computeBarycentricWeights(int el, Vec3d pos, double * weights) const
+void TetMesh::computeBarycentricWeights(const Vec3d vertexPos[4], const Vec3d & pos, double * weights)
 {
 /*
        |x1 y1 z1 1|
@@ -296,25 +296,30 @@ void TetMesh::computeBarycentricWeights(int el, Vec3d pos, double * weights) con
   wi = Di / D0
 */
 
-  Vec3d vtx[4];
-  for(int i=0; i<4; i++)
-    vtx[i] = *getVertex(el,i);
-
   double D[5];
-  D[0] = getTetDeterminant(&vtx[0], &vtx[1], &vtx[2], &vtx[3]);
+  D[0] = getTetDeterminant(vertexPos[0], vertexPos[1], vertexPos[2], vertexPos[3]);
 
   for(int i=1; i<=4; i++)
   {
     Vec3d buf[4];
     for(int j=0; j<4; j++)
-      buf[j] = vtx[j];
+      buf[j] = vertexPos[j];
     buf[i-1] = pos;
-    D[i] = getTetDeterminant(&buf[0], &buf[1], &buf[2], &buf[3]);
+    D[i] = getTetDeterminant(buf[0], buf[1], buf[2], buf[3]);
     weights[i-1] = D[i] / D[0];
   }
 }
 
-double TetMesh::getTetDeterminant(Vec3d * a, Vec3d * b, Vec3d * c, Vec3d * d)
+void TetMesh::computeBarycentricWeights(int el, const Vec3d & pos, double * weights) const
+{
+  Vec3d vtx[4];
+  for(int i=0; i<4; i++)
+    vtx[i] = getVertex(el,i);
+
+  computeBarycentricWeights(vtx, pos, weights);
+}
+
+double TetMesh::getTetDeterminant(const Vec3d & a, const Vec3d & b, const Vec3d & c, const Vec3d & d)
 {
   // computes the determinant of the 4x4 matrix
   // [ a 1 ]
@@ -322,10 +327,10 @@ double TetMesh::getTetDeterminant(Vec3d * a, Vec3d * b, Vec3d * c, Vec3d * d)
   // [ c 1 ]
   // [ d 1 ]
 
-  Mat3d m0 = Mat3d(*b, *c, *d);
-  Mat3d m1 = Mat3d(*a, *c, *d);
-  Mat3d m2 = Mat3d(*a, *b, *d);
-  Mat3d m3 = Mat3d(*a, *b, *c);
+  Mat3d m0 = Mat3d(b, c, d);
+  Mat3d m1 = Mat3d(a, c, d);
+  Mat3d m2 = Mat3d(a, b, d);
+  Mat3d m3 = Mat3d(a, b, c);
 
   return (-det(m0) + det(m1) - det(m2) + det(m3));
 }
@@ -341,7 +346,7 @@ void TetMesh::computeGradient(int element, const double * U, int numFields, doub
   // grad is constant inside a tet
   Vec3d vtx[4];
   for(int i=0; i<4; i++)
-    vtx[i] = *getVertex(element,i);
+    vtx[i] = getVertex(element,i);
 
   // form M =
   // [b - a]
@@ -422,7 +427,9 @@ void TetMesh::orient()
 {
   for(int el=0; el<numElements; el++)
   {
-    double det = dot(*(getVertex(el, 1)) - *(getVertex(el, 0)), cross(*(getVertex(el, 2)) - *(getVertex(el, 0)), *(getVertex(el, 3)) - *(getVertex(el, 0))));
+    // a, b, c, d
+    // dot(b - a, cross(c - a, d - a))
+    double det = dot(getVertex(el, 1) - getVertex(el, 0), cross(getVertex(el, 2) - getVertex(el, 0), getVertex(el, 3) - getVertex(el, 0)));
 
     if (det < 0)
     {
@@ -435,5 +442,4 @@ void TetMesh::orient()
     }
   }
 }
-
 

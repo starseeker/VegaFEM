@@ -1,12 +1,12 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
  * "Large Modal Deformation Factory",                                    *
  * a pre-processing utility for model reduction of                       *
  * deformable objects undergoing large deformations.                     *
  *                                                                       *
- *  Copyright (C) 2007 CMU, 2009 MIT, 2015 USC                           *
+ *  Copyright (C) 2007 CMU, 2009 MIT, 2016 USC                           *
  *                                                                       *
  * All rights reserved.                                                  *
  *                                                                       *
@@ -35,6 +35,8 @@
 
 #include "generateSurfaceMesh.h"
 #include "largeModalDeformationFactory.h"
+
+using namespace std;
 
 void MyFrame::OnLoadMesh(wxCommandEvent& event)
 {

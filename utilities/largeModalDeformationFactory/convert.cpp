@@ -1,12 +1,12 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
  * "Large Modal Deformation Factory",                                    *
  * a pre-processing utility for model reduction of                       *
  * deformable objects undergoing large deformations.                     *
  *                                                                       *
- *  Copyright (C) 2007 CMU, 2009 MIT, 2015 USC                           *
+ *  Copyright (C) 2007 CMU, 2009 MIT, 2016 USC                           *
  *                                                                       *
  * All rights reserved.                                                  *
  *                                                                       *
@@ -37,7 +37,7 @@
 #include "matrixIO.h"
 
 /* XPM */
-static char *folder_open_xpm[] = {
+static const char *folder_open_xpm[] = {
 /* columns rows colors chars-per-pixel */
 "16 15 31 1",
 "6 c #9BACC2",

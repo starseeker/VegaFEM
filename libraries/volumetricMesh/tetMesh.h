@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -43,7 +43,7 @@ class TetMesh : public VolumetricMesh
 {
 public:
   // loads the mesh from a file 
-  // ASCII: .veg text input formut, see documentation and the provided examples
+  // ASCII: .veg text input format, see documentation and the provided examples
   // BINARY: .vegb binary input format
   TetMesh(const char * filename, fileFormatType fileFormat = ASCII, int verbose=1);
 
@@ -98,8 +98,9 @@ public:
   static VolumetricMesh::elementType elementType() { return elementType_; }
   virtual VolumetricMesh::elementType getElementType() const { return elementType(); }
 
-  static double getTetVolume(Vec3d * a, Vec3d * b, Vec3d * c, Vec3d * d);
-  static double getTetDeterminant(Vec3d * a, Vec3d * b, Vec3d * c, Vec3d * d);
+  static double getTetVolume(const Vec3d & a, const Vec3d & b, const Vec3d & c, const Vec3d & d);
+  static double getTetDeterminant(const Vec3d & a, const Vec3d & b, const Vec3d & c, const Vec3d & d);
+
   virtual double getElementVolume(int el) const;
   virtual void getElementInertiaTensor(int el, Mat3d & inertiaTensor) const;
   virtual void computeElementMassMatrix(int element, double * massMatrix) const;
@@ -112,7 +113,8 @@ public:
 
  // === interpolation ===
 
-  virtual void computeBarycentricWeights(int el, Vec3d pos, double * weights) const;
+  static void computeBarycentricWeights(const Vec3d vertexPos[4], const Vec3d & pos, double * weights);
+  virtual void computeBarycentricWeights(int el, const Vec3d & pos, double * weights) const;
   void computeGradient(int element, const double * U, int numFields, double * grad) const; // for tet meshes, gradient is constant inside each tet, hence no need to specify position
   virtual void interpolateGradient(int element, const double * U, int numFields, Vec3d pos, double * grad) const; // conforms to the virtual function in the base class, "pos" does not affect the computation
 

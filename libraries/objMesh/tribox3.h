@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Somya Sharma, Jernej Barbic                             *
@@ -39,7 +39,7 @@ e.
 #ifndef _TRIBOX3_H_
 #define _TRIBOX3_H_
 
-bool triBoxOverlap(double boxcenter[3],double boxhalfsize[3],double triverts[3][3]);
+bool triBoxOverlap(const double boxcenter[3], const double boxhalfsize[3], const double trivert0[3], const double trivert1[3], const double trivert2[3] );
 
 #endif
 

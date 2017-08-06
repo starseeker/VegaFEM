@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "corotational linear FEM" library , Copyright (C) 2015 USC            *
+ * "corotational linear FEM" library , Copyright (C) 2016 USC            *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -44,9 +44,9 @@ CorotationalLinearFEM::CorotationalLinearFEM(TetMesh * tetMesh_) : tetMesh(tetMe
   undeformedPositions = (double*) malloc (sizeof(double) * 3 * numVertices);
   for(int i=0; i < numVertices; i++)
   {
-    Vec3d * v = tetMesh->getVertex(i);
+    const Vec3d & v = tetMesh->getVertex(i);
     for(int j=0; j<3; j++)
-      undeformedPositions[3*i+j] = (*v)[j];
+      undeformedPositions[3*i+j] = v[j];
   }
 
   int numElements = tetMesh->getNumElements();
@@ -198,7 +198,7 @@ CorotationalLinearFEM::CorotationalLinearFEM(TetMesh * tetMesh_) : tetMesh(tetMe
       }
       else
       {
-        printf("Error: CorotationalLinearFEM: unknown material encounted in the mesh.\n");
+        printf("Error: CorotationalLinearFEM: unknown material encountered in the mesh.\n");
         throw 1;
       }
     }
@@ -288,21 +288,20 @@ void CorotationalLinearFEM::WarpMatrix(double * K, double * R, double * RK, doub
     }
 }
 
-void CorotationalLinearFEM::ComputeForceAndStiffnessMatrix(double * u, double * f, SparseMatrix * stiffnessMatrix, int warp)
+void CorotationalLinearFEM::ComputeEnergyAndForceAndStiffnessMatrix(const double * u, double * energy, double * f, SparseMatrix * stiffnessMatrix, int warp)
 {
-  ComputeForceAndStiffnessMatrixOfSubmesh(u, f, stiffnessMatrix, warp, 0, tetMesh->getNumElements());
-}
-
-void CorotationalLinearFEM::ComputeForceAndStiffnessMatrixOfSubmesh(double * u, double * f, SparseMatrix * stiffnessMatrix, int warp, int elementLo, int elementHi)
-{
-  // clear f to zero
-  if (f != NULL)
+  if (energy != NULL)
+    *energy = 0.0;
+  if (f != NULL) // clear f to zero
     memset(f, 0, sizeof(double) * 3 * numVertices);
-
-  // clear stiffness matrix to zero
-  if (stiffnessMatrix != NULL)
+  if (stiffnessMatrix != NULL) // clear stiffness matrix to zero
     stiffnessMatrix->ResetToZero();
 
+  AddEnergyAndForceAndStiffnessMatrixOfSubmesh(u, energy, f, stiffnessMatrix, warp, 0, tetMesh->getNumElements());
+}
+
+void CorotationalLinearFEM::AddEnergyAndForceAndStiffnessMatrixOfSubmesh(const double * u, double * energy, double * f, SparseMatrix * stiffnessMatrix, int warp, int elementLo, int elementHi)
+{
   for (int el=elementLo; el < elementHi; el++)
   {
     int vtxIndex[4];
@@ -334,7 +333,7 @@ void CorotationalLinearFEM::ComputeForceAndStiffnessMatrixOfSubmesh(double * u, 
           F[3 * i + j] = 0;
           for(int k=0; k<4; k++)
             F[3 * i + j] += P[4 * i + k] * MInverse[el][4 * k + j];
-	}
+        }
 
       double R[9]; // rotation (row-major)
       double S[9]; // symmetric (row-major)
@@ -347,19 +346,51 @@ void CorotationalLinearFEM::ComputeForceAndStiffnessMatrixOfSubmesh(double * u, 
       double RK[144]; // row-major
       WarpMatrix(KElementUndeformed[el], R, RK, KElement);
 
-      // f = RK (RT x - x0)
-      double fElement[12];
-      for(int i=0; i<12; i++)
+      double z[12]; // z = RT x - x0
+      Mat3d Rmat(R);
+      Mat3d RTmat = trans(Rmat);
+      for(int vtx = 0; vtx < 4; vtx++)
       {
-        fElement[i] = 0;
-        for(int j=0; j<4; j++)
-          for(int l=0; l<3; l++)
-            fElement[i] += KElement[12 * i + 3 * j + l] * P[4 * l + j] - RK[12 * i + 3 * j + l] * undeformedPositions[3 * vtxIndex[j] + l];
+        Vec3d x0 = &undeformedPositions[3 * vtxIndex[vtx]];
+        Vec3d x(P[vtx], P[4+vtx], P[8+vtx]);
+        Vec3d vtxz = RTmat * x - x0;
+        vtxz.convertToArray(z + 3*vtx);
       }
-
-      // add fElement into the global f
-      if (f != NULL)
+      
+      double fElement[12];
+      if (energy != NULL) // energy = 1/2 <Kz, z>, z = RT x - x0
       {
+        double Kz[12];
+        memset(Kz, 0, sizeof(Kz));
+        for(int i = 0; i < 12; i++)
+          for(int j = 0; j < 12; j++)
+            Kz[i] += KElementUndeformed[el][12*i+j] * z[j];
+
+        double e = 0.0;
+        for(int i = 0; i < 12; i++)
+          e += Kz[i] * z[i];
+        *energy += 0.5 * e;
+
+        if (f != NULL) // f = RK (RT x - x0) = RK z
+        {
+          memset(fElement, 0, sizeof(fElement));
+          for(int i = 0; i < 12; i++)
+            for(int j = 0; j < 12; j++)
+              fElement[i] += RK[12*i+j] * z[j];
+          for(int j=0; j<4; j++)
+            for(int l=0; l<3; l++)
+              f[3 * vtxIndex[j] + l] += fElement[3 * j + l];
+        }
+      }
+      else if (f != NULL) // f = RK (RT x - x0) = KElement x - RK x0
+      {      
+        for(int i=0; i<12; i++)
+        {
+          fElement[i] = 0;
+          for(int j=0; j<4; j++)
+            for(int l=0; l<3; l++)
+              fElement[i] += KElement[12 * i + 3 * j + l] * P[4 * l + j] - RK[12 * i + 3 * j + l] * undeformedPositions[3 * vtxIndex[j] + l];
+        }
         for(int j=0; j<4; j++)
           for(int l=0; l<3; l++)
             f[3 * vtxIndex[j] + l] += fElement[3 * j + l];
@@ -516,27 +547,37 @@ void CorotationalLinearFEM::ComputeForceAndStiffnessMatrixOfSubmesh(double * u, 
       memcpy(KElement, KElementUndeformed[el], sizeof(double) * 144);
       // f = K u
       double fElement[12];
-      for(int i=0; i<12; i++)
+      if (f != NULL || energy != NULL)
       {
-        fElement[i] = 0;
-        for(int j=0; j<4; j++)
+        for(int i=0; i<12; i++)
         {
-          fElement[i] += 
-            KElement[12 * i + 3 * j + 0] * u[3 * vtxIndex[j] + 0] +
-            KElement[12 * i + 3 * j + 1] * u[3 * vtxIndex[j] + 1] +
-            KElement[12 * i + 3 * j + 2] * u[3 * vtxIndex[j] + 2];
+          fElement[i] = 0.0;
+          for(int j=0; j<4; j++)
+          {
+            fElement[i] += 
+              KElement[12 * i + 3 * j + 0] * u[3 * vtxIndex[j] + 0] +
+              KElement[12 * i + 3 * j + 1] * u[3 * vtxIndex[j] + 1] +
+              KElement[12 * i + 3 * j + 2] * u[3 * vtxIndex[j] + 2];
+          }
         }
-      }
+        if (energy != NULL)
+        {
+          double elementEnergy = 0.0;
+          for(int j = 0; j < 4; j++)
+            elementEnergy += fElement[3*j + 0] * u[3*vtxIndex[j] + 0] +
+                             fElement[3*j + 1] * u[3*vtxIndex[j] + 1] +
+                             fElement[3*j + 2] * u[3*vtxIndex[j] + 2];
+          *energy += 0.5 * elementEnergy;
+        }
 
-      // add fElement into the global f
-      if (f != NULL)
-      {
-        for(int j=0; j<4; j++)
-        {
-          f[3 * vtxIndex[j] + 0] += fElement[3 * j + 0];
-          f[3 * vtxIndex[j] + 1] += fElement[3 * j + 1];
-          f[3 * vtxIndex[j] + 2] += fElement[3 * j + 2];
-        }
+        // add fElement into the global f
+        if (f != NULL)
+          for(int j=0; j<4; j++)
+          {
+            f[3 * vtxIndex[j] + 0] += fElement[3 * j + 0];
+            f[3 * vtxIndex[j] + 1] += fElement[3 * j + 1];
+            f[3 * vtxIndex[j] + 2] += fElement[3 * j + 2];
+          }
       }
     }
 

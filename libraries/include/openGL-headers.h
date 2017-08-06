@@ -2,7 +2,7 @@
   #include <Windows.h>
 #endif
 
-#if defined(_WIN32) || defined(WIN32) || defined(linux)
+#if defined(_WIN32) || defined(WIN32) || defined(linux) || defined (__linux__)
   #include <GL/gl.h> 
   #include <GL/glu.h> 
   #include <GL/glut.h>

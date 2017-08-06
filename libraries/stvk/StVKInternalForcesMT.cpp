@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "StVK" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC           *
+ * "StVK" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC           *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -86,7 +86,7 @@ int StVKInternalForcesMT::GetEndElement(int rank)
 struct StVKInternalForcesMT_threadArg
 {
   StVKInternalForcesMT * stVKInternalForcesMT;
-  double * vertexDisplacements;
+  const double * vertexDisplacements;
   double * targetBuffer;
   int rank;
   int computationTarget; // 0 = force, 1 = energy
@@ -97,7 +97,7 @@ void * StVKInternalForcesMT_WorkerThread(void * arg)
 {
   struct StVKInternalForcesMT_threadArg * threadArgp = (struct StVKInternalForcesMT_threadArg*) arg;
   StVKInternalForcesMT * stVKInternalForcesMT = threadArgp->stVKInternalForcesMT;
-  double * vertexDisplacements = threadArgp->vertexDisplacements;
+  const double * vertexDisplacements = threadArgp->vertexDisplacements;
   double * targetBuffer = threadArgp->targetBuffer;
   int rank = threadArgp->rank;
   int startElement = stVKInternalForcesMT->GetStartElement(rank);
@@ -118,7 +118,7 @@ void * StVKInternalForcesMT_WorkerThread(void * arg)
   return NULL;
 }
 
-void StVKInternalForcesMT::ComputeForces(double * vertexDisplacements, double * internalForces)
+void StVKInternalForcesMT::ComputeForces(const double * vertexDisplacements, double * internalForces)
 {
   //PerformanceCounter forceCounter;
   Compute(0, vertexDisplacements, internalForces);
@@ -127,14 +127,14 @@ void StVKInternalForcesMT::ComputeForces(double * vertexDisplacements, double * 
   //printf("Internal forces: %G\n", forceCounter.GetElapsedTime());
 }
 
-double StVKInternalForcesMT::ComputeEnergy(double * vertexDisplacements)
+double StVKInternalForcesMT::ComputeEnergy(const double * vertexDisplacements)
 {
   double result;
   Compute(1, vertexDisplacements, &result);
   return result;
 }
 
-void StVKInternalForcesMT::Compute(int computationTarget, double * vertexDisplacements, double * target)
+void StVKInternalForcesMT::Compute(int computationTarget, const double * vertexDisplacements, double * target)
 {
   int numVertices3 = 3 * volumetricMesh->getNumVertices();
   struct StVKInternalForcesMT_threadArg * threadArgv = (struct StVKInternalForcesMT_threadArg*) malloc (sizeof(struct StVKInternalForcesMT_threadArg) * numThreads);

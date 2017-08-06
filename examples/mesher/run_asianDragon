@@ -1,0 +1,3 @@
+../../utilities/computeDistanceField/computeDistanceField ../../models/asianDragon/asianDragon.obj 256 256 256 -s -T 8 -m 1 -g 0.05 -o asianDragon_256.dist
+../../utilities/isosurfaceMesher/isosurfaceMesher asianDragon_256.dist 0.1 asianDragon.obj
+../../utilities/tetMesher/tetMesher asianDragon.obj asianDragon.veg -q 1.1 -a 1.5

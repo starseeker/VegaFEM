@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
  * "massSpringSystem" library, Copyright (C) 2007 CMU, 2009 MIT,         *
- *                                           2015 USC                    *
+ *                                           2016 USC                    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -73,7 +73,7 @@ MassSpringSystemMT::~MassSpringSystemMT()
 struct MassSpringSystemMT_threadArg
 {
   MassSpringSystemMT * massSpringSystemMT;
-  double * u;
+  const double * u;
   double * uSecondary;
   void * targetBuffer;
   int rank;
@@ -84,13 +84,20 @@ void * MassSpringSystemMT_WorkerThread(void * arg)
 {
   struct MassSpringSystemMT_threadArg * threadArgp = (struct MassSpringSystemMT_threadArg*) arg;
   MassSpringSystemMT * massSpringSystemMT = threadArgp->massSpringSystemMT;
-  double * u = threadArgp->u;
+  const double * u = threadArgp->u;
   int rank = threadArgp->rank;
   int startEdge = massSpringSystemMT->GetStartEdge(rank);
   int endEdge = massSpringSystemMT->GetEndEdge(rank);
 
   switch (threadArgp->computationTarget)
   {
+    case ENERGY:
+    {
+      double * energyBuffer = (double*)(threadArgp->targetBuffer);
+      massSpringSystemMT->AddEnergy(u, energyBuffer, startEdge, endEdge);
+    }
+    break;
+
     case FORCE: 
     {
       double * targetBuffer = (double*)(threadArgp->targetBuffer);
@@ -100,7 +107,7 @@ void * MassSpringSystemMT_WorkerThread(void * arg)
 
     case DAMPINGFORCE:
     {
-      double * uvel = u;
+      const double * uvel = u;
       double * targetBuffer = (double*)(threadArgp->targetBuffer);
       massSpringSystemMT->AddDampingForce(uvel, targetBuffer, startEdge, endEdge);
     }
@@ -132,6 +139,7 @@ void * MassSpringSystemMT_WorkerThread(void * arg)
 
 void MassSpringSystemMT::Initialize()
 {
+  energyBuffer.resize(numThreads);
   internalForceBuffer = (double*) malloc (sizeof(double) * numThreads * 3 * numParticles);
 
   // generate skeleton matrices
@@ -171,7 +179,7 @@ void MassSpringSystemMT::Initialize()
   printf("Num threads with job size augmented by one edge: %d \n",remainder);
 }
 
-void MassSpringSystemMT::ComputeHelper(enum MassSpringSystemMT_computationTargetType computationTarget, double * u, double * uSecondary, void * target, bool addQuantity)
+void MassSpringSystemMT::ComputeHelper(enum MassSpringSystemMT_computationTargetType computationTarget, const double * u, double * uSecondary, void * target, bool addQuantity)
 {
   // launch threads
   int numParticles3 = 3*numParticles;
@@ -189,6 +197,14 @@ void MassSpringSystemMT::ComputeHelper(enum MassSpringSystemMT_computationTarget
 
   switch(computationTarget)
   {
+    case ENERGY:
+    {
+      for(int i=0; i<numThreads; i++)
+        threadArgv[i].targetBuffer = (void*)(&energyBuffer[i]);
+      memset(energyBuffer.data(), 0, sizeof(double) * numThreads);
+    }
+    break;
+
     case FORCE:
     case DAMPINGFORCE:
     {
@@ -239,6 +255,16 @@ void MassSpringSystemMT::ComputeHelper(enum MassSpringSystemMT_computationTarget
   // assemble results
   switch(computationTarget)
   {
+    case ENERGY:
+    {
+      double * energy = (double*) target;
+      if (!addQuantity)
+        *energy = 0.0;
+      for(int i=0; i<numThreads; i++)
+          *energy += energyBuffer[i];
+    }
+    break;
+
     case FORCE:
     case DAMPINGFORCE:
     {
@@ -281,7 +307,14 @@ void MassSpringSystemMT::ComputeHelper(enum MassSpringSystemMT_computationTarget
   }
 }
 
-void MassSpringSystemMT::ComputeForce(double * u, double * f, bool addForce)
+double MassSpringSystemMT::ComputeEnergy(const double * u)
+{
+  double energy = 0.0;
+  ComputeHelper(ENERGY, u, NULL, (void*)&energy, false);
+  return energy;
+}
+
+void MassSpringSystemMT::ComputeForce(const double * u, double * f, bool addForce)
 {
   //PerformanceCounter forceCounter;
   ComputeHelper(FORCE, u, NULL, (void*)f, addForce);
@@ -290,7 +323,7 @@ void MassSpringSystemMT::ComputeForce(double * u, double * f, bool addForce)
   //printf("Internal forces: %G\n", forceCounter.GetElapsedTime());
 }
 
-void MassSpringSystemMT::ComputeStiffnessMatrix(double * u, SparseMatrix * K, bool addMatrix)
+void MassSpringSystemMT::ComputeStiffnessMatrix(const double * u, SparseMatrix * K, bool addMatrix)
 {
   //PerformanceCounter stiffnessCounter;
   ComputeHelper(STIFFNESSMATRIX, u, NULL, (void*)K , addMatrix);
@@ -299,12 +332,12 @@ void MassSpringSystemMT::ComputeStiffnessMatrix(double * u, SparseMatrix * K, bo
   //printf("Stiffness matrix: %G\n", stiffnessCounter.GetElapsedTime());
 }
 
-void MassSpringSystemMT::ComputeDampingForce(double * uvel, double * f, bool addForce)
+void MassSpringSystemMT::ComputeDampingForce(const double * uvel, double * f, bool addForce)
 {
   ComputeHelper(DAMPINGFORCE, uvel, NULL, (void*)f, addForce);
 }
 
-void MassSpringSystemMT::ComputeHessianApproximation(double * u, double * du, SparseMatrix * dK, bool addMatrix)
+void MassSpringSystemMT::ComputeHessianApproximation(const double * u, double * du, SparseMatrix * dK, bool addMatrix)
 {
   ComputeHelper(HESSIANAPPROXIMATION, u, du, (void*) dK, addMatrix);
 }

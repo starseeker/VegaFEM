@@ -223,7 +223,7 @@ int ObjMeshGraph::graphID(int faceID, int siteIndex)
   return graphVertex;
 }
 
-Graph * ObjMeshGraph::GenerateVertexGraph(ObjMesh * objMesh, int faceClique)
+Graph * ObjMeshGraph::GenerateVertexGraph(const ObjMesh * objMesh, int faceClique)
 {
   // Generate springs:
   typedef pair<int,int> edge;

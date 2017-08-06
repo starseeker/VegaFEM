@@ -9,3 +9,8 @@
 47736 vertices: dragon <== offline
 == ^^ MOST  COMPLEX ^^ ==
 
+The cloth examples are in the "cloth" folder. They demonstrate bending, and a cloth sheet suspended under gravity.
+
+The mesher examples are in the "mesher" folder. They demonstrate how to use Vega's meshing capabilities.
+
+

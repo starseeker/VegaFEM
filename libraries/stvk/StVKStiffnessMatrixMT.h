@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "StVK" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC           *
+ * "StVK" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC           *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -48,7 +48,7 @@ public:
   virtual ~StVKStiffnessMatrixMT();
 
   // evaluates the stiffness matrix in the given deformation configuration
-  virtual void ComputeStiffnessMatrix(double * vertexDisplacements, SparseMatrix * sparseMatrix);
+  virtual void ComputeStiffnessMatrix(const double * vertexDisplacements, SparseMatrix * sparseMatrix);
 
   int GetStartElement(int rank);
   int GetEndElement(int rank);

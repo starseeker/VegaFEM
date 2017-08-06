@@ -5,8 +5,8 @@ ifndef CLEANFOLDER
 CLEANFOLDER=INTEGRATORDENSE
 endif
 
-include ../../Makefile-headers/Makefile-header
 R ?= ../..
+include $(R)/Makefile-headers/Makefile-header
 
 # NOTE: unlike the other library makefiles, this makefile adds $(PARDISO_INCLUDE) to the compiler invocation
 

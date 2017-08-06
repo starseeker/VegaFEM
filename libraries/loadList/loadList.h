@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
  * "loadList" library , Copyright (C) 2007 CMU, 2009 MIT                 *
  * All rights reserved.                                                  *
@@ -35,7 +35,8 @@ class LoadList
 public:
 
   // returns 0 on success and non-zero otherwise
-  static int load(const char * filename, int * numListEntries, int ** listEntries, int offset=0);
+  // load: sort the loaded entries if sortAfterLoad is true
+  static int load(const char * filename, int * numListEntries, int ** listEntries, int offset=0, bool sortAfterLoad = true);
   static int save(const char * filename, int numListEntries, int * listEntries, int offset=0);
 
   static int loadBinary(const char * filename, int * numListEntries, int ** listEntries, int offset=0);

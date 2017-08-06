@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "StVK" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC           *
+ * "StVK" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC           *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -90,21 +90,21 @@ public:
   // they must be (pre-allocated) vectors of length 3 * numVertices
   // the internal forces are returned with the sign corresponding to f_int(x) on the left side of the equation M * x'' + f_int(x) = f_ext
   // i.e., the computed internal forces are negatives of the actual physical internal forces acting on the material
-  virtual void ComputeForces(double * vertexDisplacements, double * internalForces);
+  virtual void ComputeForces(const double * vertexDisplacements, double * internalForces);
 
   // enables or disables the gravity (note: you can also set this in the constructor; use this routine to turn the gravity on/off during the simulation)
   void SetGravity(bool addGravity) { this->addGravity = addGravity; InitGravity(); } // if addGravity is enabled, ComputeForces will subtract the gravity force from the internal forces (note: subtraction, not addition, is used because the internal forces are returned with the sign as described in the f_int(x) comment above)
 
-  virtual double ComputeEnergy(double * vertexDisplacements); // get the nonlinear elastic strain energy
+  virtual double ComputeEnergy(const double * vertexDisplacements); // get the nonlinear elastic strain energy
 
   inline VolumetricMesh * GetVolumetricMesh() { return volumetricMesh; }
   inline StVKElementABCD * GetPrecomputedIntegrals() { return precomputedIntegrals; }
 
   // === advanced routines below === 
-  double ComputeEnergyContribution(double * vertexDisplacements, int elementLow, int elementHigh, double * buffer = NULL); // compute the contribution to strain energy due to the specified elements; needs a buffer for internal calculations; you can pass NULL (and then an internal buffer will be used), or pass your own buffer (useful with multi-threading)
-  void AddLinearTermsContribution(double * vertexDisplacements, double * forces, int elementLow=-1, int elementHigh=-1);
-  void AddQuadraticTermsContribution(double * vertexDisplacements, double * forces, int elementLow=-1, int elementHigh=-1);
-  void AddCubicTermsContribution(double * vertexDisplacements, double * forces, int elementLow=-1, int elementHigh=-1);
+  double ComputeEnergyContribution(const double * vertexDisplacements, int elementLow, int elementHigh, double * buffer = NULL); // compute the contribution to strain energy due to the specified elements; needs a buffer for internal calculations; you can pass NULL (and then an internal buffer will be used), or pass your own buffer (useful with multi-threading)
+  void AddLinearTermsContribution(const double * vertexDisplacements, double * forces, int elementLow=-1, int elementHigh=-1);
+  void AddQuadraticTermsContribution(const double * vertexDisplacements, double * forces, int elementLow=-1, int elementHigh=-1);
+  void AddCubicTermsContribution(const double * vertexDisplacements, double * forces, int elementLow=-1, int elementHigh=-1);
   
 protected:
   VolumetricMesh * volumetricMesh;

@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder      *
@@ -31,7 +31,7 @@
 
 /*
   Author: Jernej Barbic, 2003
-  Generates a voxel representation of an offset surface
+  Voxelizes the given triangular geometry.
 */
 
 #include <set>
@@ -45,14 +45,46 @@
 class ObjMeshOffsetVoxels 
 {
 public:
-  ObjMeshOffsetVoxels( ObjMesh * objMesh, int resolution[3], int depth, double expansionFactor=1.2); // cube box, with the given expansion ratio
-  ObjMeshOffsetVoxels( ObjMesh * objMesh, int resolution[3], int depth, Vec3d boxbmin, Vec3d boxbmax);
+  // voxelizes the given triangular geometry
+  // resolution is the grid resolution in xyz
+  // "depth" means that the output includes voxels that are grown a "depth" number of layers away from the originally interesecting voxels (good default: 0)
+  // note: cubic mesh means voxel mesh in this class
+  ObjMeshOffsetVoxels(ObjMesh * objMesh, int resolution[3], int depth=0, double expansionFactor=1.2); // cube box; size is computed by expanding the tight-fitting cube by the given expansion ratio
+  ObjMeshOffsetVoxels(ObjMesh * objMesh, int resolution[3], int depth, Vec3d boxbmin, Vec3d boxbmax); // explicitly provide the bounding box
+
+  // flood-fills the space outward from the voxel containing seed, until hitting existing voxels
+  void floodFill(Vec3d seed);
+  void floodFill(std::vector<Vec3d> & seeds);
+  // finds all empty components in the voxel structure, and gives seeds and sizes for each of them
+  void emptyComponents(std::vector<Vec3d> & componentSeeds, std::vector<int> & componentSize, bool interiorOnly = true);
+
+  size_t numVoxels() { return voxels.size(); }
+  double voxelSpacing() { return inc[0]; }
+
+  // generates the voxel mesh vertices, the voxel elements, the interpolation structure to interpolate quantities from the voxel mesh to the 
+  void generateCubicMesh(
+    int * numVertices, double ** vertices, 
+    int * numElements, int ** elements,
+    int ** interpolationVertices, 
+    double ** interpolationWeights, ObjMesh ** surfaceMesh);
+
+  // generates the surface mesh of the computed voxel mesh
+  ObjMesh * surfaceOffsetMesh();
+
+  // writes the voxel mesh file to disk, as well as the interpolation file and the surface mesh file
+  void generateCubicMesh(const std::string & filenameVeg, const std::string & filenameInterp, const std::string & filenameObj);
+
+ // generates the interpolation mask for the geometry from an external file 'inputObjMesh'
+ void generateInterpolationMasks(const std::string & filenameInterp, const std::string & inputObjMesh);
+
+ //  generates the normal correction matrix for the vertices from the external file 'inputObjMesh'
+ void generateNormalCorrectionMatrix(const std::string filenameCorrectionMatrix, 
+                const std::string inputObjMesh, 
+		const std::string filenameVoxelModalMatrix,
+ 	        const std::string filenameNormals);
 
   typedef triple<int,int,int> voxel;
   typedef triple<int,int,int> gridPoint;
-
-  void render();
-  void renderSurfaceFaces();
 
   class TopologicalFace
   {
@@ -74,40 +106,9 @@ public:
     bool operator()(const TopologicalFace & x, const TopologicalFace & y) const;
   };
 
- void renderTopologicalFace(const TopologicalFace & face) const;
-
- // generates the offset surface mesh
- ObjMesh * surfaceOffsetMesh();
-
- // writes the cubic mesh file to disk, as well as the interpolation file and the surface mesh file
- void generateCubicMesh(const std::string & filenameVeg, const std::string & filenameInterp, const std::string & filenameObj);
-
- // generates the "squashing cubes" data (in memory)
- void generateCubicMesh(
-   int * numVertices, double ** vertices, 
-   int * numElements, int ** elements,
-   int ** interpolationVertices, 
-   double ** interpolationWeights,  ObjMesh ** surfaceMesh);
-
- // generates the interpolation mask for the geometry from an external file 'inputObjMesh'
- void generateInterpolationMasks(const std::string & filenameInterp, const std::string & inputObjMesh);
-
- //  generates the normal correction matrix for the vertices from the external file 'inputObjMesh'
- void generateNormalCorrectionMatrix(const std::string filenameCorrectionMatrix, 
-                const std::string inputObjMesh, 
-		const std::string filenameVoxelModalMatrix,
- 	        const std::string filenameNormals);
-
-  // flood-fills the space outward from the voxel containing seed, until hitting existing voxels
-  void floodFill(Vec3d seed);
-  void floodFill(std::vector<Vec3d> & seeds);
-
-  // finds all empty components in the voxel structure, and gives seeds and sizes for each of them
-  void emptyComponents(std::vector<Vec3d> & componentSeeds, 
-    std::vector<int> & componentSize, bool interiorOnly = true);
-
-  size_t numVoxels() { return voxels.size(); }
-  double voxelSpacing() { return inc[0]; }
+  void render();
+  void renderSurfaceFaces();
+  void renderTopologicalFace(const TopologicalFace & face) const;
 
 protected:
   ObjMesh * objMesh;

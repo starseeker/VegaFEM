@@ -1,18 +1,14 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "clothBW" library , Copyright (C) 2015 USC                            *
+ * "clothBW" library , Copyright (C) 2016 USC                            *
  * All rights reserved.                                                  *
  *                                                                       *
- * Code authors: Andy Pierce, Yu Yu Xu, Jernej Barbic, Yijing Li         *
+ * Code authors: Andy Pierce, Yijing Li, Yu Yu Xu, Jernej Barbic         *
  * http://www.jernejbarbic.com/code                                      *
  *                                                                       *
- * Research: Jernej Barbic, Fun Shing Sin, Daniel Schroeder,             *
- *           Doug L. James, Jovan Popovic                                *
- *                                                                       *
- * Funding: National Science Foundation, Link Foundation,                *
- *          Singapore-MIT GAMBIT Game Lab,                               *
+ * Funding: National Science Foundation                                  *
  *          Zumberge Research and Innovation Fund at USC                 *
  *                                                                       *
  * This library is free software; you can redistribute it and/or         *
@@ -43,9 +39,8 @@ public:
   
   // generate a cloth model from the given mesh (builds tensile, shear, and bending springs)
   // surface density and stiffnesses are the same for every triangle
-  static int GenerateClothBW(ObjMesh * mesh, ClothBW ** clothBW, double surfaceDensity, double tensileStiffness, double shearStiffness, double bendStiffnessU, double bendStiffnessV, double damping, int bu = 1.0, int bv = 1.0, int addGravity=0);
-  // create a ClothBWMT object, for multi-threaded cloth computation
-  static int GenerateClothBWMT(ObjMesh * mesh, ClothBWMT ** clothBWMT, double surfaceDensity, double tensileStiffness, double shearStiffness, double bendStiffnessU, double bendStiffnessV, double damping, int numThreads = 1, int bu = 1.0, int bv = 1.0, int addGravity=0);
+  static ClothBW * GenerateClothBW(const ObjMesh * mesh, double surfaceDensity, const ClothBW::MaterialGroup & material,int addGravity=0);
+  static ClothBWMT * GenerateClothBWMT(const ObjMesh * mesh, double surfaceDensity, const ClothBW::MaterialGroup & material, int numThreads = 1, int addGravity=0);
 
   // NOTE: materialGroup 0 is hard-coded as "default" in ObjMesh.cpp. So if a .mtl file 
   // specifies 2 materials (with 2 'usemtl' calls), there will actually be 3 material groups.
@@ -55,9 +50,8 @@ public:
   
   // generate a cloth model from the given mesh (builds tensile, shear, and bending springs)
   // user passes array of doubles to specify surface densities and stiffness values for each material group
-  static int GenerateClothBW(ObjMesh * mesh, ClothBW ** clothBW, int numMaterialGroups, double * surfaceDensity, double * tensileStiffness, double * shearStiffness, double * bendStiffnessU, double * bendStiffnessV, double * damping, int * bu = NULL, int * bv = NULL, int addGravity=0);
-  // create a ClothBWMT object, for multi-threaded cloth computation
-  static int GenerateClothBWMT(ObjMesh * mesh, ClothBWMT ** clothBWMT, int numMaterialGroups, double * surfaceDensity, double * tensileStiffness, double * shearStiffness, double * bendStiffnessU, double * bendStiffnessV, double * damping, int numThreads = 1, int * bu = NULL, int * bv = NULL, int addGravity=0);
+  static ClothBW * GenerateClothBW(const ObjMesh * mesh, int numMaterialGroups, const double * groupSurfaceDensities, const ClothBW::MaterialGroup * materials, int addGravity=0);
+  static ClothBWMT * GenerateClothBWMT(const ObjMesh * mesh, int numMaterialGroups, const double * groupSurfaceDensities, const ClothBW::MaterialGroup * materials,  int numThreads = 1, int addGravity=0);
   
 protected:
 };

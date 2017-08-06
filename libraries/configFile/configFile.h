@@ -43,6 +43,9 @@
   float (single precision floating point)
   double (double precision floating point)
   char* (a C-style string)
+  Vec3d (vector of three double values)
+  string (std::string)
+  vector<string> (0 to multiple lines of string)
 
   Configuration files are text files. The format for each option entry is:
   *<option name>
@@ -52,22 +55,42 @@
   *temperature
   36.6
 
+  *rainy
+  # boolean option can accept both integer (0/1) or text (true/false) input
+  false
+
+  *color
+  # Vec3d option can accept numbers separated by either comma "," or space " "
+  #0.4, 0.8, 0.5
+  0.4 0.8 0.5
+
+  *street
+  # string/char* option accepts one line of characters. Memory preallocation
+  # is required for char* option
+  Hoover
+
+  *toDoList
+  # vector<string> option can accept 0 to multiple lines of text
+  wash car
+  buy food
+  repair chair
+
   Blank lines are ignored. 
   A line is a comment if it begins with a "#".
-  The options can appear in arbirary order. They need not follow the order
-  in which they were created via addOption/addOptionOptional .
+  The options can appear in arbitrary order. They need not follow the order
+  in which they were created via addOption/addOptionOptional.
 
 */
 
 #include <vector>
 #include <string>
+#include "vec3d.h"
 
 class ConfigFile
 {
 public:
- 
   ConfigFile();
-  ~ConfigFile();
+  virtual ~ConfigFile();
 
   // === routines to define the valid option entries for your configuration file ===
   // each option entry is either mandatory, or optional (in which case you need to provide a default value)
@@ -80,21 +103,49 @@ public:
   int addOption(const char * optionName, bool * destLocation);
   int addOption(const char * optionName, float * destLocation);
   int addOption(const char * optionName, double * destLocation);
+  int addOption(const char * optionName, Vec3d * destLocation);
   int addOption(const char * optionName, char * destLocation); // for strings, you must pass a pointer to a pre-allocated string buffer (and not a pointer to a (char*) pointer)
+  int addOption(const char * optionName, std::string * destLocation);
+  int addOption(const char * optionName, std::vector<std::string> * destLocation); // allow arbitrary lines of strings
 
   // routines to specify option entries that are optional
   // if not specified in a particular config file, the value will default to the given default value
   template<class T>
-  int addOptionOptional(const char * optionName, T * destLocation, T defaultValue);
+  int addOptionOptional(const char * optionName, T * destLocation, const T & defaultValue);
   int addOptionOptional(const char * optionName, char * destLocation, const char * defaultValue);
 
-  // === after you have specified your option entries with addOption and/or addOptionOptional, call "parseOptions" to open a particular configuration file and load the option values to their destination locations.
-
-  int parseOptions(const char * filename, int verbose=1); // returns 0 on success, and a non-zero value on failure
-  int parseOptions(FILE * fin, int verbose=1); // makes it possible to parse from a file stream
+  // === routines to parse config files ===
+  // after you have specified your option entries with addOption and/or addOptionOptional, 
+  // call "parseOptions" to open a particular configuration file and load the option values to their destination locations.
+  int parseOptions(const char * filename, int verbose = 1); // returns 0 on success, and a non-zero value on failure
+  int parseOptions(std::istream & in, int verbose = 1);     // makes it possible to parse from std::istream
+  int parseOptions(FILE * fin, int verbose=1);              // makes it possible to parse from a file stream
 
   // after calling "parseOptions", you can print out the values of all options, to see the values that were read from the configuration file
-  void printOptions();
+  void printOptions() const;
+
+  // === recursive parsing ===
+
+  // following routines allow recursive parsing. first convert config file to a vector of entries (<option name>, <option value>)
+  // then in each level, a ConfigFile object parses the entry vector, assigns the correct options that the object knows, 
+  // and passes the unrecognized entries to the next level
+  struct Entry 
+  {
+    std::string option;
+    std::string value;
+    int lineCount;
+    Entry() : lineCount(-1) {}
+  };
+  typedef std::vector<Entry> Entries;
+
+  // parse a file and return its config entries
+  static int parse(const char * filename, Entries & entries, const char * stoppingString = "**EOF", int verbose = 1);
+  static int parse(std::istream & in, Entries & entries, const char * stoppingString = "**EOF", int verbose = 1); // makes it possible to parse from a file stream
+ 
+  // parse option from entries. If remainingEntries is provided, those entries that are not recognized are pushed into remainingEntries
+  int parseOptions(const Entries & entries, Entries * remainingEntries = NULL, int verbose = 1);
+
+  // === additional settings ===
 
   // (optional) set a stopping string (when it is encountered in a file, parsing will stop); default: **EOF
   // if the stopping string does not appear in a file, it will be parsed to the end
@@ -115,15 +166,14 @@ protected:
   template<class T>
   int addOptionHelper(const char * optionName, T * destLocation);
 
-  int getTypeSize(int type);
-  void getTypeFormatSpecifier(int type, char * fsp);
+  int parseNumber(int type, const char * line, void * dest, int optionIndex, int verbose);
 
-  void upperCase(char * s); // converts a string to upper case
-  void removeTrailingCharacters(char * s, char ch); // removes (one or more) characters 'ch' from the end of the string
-
-  char stoppingString[32];
+  static void strip(std::string & s);
+  static void upperCase(char * s); // converts a string to upper case
 
   int suppressWarnings_;
+
+  char stoppingString[32];
 };
 
 #endif

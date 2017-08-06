@@ -27,12 +27,13 @@
 * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-  Version: 1.2
 */
 
 #include "mat3d.h"
 #include "eig3.h"
+
+const Mat3d Mat3d::Identity(1.0);
+const Mat3d Mat3d::Zero(0.0);
 
 // This routine calls a public domain routine (eigen_decomposition), which was 
 // downloaded from:
@@ -54,9 +55,12 @@ void eigen_sym(Mat3d & a, Vec3d & eig_val, Vec3d eig_vec[3])
   eigen_decomposition(A, V, d);
 
   eig_val = Vec3d(d[2],d[1],d[0]);
-  eig_vec[0] = Vec3d(V[0][2], V[1][2], V[2][2]);
-  eig_vec[1] = Vec3d(V[0][1], V[1][1], V[2][1]);
-  eig_vec[2] = Vec3d(V[0][0], V[1][0], V[2][0]);
+  if(eig_vec)
+  {
+    eig_vec[0] = Vec3d(V[0][2], V[1][2], V[2][2]);
+    eig_vec[1] = Vec3d(V[0][1], V[1][1], V[2][1]);
+    eig_vec[2] = Vec3d(V[0][0], V[1][0], V[2][0]);
+  }
 }
 
 /*

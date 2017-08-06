@@ -5,8 +5,8 @@ ifndef CLEANFOLDER
 CLEANFOLDER=OBJMESH
 endif
 
-include ../../Makefile-headers/Makefile-header
 R ?= ../..
+include $(R)/Makefile-headers/Makefile-header
 
 # the object files to be compiled for this library
 OBJMESH_OBJECTS=objMeshBinaryLoader.o objMesh.o objMesh-disjointSet.o objMeshRender.o objMeshEncode.o objMeshOctree.o objMeshOffsetVoxels.o objMeshOrientable.o octree.o boundingBox.o simpleSphere.o triangle.o tribox3.o objMeshGraph.o objMeshClose.o

@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Yijing Li                                *
@@ -49,9 +49,9 @@ public:
   // The output surface mesh is usually a triangle mesh, but can also be a quad mesh for cubic meshes.
   // The last argument specifies whether output mesh should be quads or triangles (in the case of cubic volumetric meshes).
   // All vertices of the volumetric mesh are included in the output surface mesh, even if they don't touch any surface triangle (e.g., vertices in the interior of the volumetric mesh).
-  static ObjMesh * ComputeMesh(VolumetricMesh * volumetricMesh, bool triangulateOutputMesh=false); 
+  static ObjMesh * ComputeMesh(const VolumetricMesh * volumetricMesh, bool triangulateOutputMesh=false); 
 
-  static ObjMesh * ComputeMesh(VolumetricMesh * volumetricMesh, ObjMesh * superMesh, bool triangulateOutputMesh=false); // computes the surface of the mesh, but only the part which is also the outer surface of the given super mesh (advanced routine)
+  static ObjMesh * ComputeMesh(const VolumetricMesh * volumetricMesh, const ObjMesh * superMesh, bool triangulateOutputMesh=false); // computes the surface of the mesh, but only the part which is also the outer surface of the given super mesh (advanced routine)
 };
 
 #endif

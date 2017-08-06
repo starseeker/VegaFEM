@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -121,7 +121,7 @@ public:
 
   // === interpolation ===
 
-  virtual void computeBarycentricWeights(int el, Vec3d pos, double * weights) const;
+  virtual void computeBarycentricWeights(int el, const Vec3d & pos, double * weights) const;
 
   int interpolateData(double * volumetricMeshVertexData, int numLocations, int r, double * interpolationLocations, double * destMatrix, double zeroThreshold = -1.0) const;
 

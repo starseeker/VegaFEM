@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "sparseSolver" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC   *
+ * "sparseSolver" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC   *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -53,16 +53,20 @@ class CGSolver : public LinearSolver
 {
 public:
 
-  // standard constructor
+  // Standard constructor. Provide the matrix A to be used for the solve, A x = b.
+  // Matrix A will not be modified. 
+  // Minor note: the code will generate an internal acceleration structure, by calling A->BuildDiagonalIndices() when using the Jacobi preconditioner. Technically speaking, this modifies the SparseMatrix object since it builds the acceleration structure. It does not modify
+  // the matrix A or any of its entries.
   CGSolver(SparseMatrix * A);
 
-  // This constructor makes it possible to only provide a
-  // "black-box" matrix-vector multiplication routine 
-  // (no need to explicitly give the matrix):
-  // given x, the routine must compute A * x, and store it into Ax.
-  // "data" should not be used/touched by the user-written "black-box" routine.
-  // In order to be able to use the Jacobi preconditioner, one can optionally specify the diagonal of the matrix.
-  // If diagonal is not specified, SolveLinearSystemWithJacobiPreconditioner will use the identity preconditioner, i.e., it will be identical to SolveLinearSystemWithoutPreconditioner.
+  // This constructor makes it possible to only provide a "black-box" matrix-vector multiplication routine 
+  // (no need to explicitly give the matrix).
+  // Given x, the routine must compute A * x, and store it into Ax.
+  // "data" should not be used/touched by the user-provided "black-box" routine.
+  // One can then use "SolveLinearSystemWithoutPreconditioner" to solve the linear system.
+  // In order to use "SolveLinearSystemWithJacobiPreconditioner", one needs to specify the diagonal of the matrix.
+  // If the diagonal is not specified, SolveLinearSystemWithJacobiPreconditioner will use the identity preconditioner, 
+  // i.e., the solve will be identical to SolveLinearSystemWithoutPreconditioner.
   typedef void (*blackBoxProductType)(const void * data, const double * x, double * Ax);
   CGSolver(int n, blackBoxProductType callBackFunction, void * data, double * diagonal=NULL);
 
@@ -81,6 +85,10 @@ public:
   // same as above, except it uses Jacobi preconditioning
   // the employed error metric is M^{-1}-weighted L2 residual error (see Shewchuk)
   int SolveLinearSystemWithJacobiPreconditioner(double * x, const double * b, double eps=1e-6, int maxIterations=1000, int verbose=0);
+
+  // Solve the linear system with a user-provided preconditioner.
+  // Solving the linear system "preconditioner * x = b" should approximate solving the linear system "(this matrix) * x = b".
+  int SolveLinearSystemWithPreconditioner(LinearSolver * preconditioner, double * x, const double * b, double eps=1e-6, int maxIterations=1000, int verbose=0);
 
   virtual int SolveLinearSystem(double * x, const double * b); // implements the virtual method from LinearSolver by calling "SolveLinearSystemWithJacobiPreconditioner" with default parameters
 

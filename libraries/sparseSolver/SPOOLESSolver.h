@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "sparseSolver" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC   *
+ * "sparseSolver" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC   *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -30,7 +30,6 @@
 #define _SPOOLESSOLVER_H_
 
 /*
-
   Solves A * x = rhs, where A is sparse, usually large, and symmetric.
   
   The solution is obtained using the SPOOLES library (which is free software).
@@ -41,9 +40,6 @@
   Cholesky decomposition.
   However, for very large systems (e.g. 200,000 x 200,000 matrices on a 
   2Gb machine), the Cholesky decomposition might run out of memory.
-  
-  Jernej Barbic, MIT, 2007-2009
-
 */
 
 #include <stdio.h>

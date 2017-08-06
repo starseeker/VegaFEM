@@ -5,8 +5,8 @@ ifndef CLEANFOLDER
 CLEANFOLDER=MATRIX
 endif
 
-include ../../Makefile-headers/Makefile-header
 R ?= ../..
+include $(R)/Makefile-headers/Makefile-header
 
 # the object files to be compiled for this library
 MATRIX_OBJECTS=matrixProjection.o matrixPCA.o matrixBLAS.o matrixLAPACK.o matrix.o matrixExp.o

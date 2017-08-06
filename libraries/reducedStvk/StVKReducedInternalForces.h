@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
  * "reducedStvk" library , Copyright (C) 2007 CMU, 2009 MIT              *
  * All rights reserved.                                                  *
@@ -143,7 +143,7 @@ public:
   // makes shallow copies of all pointers, except those initialized by InitBuffers
   // use this if you want to Evaluate two or more identical models (i.e., two copies of an object) in parallel (to ensure thread safety)
   // you do not need to use this if you are Evaluating a single model in parallel (e.g., using the MT derived class)
-  StVKReducedInternalForces * ShallowClone();
+  StVKReducedInternalForces * ShallowClone(int deepCloneGravityBuffer=0);
 
   // saves a model with r=0
   static int SaveEmptyCub(const char * filename);

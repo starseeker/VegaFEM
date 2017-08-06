@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC     *
+ * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -26,11 +26,6 @@
  *                                                                       *
  *************************************************************************/
 
-/*
-  Jernej Barbic
-  A class to timestep large sparse dynamics using implicit backward Euler.
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,7 +34,7 @@
 #include "insertRows.h"
 #include "implicitBackwardEulerSparse.h"
 
-ImplicitBackwardEulerSparse::ImplicitBackwardEulerSparse(int r, double timestep, SparseMatrix * massMatrix_, ForceModel * forceModel_, int positiveDefiniteSolver_, int numConstrainedDOFs_, int * constrainedDOFs_, double dampingMassCoef, double dampingStiffnessCoef, int maxIterations, double epsilon, int numSolverThreads_): ImplicitNewmarkSparse(r, timestep, massMatrix_, forceModel_, positiveDefiniteSolver_, numConstrainedDOFs_, constrainedDOFs_, dampingMassCoef, dampingStiffnessCoef, maxIterations, epsilon, 0.25, 0.5, numSolverThreads_)
+ImplicitBackwardEulerSparse::ImplicitBackwardEulerSparse(int r, double timestep, SparseMatrix * massMatrix_, ForceModel * forceModel_, int numConstrainedDOFs_, int * constrainedDOFs_, double dampingMassCoef, double dampingStiffnessCoef, int maxIterations, double epsilon, int numSolverThreads_): ImplicitNewmarkSparse(r, timestep, massMatrix_, forceModel_, numConstrainedDOFs_, constrainedDOFs_, dampingMassCoef, dampingStiffnessCoef, maxIterations, epsilon, 0.25, 0.5, numSolverThreads_)
 {
 }
 
@@ -234,7 +229,7 @@ int ImplicitBackwardEulerSparse::DoTimestep()
     #endif
 
     #ifdef PARDISO
-      int info = pardisoSolver->ComputeCholeskyDecomposition(systemMatrix);
+      int info = pardisoSolver->FactorMatrix(systemMatrix);
       if (info == 0)
         info = pardisoSolver->SolveLinearSystem(buffer, bufferConstrained);
       char solverString[16] = "PARDISO";

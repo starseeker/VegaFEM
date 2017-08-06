@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "StVK" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC           *
+ * "StVK" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC           *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -92,7 +92,7 @@ int StVKStiffnessMatrixMT::GetEndElement(int rank)
 struct StVKStiffnessMatrixMT_threadArg
 {
   StVKStiffnessMatrixMT * stVKStiffnessMatrixMT;
-  double * vertexDisplacements;
+  const double * vertexDisplacements;
   SparseMatrix * targetBuffer;
   int rank;
 };
@@ -101,7 +101,7 @@ void * StVKStiffnessMatrixMT_WorkerThread(void * arg)
 {
   struct StVKStiffnessMatrixMT_threadArg * threadArgp = (struct StVKStiffnessMatrixMT_threadArg*) arg;
   StVKStiffnessMatrixMT * stVKStiffnessMatrixMT = threadArgp->stVKStiffnessMatrixMT;
-  double * vertexDisplacements = threadArgp->vertexDisplacements;
+  const double * vertexDisplacements = threadArgp->vertexDisplacements;
   SparseMatrix * targetBuffer = threadArgp->targetBuffer;
   int rank = threadArgp->rank;
   int startElement = stVKStiffnessMatrixMT->GetStartElement(rank);
@@ -114,7 +114,7 @@ void * StVKStiffnessMatrixMT_WorkerThread(void * arg)
   return NULL;
 }
 
-void StVKStiffnessMatrixMT::ComputeStiffnessMatrix(double * vertexDisplacements, SparseMatrix * sparseMatrix)
+void StVKStiffnessMatrixMT::ComputeStiffnessMatrix(const double * vertexDisplacements, SparseMatrix * sparseMatrix)
 {
   //PerformanceCounter stiffnessCounter;
   // launch the threads

@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder,     *
@@ -38,6 +38,7 @@
 #include <iostream>
 #include <algorithm>
 #include <assert.h>
+#include <exception>
 #include "minivector.h"
 
 /*
@@ -71,12 +72,14 @@
 */
 
 // thrown by the ObjMesh constructor
-class ObjMeshException
+class ObjMeshException : public std::exception
 {
 public:
   ObjMeshException(const std::string & reason);
   ObjMeshException(const std::string & reason, const std::string & filename, unsigned int line);
-  std::string getReason() const { return reason; }
+  virtual ~ObjMeshException() throw() {}
+  const std::string & getReason() const throw() { return reason; }
+  virtual const char * what() const throw() { return reason.c_str(); }
 
 protected:
   std::string reason;
@@ -136,16 +139,16 @@ public:
       explicit Material(): Ka(Vec3d(1,1,1)), Kd(Vec3d(1,1,1)), Ks(Vec3d(1,1,1)), shininess(0), alpha(1.0), name(std::string("default")), textureFilename(std::string()) {}
 
       inline std::string getName() const { return name; }
-      inline Vec3d getKa() const { return Ka; }
-      inline Vec3d getKd() const { return Kd; }
-      inline Vec3d getKs() const { return Ks; }
+      inline const Vec3d & getKa() const { return Ka; }
+      inline const Vec3d & getKd() const { return Kd; }
+      inline const Vec3d & getKs() const { return Ks; }
       inline double getShininess() const { return shininess; }
       inline double getAlpha() const { return alpha; }
 
       inline void setName(const std::string & name_) { name = name_; }
-      inline void setKa(Vec3d & Ka_) { Ka = Ka_; }
-      inline void setKd(Vec3d & Kd_) { Kd = Kd_; }
-      inline void setKs(Vec3d & Ks_) { Ks = Ks_; }
+      inline void setKa(const Vec3d & Ka_) { Ka = Ka_; }
+      inline void setKd(const Vec3d & Kd_) { Kd = Kd_; }
+      inline void setKs(const Vec3d & Ks_) { Ks = Ks_; }
       inline void setShininess(double shininess_) { shininess = shininess_; }
       inline void setAlpha(double alpha_) { alpha = alpha_; }
       inline void setTextureFilename(const std::string & textureFilename_) { textureFilename = textureFilename_; }
@@ -177,12 +180,13 @@ public:
       }
 
       inline size_t getNumVertices() const { return vertices.size(); }
-      inline Vertex getVertex(unsigned int vertex) const { return vertices[vertex]; }
+      // get vertex pointer. Warning: This pointer will be invalided if vertices are modified by Face::removeVertex(), Face::reverseVertices() or Face::addVertex() due to vector reallocation
+      inline const Vertex & getVertex(unsigned int vertex) const { return vertices[vertex]; }
       inline const Vertex * getVertexHandle(unsigned int vertex) const { return &(vertices[vertex]); }
 
       inline void setFaceNormal(const Vec3d & normal) { faceNormal = std::pair<bool, Vec3d>(true, normal); }
       inline bool hasFaceNormal() const { return faceNormal.first; };
-      inline Vec3d getFaceNormal() const { assert(faceNormal.first); return faceNormal.second; }
+      inline const Vec3d & getFaceNormal() const { assert(faceNormal.first); return faceNormal.second; }
           
       inline void addVertex(const Vertex & v) { vertices.push_back(v); }
       inline void removeVertex(unsigned int i) { vertices.erase(vertices.begin() + i); }
@@ -197,13 +201,15 @@ public:
   class Group
   {
     public:
-      explicit Group(const std::string name_, unsigned int materialIndex_=0)
+      explicit Group(const std::string & name_, unsigned int materialIndex_=0)
         : name(name_), materialIndex(materialIndex_) {}
 
       inline size_t getNumFaces() const { return faces.size(); }
-      inline Face getFace(unsigned int face) const { return faces[face]; }
+      // get face pointer. Warning: This pointer will be invalided if faces are modified by Group::removeFace() or ObjMesh::addFace() due to vector reallocation
+      inline const Face & getFace(unsigned int face) const { return faces[face]; }
       inline const Face * getFaceHandle(unsigned int face) const { return &(faces[face]); }
-      inline std::string getName() const { return name; }
+      inline Face * getFaceHandle(unsigned int face) { return &(faces[face]); }
+      inline const std::string & getName() const { return name; }
       void setName(const std::string & name_) { name = name_; }
       inline unsigned int getMaterialIndex() const { return materialIndex; }
       inline void setMaterialIndex(unsigned int materialIndex_) { materialIndex = materialIndex_; }
@@ -227,10 +233,10 @@ public:
   explicit ObjMesh() {}
 
   // creates a triangle mesh with a single group
-  explicit ObjMesh(int numVertices, double * vertices, int numTriangles, int * triangles);
+  explicit ObjMesh(int numVertices, const double * vertices, int numTriangles, const int * triangles);
 
   // creates a mesh with a single group
-  explicit ObjMesh(int numVertices, double * vertices, int numFaces, int* faceVertexCounts, int * faces);
+  explicit ObjMesh(int numVertices, const double * vertices, int numFaces, const int* faceVertexCounts, const int * faces);
 
   // copy constructor
   explicit ObjMesh(const ObjMesh & objMesh);
@@ -250,7 +256,7 @@ public:
   // retrieve a list of all the group names in the obj file.
   std::vector<std::string> getGroupNames() const;
   // the filename from which this obj mesh was loaded (if it was loaded)
-  inline std::string getFilename() { return filename; }
+  inline const std::string & getFilename() const { return filename; }
 
   // prints info on the obj model
   void printInfo() const; 
@@ -260,12 +266,12 @@ public:
   // all locations are 0-indexed
   inline int getVertexIndex(unsigned int group, unsigned int face, unsigned int vertex) const { return groups[group].getFace(face).getVertex(vertex).getPositionIndex(); } // returns the global integer index of a specified group/face/vertex vertex
 
-  inline Vec3d getPosition(int vertexIndex) const { return vertexPositions[vertexIndex]; }
-  inline Vec3d getPosition(const Vertex & vertex) const { return vertexPositions[vertex.getPositionIndex()]; }
-  inline Vec3d getTextureCoordinate(int textureCoordinateIndex) const { return textureCoordinates[textureCoordinateIndex]; }
-  inline Vec3d getTextureCoordinate(const Vertex & vertex) const { return textureCoordinates[vertex.getTextureCoordinateIndex()]; }
-  inline Vec3d getNormal(int normalIndex) const { return normals[normalIndex]; }
-  inline Vec3d getNormal(const Vertex & vertex) const { return normals[vertex.getNormalIndex()]; }
+  inline const Vec3d & getPosition(int vertexIndex) const { return vertexPositions[vertexIndex]; }
+  inline const Vec3d & getPosition(const Vertex & vertex) const { return vertexPositions[vertex.getPositionIndex()]; }
+  inline const Vec3d & getTextureCoordinate(int textureCoordinateIndex) const { return textureCoordinates[textureCoordinateIndex]; }
+  inline const Vec3d & getTextureCoordinate(const Vertex & vertex) const { return textureCoordinates[vertex.getTextureCoordinateIndex()]; }
+  inline const Vec3d & getNormal(int normalIndex) const { return normals[normalIndex]; }
+  inline const Vec3d & getNormal(const Vertex & vertex) const { return normals[vertex.getNormalIndex()]; }
 
   inline void setPosition(int vertexIndex, const Vec3d & position) { vertexPositions[vertexIndex] = position; }
   inline void setPosition(Vertex & vertex, const Vec3d & position) { vertexPositions[vertex.getPositionIndex()] = position; }
@@ -276,11 +282,15 @@ public:
 
   Group getGroup(const std::string name) const; // retrieve a group by its name
   unsigned int getGroupIndex(const std::string name) const; // obtain a group index by its name
+  // get group pointer. Warning: This pointer will be invalided if groups are modified by ObjMesh::removeGroup() or ObjMesh::addGroup() due to vector reallocation
   inline const Group * getGroupHandle(unsigned int groupIndex) const { return &(groups[groupIndex]); }
+  inline Group * getGroupHandle(unsigned int groupIndex) { return &(groups[groupIndex]); }
 
-  inline Material getMaterial(unsigned int materialIndex) const { return materials[materialIndex]; }
+  inline const Material & getMaterial(unsigned int materialIndex) const { return materials[materialIndex]; }
   unsigned int getMaterialIndex(const std::string name) const; // obtain a material index by its name
+  // get material pointer. Warning: This pointer will be invalided if materials are modified by ObjMesh::addMaterial() due to vector reallocation
   inline const Material * getMaterialHandle(unsigned int materialIndex) const { return &materials[materialIndex]; }
+  inline Material * getMaterialHandle(unsigned int materialIndex) { return &materials[materialIndex]; }
   void setMaterialAlpha(double alpha);
   void setSingleMaterial(const Material & material); // erases all materials and sets a single material for the entire mesh
   int usesTextureMapping(); // 0 = no group uses a material that references a texture image, 1 = otherwise
@@ -289,9 +299,9 @@ public:
 
   void addDefaultMaterial();
   inline void addMaterial(const Material & material) { materials.push_back(material); }
-  inline void addMaterial(const std::string name, const Vec3d & Ka, const Vec3d & Kd, const Vec3d & Ks, double shininess, const std::string textureFilename=std::string()) { materials.push_back(Material(name, Ka, Kd, Ks, shininess, textureFilename));}
+  inline void addMaterial(const std::string & name, const Vec3d & Ka, const Vec3d & Kd, const Vec3d & Ks, double shininess, const std::string textureFilename=std::string()) { materials.push_back(Material(name, Ka, Kd, Ks, shininess, textureFilename));}
   inline void addGroup(const Group & group) { groups.push_back(group);}
-  inline void addGroup(const std::string name) { groups.push_back(Group(name));}
+  inline void addGroup(const std::string & name) { groups.push_back(Group(name));}
   void removeGroup(const int groupIndex);
   void removeGroup(const std::string name);
   void removeAllGroups();
@@ -305,7 +315,7 @@ public:
   // used to set values that are not filled upon construction
 
   void computePseudoNormals(); // vertex pseudonormals
-  inline Vec3d getPseudoNormal(unsigned int i) const { return pseudoNormals[i]; } // must first call "computePseudoNormals"
+  inline const Vec3d & getPseudoNormal(unsigned int i) const { return pseudoNormals[i]; } // must first call "computePseudoNormals"
 
   void computeEdgePseudoNormals(); // assumes that the faces are oriented coherently
   int getEdgePseudoNormal(unsigned int i, unsigned int j, Vec3d * pseudoNormal) const; // must first call "computeEdgePseudoNormals"
@@ -358,7 +368,8 @@ public:
 
   void exportGeometry(int * numVertices, double ** vertices, int * numTriangles = NULL, int ** triangles = NULL, 
     int * numGroups = NULL, int ** triangleGroups = NULL) const; // all faces are triangulated before exporting 
-  void exportFaceGeometry(int * numVertices, double ** vertices, int * numFaces = NULL, int ** faceCardinalities = NULL, int ** faces = NULL) const; // faces are not triangulated before exporting
+  void exportFaceGeometry(int * numVertices, double ** vertices, int * numFaces = NULL, int ** faceCardinalities = NULL, int ** faces = NULL, 
+    int * numGroups = NULL, int ** faceGroups = NULL) const; // faces are not triangulated before exporting
   void exportUVGeometry(int * numUVVertices, double ** UVVertices, int * numUVTriangles, int ** UVTriangles) const; // exports the geometry in the texture coordinate space
 
   Vec3d computeFaceCentroid(const Face & face) const;
@@ -476,7 +487,7 @@ public:
   // computes internal axis-aligned bounding box
   void computeBoundingBox(); // sets diameter, bmin, bmax, center, cubeHalf
 
-  inline static bool isNaN(double x) { return (x != x); }
+  inline static bool isNaN(double x) { return Vec3d::isNaN(x); }
 
 protected:
 

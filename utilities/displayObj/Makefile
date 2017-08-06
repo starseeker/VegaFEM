@@ -5,14 +5,14 @@ ifndef CLEANFOLDER
 CLEANFOLDER=DISPLAYOBJ
 endif
 
-include ../../Makefile-headers/Makefile-header
 R ?= ../..
+include $(R)/Makefile-headers/Makefile-header
 
 # the object files to be compiled for these utilities
 DISPLAYOBJ_OBJECTS=
 
 # the libraries these utilities depend on
-DISPLAYOBJ_LIBS=getopts objMesh imageIO glslPhong camera matrixIO lighting configFile loadList
+DISPLAYOBJ_LIBS=getopts objMesh openGLHelper imageIO glslPhong camera matrixIO lighting configFile loadList
 
 # the headers in this library
 DISPLAYOBJ_HEADERS=
@@ -28,10 +28,10 @@ include $(DISPLAYOBJ_LIB_MAKEFILES)
 
 all: $(R)/utilities/displayObj/displayObj $(R)/utilities/displayObj/objMergeFiles
 
-$(R)/utilities/displayObj/displayObj: $(R)/utilities/displayObj/displayObj.cpp
+$(R)/utilities/displayObj/displayObj: $(R)/utilities/displayObj/displayObj.cpp $(DISPLAYOBJ_LIB_FILENAMES) $(DISPLAYOBJ_HEADER_FILENAMES)
 	$(CXXLD) $(LDFLAGS) $(INCLUDE) $(GLUI_INCLUDE) $(DISPLAYOBJ_OBJECTS) $^ $(DISPLAYOBJ_LINK) -Wl,-rpath,$(GLUI_DIR)/lib $(IMAGE_LIBS) -o $@; cp $@ $(R)/utilities/bin/
 
-$(R)/utilities/displayObj/objMergeFiles: $(R)/utilities/displayObj/objMergeFiles.cpp
+$(R)/utilities/displayObj/objMergeFiles: $(R)/utilities/displayObj/objMergeFiles.cpp $(DISPLAYOBJ_LIB_FILENAMES) $(DISPLAYOBJ_HEADER_FILENAMES)
 	$(CXXLD) $(LDFLAGS) $(INCLUDE) $(GLUI_INCLUDE) $(DISPLAYOBJ_OBJECTS) $^ $(DISPLAYOBJ_LINK) -Wl,-rpath,$(GLUI_DIR)/lib $(IMAGE_LIBS) -o $@; cp $@ $(R)/utilities/bin/
 
 $(DISPLAYOBJ_OBJECTS_FILENAMES): %.o: %.cpp $(DISPLAYOBJ_LIB_FILENAMES) $(DISPLAYOBJ_HEADER_FILENAMES)

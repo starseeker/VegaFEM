@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "sparseSolver" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC   *
+ * "sparseSolver" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC   *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -130,6 +130,64 @@ int CGSolver::SolveLinearSystemWithoutPreconditioner(double * x, const double * 
       d[i] = r[i] + beta * d[i];
 
     iteration++;
+  }
+
+  return (iteration-1) * ((residualNorm2 > eps * eps * initialResidualNorm2) ? -1 : 1);
+}
+
+int CGSolver::SolveLinearSystemWithPreconditioner(LinearSolver * preconditioner, double * x, const double * b, double eps, int maxIterations, int verbose)
+{
+  int iteration=1;
+  multiplicator(multiplicatorData, x, r); //A->MultiplyVector(x,r);
+  for (int i=0; i<numRows; i++)
+    r[i] = b[i] - r[i];
+  preconditioner->SolveLinearSystem(d, r); // d = M^{-1} * r
+
+  // residualNorm2 = < M^{-1} * r, r >
+  double residualNorm2 = ComputeDotProduct(d, r);
+  double initialResidualNorm2 = residualNorm2;
+
+  while ((residualNorm2 > eps * eps * initialResidualNorm2) && (iteration <= maxIterations))
+  {
+    if (verbose)
+      printf("CG iteration %d: current M^{-1}-L2 error vs initial error=%G\n", iteration, sqrt(residualNorm2 / initialResidualNorm2));
+
+    multiplicator(multiplicatorData, d, q); //A->MultiplyVector(d,q); // q = A * d
+    double dDotq = ComputeDotProduct(d, q);
+    double alpha = residualNorm2 / dDotq;
+
+    for(int i=0; i<numRows; i++)
+      x[i] += alpha * d[i];
+
+    if (iteration % 30 == 0)
+    {
+      // periodically compute the exact residual (Shewchuk, page 8)
+      multiplicator(multiplicatorData, x, r); //A->MultiplyVector(x,r);
+      for (int i=0; i<numRows; i++)
+	r[i] = b[i] - r[i];
+    }
+    else
+    {
+      for (int i=0; i<numRows; i++)
+	r[i] = r[i] - alpha * q[i];
+    }
+
+    double oldResidualNorm2 = residualNorm2;
+
+    preconditioner->SolveLinearSystem(q, r); // q = M^{-1} * r
+    // residualNorm2 = < M^{-1} * r, r >
+    residualNorm2 = ComputeDotProduct(q, r);
+    double beta = residualNorm2 / oldResidualNorm2;
+
+    for (int i=0; i<numRows; i++)
+      d[i] = q[i] + beta * d[i];
+
+    iteration++;
+  }
+
+  if (residualNorm2 < 0)
+  {
+    printf("Warning: residualNorm2=%G is negative. Input matrix might not be SPD. Solution could be incorrect.\n", residualNorm2);
   }
 
   return (iteration-1) * ((residualNorm2 > eps * eps * initialResidualNorm2) ? -1 : 1);

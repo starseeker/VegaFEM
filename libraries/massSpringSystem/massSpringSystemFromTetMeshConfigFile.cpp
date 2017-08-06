@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
  * "massSpringSystem" library, Copyright (C) 2007 CMU, 2009 MIT,         *
- *                                           2015 USC                    *
+ *                                           2016 USC                    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -79,9 +79,7 @@ int MassSpringSystemFromTetMeshConfigFile::GenerateMassSpringSystem(const char *
   };
   printf("Tet mesh loaded.\n");
 
-  MassSpringSystemFromTetMesh massSpringSystemFromTetMesh;
-
-  int code = massSpringSystemFromTetMesh.GenerateMassSpringSystem(tetMesh, massSpringSystem, density, tensileStiffness, damping, addGravity);
+  int code = MassSpringSystemFromTetMesh::GenerateMassSpringSystem(tetMesh, massSpringSystem, density, tensileStiffness, damping, addGravity);
 
   delete(tetMesh);
 

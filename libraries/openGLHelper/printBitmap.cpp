@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "openGLHelper" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC   *
+ * "openGLHelper" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC   *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -27,7 +27,6 @@
  *************************************************************************/
 
 #include "printBitmap.h"
-
 #include "openGL-headers.h"
 
 void print_bitmap_string(float x, float y, float z, const char * s)

@@ -1,12 +1,12 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
  * "Large Modal Deformation Factory",                                    *
  * a pre-processing utility for model reduction of                       *
  * deformable objects undergoing large deformations.                     *
  *                                                                       *
- *  Copyright (C) 2007 CMU, 2009 MIT, 2015 USC                           *
+ *  Copyright (C) 2007 CMU, 2009 MIT, 2016 USC                           *
  *                                                                       *
  * All rights reserved.                                                  *
  *                                                                       *
@@ -468,18 +468,17 @@ void MyFrame::OnQuit(wxCommandEvent& WXUNUSED(event))
 void MyFrame::OnAbout(wxCommandEvent& WXUNUSED(event))
 {
   wxString message = 
-    _T( "Modal Deformation Precomputation Utility.\n"
-        "Version ") + versionString + _T("\n") +
-    _T( "\n"
-        "Computes:\n"
-        "- Linear vibrational modes (both constrained and free models are supported)\n"
-        "- Modal derivatives\n"
-        "- Simulation basis (using linear modes and modal derivatives, or external simulation data)\n"
-        "- Reduced cubic polynomials for geometrically nonlinear simulations\n"
-        "- A cubic (voxel) mesh to the input triangle geometry\n"
-        "\n"
-        "By Jernej Barbic, CMU, MIT, USC, 2007-2015.\n"
-  );
+    _T( "Modal Deformation Precomputation Utility.\n")
+    _T("Version ") + versionString + _T("\n") +
+    _T( "\n")
+    _T("Computes:\n")
+    _T("- Linear vibrational modes (both constrained and free models are supported)\n")
+    _T("- Modal derivatives\n")
+    _T("- Simulation basis (using linear modes and modal derivatives, or external simulation data)\n")
+    _T("- Reduced cubic polynomials for geometrically nonlinear simulations\n")
+    _T("- A cubic (voxel) mesh to the input triangle geometry\n")
+    _T("\n")
+    _T("By Jernej Barbic, CMU, MIT, USC, 2007-2015.\n");
 
   wxMessageBox(message,
     _T("About Large Modal Deformation Factory"), wxOK | wxICON_INFORMATION, this);
@@ -488,18 +487,18 @@ void MyFrame::OnAbout(wxCommandEvent& WXUNUSED(event))
 void MyFrame::OnMouseHelp(wxCommandEvent& WXUNUSED(event))
 {
   wxString message = 
-  _T( "LEFT mouse button:\n"
-  "  click: constrain a vertex\n"
-  "  shift-click: toggle constraining a vertex\n"
-  "  drag: marquee-select constrained vertices\n"
-  "  shift-drag: marquee-toggle constraining vertices\n"
-  "  NOTE: The \"Fixed Vertices.Select\" menu flag must be activated\n"
-  "\n" 
-  "MIDDLE mouse button:\n"
-  "  drag: camera zoom in/out\n"
-  "\n"
-  "RIGHT mouse button:\n"
-  "  drag: change camera viewpoint\n");
+  _T("LEFT mouse button:\n")
+  _T("  click: constrain a vertex\n")
+  _T("  shift-click: toggle constraining a vertex\n")
+  _T("  drag: marquee-select constrained vertices\n")
+  _T("  shift-drag: marquee-toggle constraining vertices\n")
+  _T("  NOTE: The \"Fixed Vertices.Select\" menu flag must be activated\n")
+  _T("\n")
+  _T("MIDDLE mouse button:\n")
+  _T("  drag: camera zoom in/out\n")
+  _T("\n")
+  _T("RIGHT mouse button:\n")
+  _T("  drag: change camera viewpoint\n");
         
   wxMessageBox(message,
     _T("Mouse Help"), wxOK | wxICON_INFORMATION, this);
@@ -508,25 +507,25 @@ void MyFrame::OnMouseHelp(wxCommandEvent& WXUNUSED(event))
 void MyFrame::OnExampleHelp(wxCommandEvent& WXUNUSED(event))
 {
   wxString message = 
-    _T( "Example usage\n"
-        "Note: This text was also printed to your command prompt window. It is also available in \"instructions.txt\" (shortcut is in the Start menu).\n"
-        "=========================================================================================\n"
-        "\n"
-        "1. Load \"examples/simpleBridge.obj\" (using Mesh.Load triangle mesh)\n\n"
-        "2. Create a voxel simulation mesh (using Mesh.Voxelize, keep the resolution at the default (65))\n\n"
-        "3. (optional) Inspect the properties of the newly created simulation mesh (using Mesh.Information)\n\n"
-        "4. (optional) Switch the view to the triangle mesh (and later back to simulation mesh) using View.Triangle Mesh, and View.Simulation Mesh\n\n"
-        "5. (optional) Select some vertices that are to be permanently fixed (left-click with the mouse, use shift to add/subtract, you can also marquee select)\n\n"
-        "6. (optional) At any time, you can inspect the program text output in the text window (might be initially hidden behind the main program window)\n\n"
-        "7. Compute the linear modes (using Linear Modes.Compute; compute, say, 10 modes)\n\n"
-        "8. (optional) See the different modes and their frequencies by pressing the up arrow/down arrow on the toolbar\n\n"
-        "9. Compute modal derivatives (using the Simulation Basis.Modal derivatives.Compute modal derivatives)\n\n"
-        "10. Compute nonlinear modes (using Simulation Basis.Compute; compute, say, 15 modes)\n\n"
-        "11. Generate cubic polynomials (using Cubic polynomials.Compute; this part of the computation is multi-threaded, so it will work faster on a multi-core computer)\n\n"
-        "12. Prepare the real-time simulation (using Real-time Sim.Prepare real-time simulation)\n\n"
-        "13. Launch the real-time simulation (using Real-time Sim.Launch real-time simulation). Note: reducedDynamicSolver-rt must be in the path, check the .bat file.\n\n"
-        "14. Interact with the real-time simulation using the mouse (left-click on the model and pull on it)\n\n"
-        "15. Close the real-time simulation window\n" );
+    _T("Example usage\n")
+    _T("Note: This text was also printed to your command prompt window. It is also available in \"instructions.txt\" (shortcut is in the Start menu).\n")
+    _T("=========================================================================================\n")
+    _T("\n")
+    _T("1. Load \"examples/simpleBridge.obj\" (using Mesh.Load triangle mesh)\n\n")
+    _T("2. Create a voxel simulation mesh (using Mesh.Voxelize, keep the resolution at the default (65))\n\n")
+    _T("3. (optional) Inspect the properties of the newly created simulation mesh (using Mesh.Information)\n\n")
+    _T("4. (optional) Switch the view to the triangle mesh (and later back to simulation mesh) using View.Triangle Mesh, and View.Simulation Mesh\n\n")
+    _T("5. (optional) Select some vertices that are to be permanently fixed (left-click with the mouse, use shift to add/subtract, you can also marquee select)\n\n")
+    _T("6. (optional) At any time, you can inspect the program text output in the text window (might be initially hidden behind the main program window)\n\n")
+    _T("7. Compute the linear modes (using Linear Modes.Compute; compute, say, 10 modes)\n\n")
+    _T("8. (optional) See the different modes and their frequencies by pressing the up arrow/down arrow on the toolbar\n\n")
+    _T("9. Compute modal derivatives (using the Simulation Basis.Modal derivatives.Compute modal derivatives)\n\n")
+    _T("10. Compute nonlinear modes (using Simulation Basis.Compute; compute, say, 15 modes)\n\n")
+    _T("11. Generate cubic polynomials (using Cubic polynomials.Compute; this part of the computation is multi-threaded, so it will work faster on a multi-core computer)\n\n")
+    _T("12. Prepare the real-time simulation (using Real-time Sim.Prepare real-time simulation)\n\n")
+    _T("13. Launch the real-time simulation (using Real-time Sim.Launch real-time simulation). Note: reducedDynamicSolver-rt must be in the path, check the .bat file.\n\n")
+    _T("14. Interact with the real-time simulation using the mouse (left-click on the model and pull on it)\n\n")
+    _T("15. Close the real-time simulation window\n");
         
   printf("%s", (const char*)message.mb_str());
 

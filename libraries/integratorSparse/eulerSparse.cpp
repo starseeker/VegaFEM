@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC     *
+ * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -34,13 +34,12 @@
 #include "insertRows.h"
 #include "eulerSparse.h"
 
-EulerSparse::EulerSparse(int r, double timestep, SparseMatrix * massMatrix_, ForceModel * forceModel_, int symplectic_, int numConstrainedDOFs_, int * constrainedDOFs_, double dampingMassCoef): IntegratorBaseSparse(r, timestep, massMatrix_, forceModel_, numConstrainedDOFs_, constrainedDOFs_, dampingMassCoef, 0.0), symplectic(symplectic_)
+EulerSparse::EulerSparse(int r, double timestep, SparseMatrix * massMatrix_, ForceModel * forceModel_, int symplectic_, int numConstrainedDOFs_, int * constrainedDOFs_, double dampingMassCoef, int numSolverThreads): IntegratorBaseSparse(r, timestep, massMatrix_, forceModel_, numConstrainedDOFs_, constrainedDOFs_, dampingMassCoef, 0.0), symplectic(symplectic_)
 {
   #ifdef PARDISO
     printf("Creating Pardiso solver for M.\n");
-    int positiveDefiniteSolver = 1;
-    pardisoSolver = new PardisoSolver(massMatrix, 1, positiveDefiniteSolver);
-    int info = pardisoSolver->ComputeCholeskyDecomposition(massMatrix);
+    pardisoSolver = new PardisoSolver(massMatrix, numSolverThreads, PardisoSolver::REAL_SPD);
+    int info = pardisoSolver->FactorMatrix(massMatrix);
     if (info != 0)
     {
       printf("Error: PARDISO solver returned non-zero exit code %d.\n", info);

@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -74,10 +74,9 @@ void GenerateMassMatrix::computeMassMatrix(
   free(buffer);
 }
 
-void GenerateMassMatrix::computeVertexMasses(VolumetricMesh * volumetricMesh, double * masses)
+void GenerateMassMatrix::computeVertexMasses(VolumetricMesh * volumetricMesh, double * masses, bool inflate3Dim)
 {
   SparseMatrix * massMatrix;
-  bool inflate3Dim = false;
   computeMassMatrix(volumetricMesh, &massMatrix, inflate3Dim);
   massMatrix->SumRowEntries(masses);
   delete(massMatrix);

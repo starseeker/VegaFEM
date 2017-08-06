@@ -5,14 +5,14 @@ ifndef CLEANFOLDER
 CLEANFOLDER=REDUCEDFORCEMODEL
 endif
 
-include ../../Makefile-headers/Makefile-header
 R ?= ../..
+include $(R)/Makefile-headers/Makefile-header
 
 # the object files to be compiled for this library
 REDUCEDFORCEMODELOBJECTS=reducedForceModel.o reducedForceModelWithHessian.o
 
 # the libraries this library depends on
-REDUCEDFORCEMODELLIBS=
+REDUCEDFORCEMODELLIBS=matrixIO
 
 # the headers in this library
 REDUCEDFORCEMODELHEADERS=reducedForceModel.h reducedForceModelWithHessian.h

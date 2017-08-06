@@ -30,15 +30,6 @@
 
   A simple class for vector algebra on 2D vectors 
   (summation, normalization, dot product, etc.).
-
-  Note: this code was inspired by Andrew Willmott's VL and SVL Libraries:
-    http://www.cs.cmu.edu/afs/cs/user/ajw/www/software/index.html#VL
-    (these two libraries contain a lot of useful functionality and
-     are highly recommended)
-  My library offers just the basic vector functionality, hence "minivector".
-  It was written from scratch for a course project at CMU.
-
-  Version 1.2
 */
 
 #ifndef _MINIVEC2D_H_
@@ -51,7 +42,8 @@ class Vec2d {
 public:
 
   inline Vec2d() {}
-  inline Vec2d(double x, double y) {elt[0]=x; elt[1]=y;}
+  inline Vec2d(double x, double y) { elt[0]=x; elt[1]=y; }
+  inline Vec2d(const double v[2]) { elt[0]=v[0]; elt[1]=v[1]; }
   inline Vec2d(double entry); // // create a vector with all entries "entry" (can create zero vector for entry=0.0)
 
   inline Vec2d & operator=(const Vec2d & source);

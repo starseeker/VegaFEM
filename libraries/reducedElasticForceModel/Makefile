@@ -5,14 +5,14 @@ ifndef CLEANFOLDER
 CLEANFOLDER=REDUCEDELASTICFORCEMODEL
 endif
 
-include ../../Makefile-headers/Makefile-header
 R ?= ../..
+include $(R)/Makefile-headers/Makefile-header
 
 # the object files to be compiled for this library
 REDUCEDELASTICFORCEMODELOBJECTS=reducedLinearForceModel.o reducedLinearStVKForceModel.o reducedMassSpringSystemForceModel.o reducedMassSpringSystemForceModelWithHessian.o reducedSpringForceModel.o reducedStVKForceModel.o reducedStVKForceModelWithHessian.o reducedSubspaceStVKForceModel.o
 
 # the libraries this library depends on
-REDUCEDELASTICFORCEMODELLIBS=reducedForceModel reducedStvk stvk massSpringSystem
+REDUCEDELASTICFORCEMODELLIBS=reducedForceModel reducedStvk stvk massSpringSystem performanceCounter
 
 # the headers in this library
 REDUCEDELASTICFORCEMODELHEADERS=reducedLinearForceModel.h reducedLinearStVKForceModel.h reducedMassSpringSystemForceModel.h reducedMassSpringSystemForceModelWithHessian.h reducedSpringForceModel.h reducedStVKForceModel.h reducedStVKForceModelWithHessian.h reducedSubspaceStVKForceModel.h

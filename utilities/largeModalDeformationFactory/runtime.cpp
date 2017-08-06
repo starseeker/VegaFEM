@@ -1,12 +1,12 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
  * "Large Modal Deformation Factory",                                    *
  * a pre-processing utility for model reduction of                       *
  * deformable objects undergoing large deformations.                     *
  *                                                                       *
- *  Copyright (C) 2007 CMU, 2009 MIT, 2015 USC                           *
+ *  Copyright (C) 2007 CMU, 2009 MIT, 2016 USC                           *
  *                                                                       *
  * All rights reserved.                                                  *
  *                                                                       *
@@ -40,7 +40,9 @@
 #include "generateMassMatrix.h"
 #include "largeModalDeformationFactory.h"
 
-static char * folder_open_xpm_2[] = {
+using namespace std;
+
+static const char * folder_open_xpm_2[] = {
 /* columns rows colors chars-per-pixel */
 "16 15 31 1",
 "6 c #9BACC2",
@@ -853,10 +855,8 @@ void MyFrame::OnPrepareRuntimeSimulation(wxCommandEvent& event)
   if (!precomputationState.renderingMeshAvailable)
   {
     wxMessageDialog * dlg = new wxMessageDialog(this, 
-      _T(
-         "Click OK to use the surface mesh of the simulation mesh as the rendering mesh.\n\n"
-         "Click CANCEL to load your own rendering mesh (via the \"Mesh.Load Triangle Mesh\" menu option)."
-        ),
+      _T("Click OK to use the surface mesh of the simulation mesh as the rendering mesh.\n\n")
+      _T("Click CANCEL to load your own rendering mesh (via the \"Mesh.Load Triangle Mesh\" menu option)."),
       _T("Rendering mesh has not been specified"),
       wxOK | wxCANCEL);
 
@@ -1155,12 +1155,10 @@ void MyFrame::OnLaunchRuntimeSimulation(wxCommandEvent& event)
 void MyFrame::OnTuneRuntimeSimulation(wxCommandEvent& event)
 {
   wxString message = 
-	  _T( 
-  "You can tune the real-time simulation from within the real-time GUI (activated by choosing \"Launch real-time simulation\").\n\n"
-  "There are essentially two parameters to tune:\n"
-  "  1. You can set how stiff the object feels by adjusting the \"strength\" of your mouse forces via the \"Deformable object compliance\" parameter.\n"
-  "  2. You can make the object oscillate faster/slower by altering the \"Base frequency\" parameter.\n"
-   );
+	  _T("You can tune the real-time simulation from within the real-time GUI (activated by choosing \"Launch real-time simulation\").\n\n")
+    _T("There are essentially two parameters to tune:\n")
+    _T("  1. You can set how stiff the object feels by adjusting the \"strength\" of your mouse forces via the \"Deformable object compliance\" parameter.\n")
+    _T("  2. You can make the object oscillate faster/slower by altering the \"Base frequency\" parameter.\n");
         
   wxMessageBox(message,
     _T("Tuning the real-time simulation"), wxOK | wxICON_INFORMATION, this);

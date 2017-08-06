@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
  * "massSpringSystem" library, Copyright (C) 2007 CMU, 2009 MIT,         *
- *                                           2015 USC                    *
+ *                                           2016 USC                    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic, Daniel Schroeder                          *
@@ -31,6 +31,7 @@
 #define _MASS_SPRING_SYSTEM_MT_H_
 
 #include "massSpringSystem.h"
+#include <vector>
 
 /*
    Multi-threaded version of the MassSpringSystem class. 
@@ -38,7 +39,7 @@
    See also massSpringSystem.h
 */
 
-enum MassSpringSystemMT_computationTargetType { FORCE, STIFFNESSMATRIX, DAMPINGFORCE, HESSIANAPPROXIMATION };
+enum MassSpringSystemMT_computationTargetType { ENERGY, FORCE, STIFFNESSMATRIX, DAMPINGFORCE, HESSIANAPPROXIMATION };
 
 class MassSpringSystemMT : public MassSpringSystem
 {
@@ -56,11 +57,12 @@ public:
 
   virtual ~MassSpringSystemMT();
 
-  virtual void ComputeForce(double * u, double * f, bool addForce=false); 
-  virtual void ComputeStiffnessMatrix(double * u, SparseMatrix * K, bool addMatrix=false);
-  virtual void ComputeDampingForce(double * uvel, double * f, bool addForce=false); 
+  virtual double ComputeEnergy(const double * u);
+  virtual void ComputeForce(const double * u, double * f, bool addForce=false); 
+  virtual void ComputeStiffnessMatrix(const double * u, SparseMatrix * K, bool addMatrix=false);
+  virtual void ComputeDampingForce(const double * uvel, double * f, bool addForce=false); 
   // computes an approximation to dK, assuming the deformations change from u to u + du
-  virtual void ComputeHessianApproximation(double * u, double * du, SparseMatrix * dK, bool addMatrix=false);
+  virtual void ComputeHessianApproximation(const double * u, double * du, SparseMatrix * dK, bool addMatrix=false);
 
   int GetStartEdge(int rank);
   int GetEndEdge(int rank);
@@ -68,11 +70,12 @@ public:
 protected:
   int numThreads;
   int * startEdge, * endEdge;
+  std::vector<double> energyBuffer;
   double * internalForceBuffer;
   SparseMatrix ** sparseMatrixBuffer;
 
   void Initialize();
-  void ComputeHelper(enum MassSpringSystemMT_computationTargetType computationTarget, double * u, double * uSecondary, void * target, bool addQuantity);
+  void ComputeHelper(enum MassSpringSystemMT_computationTargetType computationTarget, const double * u, double * uSecondary, void * target, bool addQuantity);
 
 };
 

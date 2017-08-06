@@ -5,17 +5,17 @@ ifndef CLEANFOLDER
 CLEANFOLDER=FORCEMODEL
 endif
 
-include ../../Makefile-headers/Makefile-header
 R ?= ../..
+include $(R)/Makefile-headers/Makefile-header
 
 # the object files to be compiled for this library
-FORCEMODELOBJECTS=forceModel.o 
+FORCEMODELOBJECTS=forceModel.o finiteDifferenceTester.o
 
 # the libraries this library depends on
 FORCEMODELLIBS=sparseMatrix
 
 # the headers in this library
-FORCEMODELHEADERS=forceModel.h
+FORCEMODELHEADERS=forceModel.h finiteDifferenceTester.h
 
 FORCEMODELOBJECTS_FILENAMES=$(addprefix $(L)/forceModel/, $(FORCEMODELOBJECTS))
 FORCEMODELHEADER_FILENAMES=$(addprefix $(L)/forceModel/, $(FORCEMODELHEADERS))

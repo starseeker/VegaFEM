@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "isotropic hyperelastic FEM" library , Copyright (C) 2015 USC         *
+ * "isotropic hyperelastic FEM" library , Copyright (C) 2016 USC         *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Fun Shing Sin                            *
@@ -65,10 +65,10 @@ IsotropicHyperelasticFEM::IsotropicHyperelasticFEM(TetMesh * tetMesh_, Isotropic
   restVerticesPosition = (double*) malloc (sizeof(double) * 3 * numVertices);
   for (int i=0; i<numVertices; i++)
   {
-    Vec3d * v = tetMesh->getVertex(i);
-    restVerticesPosition[3*i+0] = (*v)[0];
-    restVerticesPosition[3*i+1] = (*v)[1];
-    restVerticesPosition[3*i+2] = (*v)[2];
+    Vec3d v = tetMesh->getVertex(i);
+    restVerticesPosition[3*i+0] = v[0];
+    restVerticesPosition[3*i+1] = v[1];
+    restVerticesPosition[3*i+2] = v[2];
   }
 
   ComputeTetVolumes();
@@ -264,20 +264,20 @@ void IsotropicHyperelasticFEM::ComputeAreaWeightedVertexNormals()
   int numElements = tetMesh->getNumElements();
   for (int el=0; el<numElements; el++)
   {
-    Vec3d * va = tetMesh->getVertex(el, 0);
-    Vec3d * vb = tetMesh->getVertex(el, 1);
-    Vec3d * vc = tetMesh->getVertex(el, 2);
-    Vec3d * vd = tetMesh->getVertex(el, 3);
+    Vec3d va = tetMesh->getVertex(el, 0);
+    Vec3d vb = tetMesh->getVertex(el, 1);
+    Vec3d vc = tetMesh->getVertex(el, 2);
+    Vec3d vd = tetMesh->getVertex(el, 3);
 
     // compute normals for the four faces: acb, adc, abd, bcd
-    Vec3d acbNormal = cross(*vc-*va, *vb-*va); 
-    Vec3d adcNormal = cross(*vd-*va, *vc-*va); 
-    Vec3d abdNormal = cross(*vb-*va, *vd-*va); 
-    Vec3d bcdNormal = cross(*vc-*vb, *vd-*vb); 
+    Vec3d acbNormal = cross(vc-va, vb-va); 
+    Vec3d adcNormal = cross(vd-va, vc-va); 
+    Vec3d abdNormal = cross(vb-va, vd-va); 
+    Vec3d bcdNormal = cross(vc-vb, vd-vb); 
 
     // if the tet vertices abcd form a positive orientation, the normals are now correct
     // otherwise, we need to flip them
-    double orientation = dot(*vd-*va, cross(*vb-*va, *vc-*va));
+    double orientation = dot(vd-va, cross(vb-va, vc-va));
     if (orientation < 0)
     {
       acbNormal *= -1.0;
@@ -323,14 +323,14 @@ void IsotropicHyperelasticFEM::PrepareDeformGrad()
   int numElements = tetMesh->getNumElements();
   for (int el=0; el<numElements; el++)
   {
-    Vec3d * va = tetMesh->getVertex(el, 0);
-    Vec3d * vb = tetMesh->getVertex(el, 1);
-    Vec3d * vc = tetMesh->getVertex(el, 2);
-    Vec3d * vd = tetMesh->getVertex(el, 3);
+    Vec3d va = tetMesh->getVertex(el, 0);
+    Vec3d vb = tetMesh->getVertex(el, 1);
+    Vec3d vc = tetMesh->getVertex(el, 2);
+    Vec3d vd = tetMesh->getVertex(el, 3);
 
-    Vec3d dm1 = *vd - *va;
-    Vec3d dm2 = *vd - *vb;
-    Vec3d dm3 = *vd - *vc;
+    Vec3d dm1 = vd - va;
+    Vec3d dm2 = vd - vb;
+    Vec3d dm3 = vd - vc;
 
     Mat3d tmp(dm1[0], dm2[0], dm3[0], dm1[1], dm2[1], dm3[1], dm1[2], dm2[2], dm3[2]);
     //printf("--- dm ---\n");

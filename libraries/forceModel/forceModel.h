@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "forceModelBase" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC *
+ * "forceModel" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -44,21 +44,17 @@ public:
 
   inline int Getr() { return r; }
 
+  virtual double GetElasticEnergy(double * u) { return 0.0; }
   virtual void GetInternalForce(double * u, double * internalForces) = 0;
   virtual void GetTangentStiffnessMatrixTopology(SparseMatrix ** tangentStiffnessMatrix) = 0;
   virtual void GetTangentStiffnessMatrix(double * u, SparseMatrix * tangentStiffnessMatrix) = 0; 
 
   // sometimes computation time can be saved if we know that we will need both internal forces and tangent stiffness matrices:
-  virtual void GetForceAndMatrix (double * u, double * internalForces, SparseMatrix * tangentStiffnessMatrix); 
+  virtual void GetForceAndMatrix(double * u, double * internalForces, SparseMatrix * tangentStiffnessMatrix); 
 
   // reset routines
   virtual void ResetToZero() {}
   virtual void Reset(double * q) {}
-
-  // test the stiffness matrix, using finite differences
-  // q is the configuration to test, dq is a small delta
-  // if the stiffness matrix is correct, f(q) - f(q + eps * dq) - eps * K(q) * dq should be O(eps^2)
-  void TestStiffnessMatrix(double * q, double * dq);
 
 protected:
   int r;

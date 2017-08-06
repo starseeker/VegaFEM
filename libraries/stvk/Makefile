@@ -5,8 +5,8 @@ ifndef CLEANFOLDER
 CLEANFOLDER=STVK
 endif
 
-include ../../Makefile-headers/Makefile-header
 R ?= ../..
+include $(R)/Makefile-headers/Makefile-header
 
 # the object files to be compiled for this library
 STVK_OBJECTS=StVKCubeABCD.o StVKElementABCD.o StVKElementABCDLoader.o StVKHessianTensor.o StVKInternalForces.o StVKInternalForcesMT.o StVKStiffnessMatrix.o StVKStiffnessMatrixMT.o StVKTetABCD.o StVKTetHighMemoryABCD.o 

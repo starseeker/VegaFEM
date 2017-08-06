@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder,     *
@@ -42,6 +42,8 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <functional>
+#include <cctype>
 #include <assert.h>
 #include "macros.h"
 #include "objMesh-disjointSet.h"
@@ -96,7 +98,7 @@ ObjMesh::ObjMesh(void * binaryInputStream, streamType stream, int verbose)
   computeBoundingBox();
 }
 
-ObjMesh::ObjMesh(int numVertices, double * vertices, int numTriangles, int * triangles)
+ObjMesh::ObjMesh(int numVertices, const double * vertices, int numTriangles, const int * triangles)
 {
   filename = string("");
 
@@ -118,7 +120,7 @@ ObjMesh::ObjMesh(int numVertices, double * vertices, int numTriangles, int * tri
   computeBoundingBox();
 }
 
-ObjMesh::ObjMesh(int numVertices, double * vertices, int numFaces, int* faceVertexCounts, int * faces)
+ObjMesh::ObjMesh(int numVertices, const double * vertices, int numFaces, const int* faceVertexCounts, const int * faces)
 {
   filename = string("");
 
@@ -259,6 +261,16 @@ int ObjMesh::loadFromAscii(const string & filename, int verbose)
         lastCharPos = (int)strlen(line)-1;
       }
     }
+
+    std::string lineString(line);
+    // trim white space ahead
+    lineString.erase(lineString.begin(), std::find_if(lineString.begin(), lineString.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+    // trim white space in the end  
+    lineString.erase(std::find_if(lineString.rbegin(), lineString.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), lineString.end());
+
+
+    memset(line, 0, maxline);
+    strcpy(line, lineString.c_str());
 
     convertWhitespaceToSingleBlanks(line);
 
@@ -3775,51 +3787,51 @@ int ObjMesh::removeDuplicatedMaterials()
 void ObjMesh::exportGeometry(int * numVertices, double ** vertices, int * numTriangles , int ** triangles, int * numGroups, int ** triangleGroups) const
 {
   // set vertices
-  *numVertices = vertexPositions.size();
-  *vertices = (double*) malloc (sizeof(double) * 3 * *numVertices);
-  for(int i=0; i< *numVertices; i++)
+  if (numVertices != NULL) 
+    *numVertices = vertexPositions.size();
+  if (vertices != NULL)
   {
-    Vec3d vtx = getPosition(i);
-    (*vertices)[3*i+0] = vtx[0];
-    (*vertices)[3*i+1] = vtx[1];
-    (*vertices)[3*i+2] = vtx[2];
+    *vertices = (double*) malloc (sizeof(double) * 3 * vertexPositions.size());
+    for(size_t i=0; i< vertexPositions.size(); i++)
+    {
+      Vec3d vtx = getPosition(i);
+      (*vertices)[3*i+0] = vtx[0];
+      (*vertices)[3*i+1] = vtx[1];
+      (*vertices)[3*i+2] = vtx[2];
+    }
   }
 
-  if (numTriangles == NULL)
-  {
-    //printf("Exported %d vertices.\n", *numVertices);
+  if (numGroups != NULL)
+    *numGroups = getNumGroups();
+
+  if (numTriangles == NULL && triangles == NULL && triangleGroups == NULL)
     return;
-  }
 
-  // set triangles
-  *numTriangles = 0;
+  // count #triangles 
+  int nt = 0;
   for(unsigned int i=0; i < groups.size(); i++) // over all groups
     for (unsigned int j=0; j < groups[i].getNumFaces(); j++) // over all faces
     {
       const Face * face = groups[i].getFaceHandle(j);
       if (face->getNumVertices() < 3)
         continue;
-      *numTriangles += face->getNumVertices() - 2;
+      nt += face->getNumVertices() - 2;
     }
 
-  *triangles = (int*) malloc (sizeof(int) * 3 * *numTriangles);
+  if(numTriangles != NULL)
+    *numTriangles = nt;
+  if (triangles == NULL && triangleGroups == NULL)
+    return;
+
+  // set triangles
+  if(triangles != NULL)
+    *triangles = (int*) malloc (sizeof(int) * 3 * nt);
   
-  // ===
   // set triangle groups while setting triangle positions (easy addition)
-  if (numGroups != NULL)
-    *numGroups = getNumMaterials();
-
   if (triangleGroups != NULL)
-  {
-    *triangleGroups = (int*) malloc (sizeof(int) * *numTriangles);
-    // set all groups to 0 just in case
-    for (int i=0; i<*numTriangles; i++)
-      (*triangleGroups)[i] = 0;
-  }
-  // ===
+    *triangleGroups = (int*) calloc (nt, sizeof(int)); // set all groups to 0 just in case
 
-  int tri = 0;
-  for(unsigned int i=0; i < groups.size(); i++) // over all groups
+  for(unsigned int i=0, tri=0; i < groups.size(); i++) // over all groups
   {
     for (unsigned int j=0; j < groups[i].getNumFaces(); j++) // over all faces
     {
@@ -3840,9 +3852,12 @@ void ObjMesh::exportGeometry(int * numVertices, double ** vertices, int * numTri
         vertices.push_back(face->getVertex(k));
       
       // set triangle vertex positions
-      (*triangles)[3*tri+0] = vertices[0].getPositionIndex();
-      (*triangles)[3*tri+1] = vertices[1].getPositionIndex();
-      (*triangles)[3*tri+2] = vertices[2].getPositionIndex();
+      if(triangles != NULL)
+      {
+        (*triangles)[3*tri+0] = vertices[0].getPositionIndex();
+        (*triangles)[3*tri+1] = vertices[1].getPositionIndex();
+        (*triangles)[3*tri+2] = vertices[2].getPositionIndex();
+      }
       
       // set triangle group
       if (triangleGroups != NULL)
@@ -3853,9 +3868,12 @@ void ObjMesh::exportGeometry(int * numVertices, double ** vertices, int * numTri
 
       for(unsigned int k=2; k<faceDegree-1; k++)
       {
-        (*triangles)[3*tri+0] = vertices[0].getPositionIndex();
-        (*triangles)[3*tri+1] = vertices[k].getPositionIndex();
-        (*triangles)[3*tri+2] = vertices[k+1].getPositionIndex();
+        if(triangles != NULL)
+        {
+          (*triangles)[3*tri+0] = vertices[0].getPositionIndex();
+          (*triangles)[3*tri+1] = vertices[k].getPositionIndex();
+          (*triangles)[3*tri+2] = vertices[k+1].getPositionIndex();
+        }
         
         // set triangle group
         if (triangleGroups != NULL)
@@ -3866,44 +3884,57 @@ void ObjMesh::exportGeometry(int * numVertices, double ** vertices, int * numTri
       }
     }
   }
-  
-  //printf("Exported %d vertices and %d triangles.\n", *numVertices, *numTriangles);
+  //printf("Exported %d vertices and %d triangles.\n", vertexPositions.size(), nt);
 }
 
-void ObjMesh::exportFaceGeometry(int * numVertices, double ** vertices, int * numFaces, int ** faceCardinality, int ** faces) const
+void ObjMesh::exportFaceGeometry(int * numVertices, double ** vertices, int * numFaces, int ** faceCardinality, int ** faces, int * numGroups, int ** faceGroups) const
 {
   // set vertices
-  *numVertices = vertexPositions.size();
-  *vertices = (double*) malloc (sizeof(double) * 3 * *numVertices);
-  for(int i=0; i< *numVertices; i++)
+  if (numVertices != NULL) 
+    *numVertices = vertexPositions.size();
+  if (vertices != NULL)
   {
-    Vec3d vtx = getPosition(i);
-    (*vertices)[3*i+0] = vtx[0];
-    (*vertices)[3*i+1] = vtx[1];
-    (*vertices)[3*i+2] = vtx[2];
+    *vertices = (double*) malloc (sizeof(double) * 3 * *numVertices);
+    for(int i=0; i< *numVertices; i++)
+    {
+      Vec3d vtx = getPosition(i);
+      (*vertices)[3*i+0] = vtx[0];
+      (*vertices)[3*i+1] = vtx[1];
+      (*vertices)[3*i+2] = vtx[2];
+    }
   }
 
-  if (numFaces == NULL)
-  {
-    printf("Exported %d vertices.\n", *numVertices);
+  if(numGroups != NULL)
+    *numGroups = getNumGroups();
+
+  if (numFaces == NULL && faceCardinality == NULL && faces == NULL && faceGroups == NULL)
     return;
-  }
 
   // set faces
-  *numFaces = 0;
-  int totalCardinality = 0;
+  int nf = 0, totalCardinality = 0;
   for(unsigned int i=0; i < groups.size(); i++) // over all groups
     for (unsigned int j=0; j < groups[i].getNumFaces(); j++) // over all faces
     {
       const Face * face = groups[i].getFaceHandle(j);
       if (face->getNumVertices() < 3)
         continue;
-      (*numFaces)++;
+      nf++;
       totalCardinality += face->getNumVertices();
     }
 
-  *faceCardinality = (int*) malloc (sizeof(int) * *numFaces);
-  *faces = (int*) malloc (sizeof(int) * totalCardinality);
+  if(numFaces != NULL)
+    (*numFaces) = nf;
+  if (faceCardinality == NULL && faces == NULL && faceGroups == NULL)
+    return;
+
+  if(faceCardinality != NULL)
+    *faceCardinality = (int*) malloc (sizeof(int) * nf);
+
+  if(faces != NULL)
+    *faces = (int*) malloc (sizeof(int) * totalCardinality);
+
+  if(faceGroups != NULL)
+    *faceGroups = (int*) calloc (*numFaces, sizeof(int));
 
   int faceCounter = 0;
   int tc = 0;
@@ -3918,15 +3949,17 @@ void ObjMesh::exportFaceGeometry(int * numVertices, double ** vertices, int * nu
       }
 
       int faceDegree = (int)face->getNumVertices();
-      (*faceCardinality)[faceCounter] = faceDegree;
-
-      for(unsigned int k=0; k<face->getNumVertices(); k++)
-        (*faces)[tc + k] = face->getVertex(k).getPositionIndex();
+      if(faceCardinality != NULL)
+        (*faceCardinality)[faceCounter] = faceDegree;
+      if(faceGroups != NULL)
+        (*faceGroups)[faceCounter] = i;
+      if(faces != NULL)
+        for(unsigned int k=0; k<face->getNumVertices(); k++)
+          (*faces)[tc + k] = face->getVertex(k).getPositionIndex();
         
       faceCounter++;
       tc += faceDegree;
     }
-
   //printf("Exported %d vertices and %d faces. Average number of vertices: %G\n", *numVertices, *numFaces, 1.0 * totalCardinality / (*numFaces));
 }
 
@@ -4603,33 +4636,33 @@ int ObjMesh::loadFromBinary(void * binaryInputStream_, streamType stream, int ve
   // important: subtract the bytes used to save totalBytes
   totalBytes -= sizeof(unsigned int);
 
-  unsigned char * objMeshBuffer;
+  vector<unsigned char> objMeshBuffer;
+  unsigned char * objMeshBufferPtr = NULL;
   if (stream == FILE_STREAM)
   {
-    objMeshBuffer = (unsigned char *) malloc (sizeof(unsigned char *) * totalBytes);
-    if (objMeshBuffer == NULL)
+    try 
     {
-      if (verbose)
-        printf("Error in ObjMesh::loadFromBinary: cannot allocate buffer to read entire obj mesh.\n");
+      objMeshBuffer.resize(totalBytes);
+    }
+    catch (std::bad_alloc const &) 
+    {
+      printf("Error in ObjMesh::loadFromBinary: cannot allocate buffer to read entire obj mesh.\n");
       return 1;
     }
-  }
-  else
-    objMeshBuffer = (unsigned char *) binaryInputStream_; // use current input stream directly, NOT the binaryInputStream wrapper
+    objMeshBufferPtr = &objMeshBuffer[0];
 
-  if (stream == FILE_STREAM)
-  {
-    items = genericRead(objMeshBuffer, sizeof(unsigned char), totalBytes, binaryInputStream);
+    items = genericRead(objMeshBufferPtr, sizeof(unsigned char), totalBytes, binaryInputStream);
     if (items != totalBytes)
     {
-        free(objMeshBuffer);
       if (verbose)
         printf("Error in ObjMesh::loadFromBinary: cannot read from the binary file.\n");
       return 1;
     }
   }
+  else
+    objMeshBufferPtr = (unsigned char *) binaryInputStream_; // use current input stream directly, NOT the binaryInputStream wrapper
 
-  void * binaryInputBuffer = &(objMeshBuffer);
+  void * binaryInputBuffer = &objMeshBufferPtr;
 
   // read whether the mesh has materials or not 
   int hasMaterials = 0;
@@ -4640,7 +4673,7 @@ int ObjMesh::loadFromBinary(void * binaryInputStream_, streamType stream, int ve
     addMaterial(string("default"), defaultKa, defaultKd, defaultKs, defaultShininess);
   }
 
-  double * doubleVec;
+  vector<double> doubleVec;
   if (hasMaterials)
   {
     // number of materials
@@ -4672,8 +4705,8 @@ int ObjMesh::loadFromBinary(void * binaryInputStream_, streamType stream, int ve
     // Ka, Kd, Ks, each of which has 3 doubles, plus Ns, a double
     // So there are 10 doubles for every material
     const int numDoubles = 10;
-    doubleVec = (double *) malloc (sizeof(double) * numDoubles * numObjMaterials);
-    readFromMemory(doubleVec, sizeof(double), numDoubles * numObjMaterials, binaryInputBuffer);
+    doubleVec.resize(numDoubles * numObjMaterials);
+    readFromMemory(&doubleVec[0], sizeof(double), numDoubles * numObjMaterials, binaryInputBuffer);
     for (unsigned int materialIndex=0; materialIndex < numObjMaterials; materialIndex++)
     {
       unsigned int offset = materialIndex * numDoubles;
@@ -4686,7 +4719,6 @@ int ObjMesh::loadFromBinary(void * binaryInputStream_, streamType stream, int ve
       materials[materialIndex].setKs(Ks);
       materials[materialIndex].setShininess(shininess);
     }
-    free(doubleVec);
 
     // number of materials which have map_Kd images
     unsigned int numMaterialsHasKdImages;
@@ -4714,15 +4746,14 @@ int ObjMesh::loadFromBinary(void * binaryInputStream_, streamType stream, int ve
   readFromMemory(&numVertices, sizeof(unsigned int), 1, binaryInputBuffer);
 
   // vertices
-  doubleVec = (double *) malloc (sizeof(double) * numVertices * 3);
-  readFromMemory(doubleVec, sizeof(double), numVertices * 3, binaryInputBuffer);
+  doubleVec.resize(numVertices * 3);
+  readFromMemory(&doubleVec[0], sizeof(double), numVertices * 3, binaryInputBuffer);
   for(unsigned int vertexIndex=0; vertexIndex < numVertices; vertexIndex++)
   {
     unsigned int offset = vertexIndex * 3;
     Vec3d pos(doubleVec[offset], doubleVec[offset+1], doubleVec[offset+2]);
     vertexPositions.push_back(pos);
   }
-  free(doubleVec);
 
   // the number of texture coordinates
   unsigned int numTexCoordinates;
@@ -4731,15 +4762,14 @@ int ObjMesh::loadFromBinary(void * binaryInputStream_, streamType stream, int ve
   // texture coordinates
   if (numTexCoordinates > 0)
   {
-    doubleVec = (double *) malloc (sizeof(double) * numTexCoordinates * 3);
-    readFromMemory(doubleVec, sizeof(double), numTexCoordinates * 3, binaryInputBuffer);
+    doubleVec.resize(numTexCoordinates * 3);
+    readFromMemory(&doubleVec[0], sizeof(double), numTexCoordinates * 3, binaryInputBuffer);
     for(unsigned int textureCoordinateIndex=0; textureCoordinateIndex < numTexCoordinates; textureCoordinateIndex++)
     {
       unsigned int offset = textureCoordinateIndex * 3;
       Vec3d tex(doubleVec[offset], doubleVec[offset+1], doubleVec[offset+2]);
       textureCoordinates.push_back(tex);
     }
-    free(doubleVec);
   }
 
   // the number of normals
@@ -4749,15 +4779,14 @@ int ObjMesh::loadFromBinary(void * binaryInputStream_, streamType stream, int ve
   // normals
   if (numNormals > 0)
   {
-    doubleVec = (double *) malloc (sizeof(double) * numNormals * 3);
-    readFromMemory(doubleVec, sizeof(double), numNormals * 3, binaryInputBuffer);
+    doubleVec.resize(numNormals * 3);
+    readFromMemory(&doubleVec[0], sizeof(double), numNormals * 3, binaryInputBuffer);
     for(unsigned int normalIndex=0; normalIndex < numNormals; normalIndex++)
     {
       unsigned int offset = normalIndex * 3;
       Vec3d normal(doubleVec[offset], doubleVec[offset+1], doubleVec[offset+2]);
       normals.push_back(normal);
     }
-    free(doubleVec);
   }
 
   // the number of groups
@@ -4859,9 +4888,6 @@ int ObjMesh::loadFromBinary(void * binaryInputStream_, streamType stream, int ve
 
   // search if there is a "default" material, if not, add it
   addDefaultMaterial();
-
-  if (stream == FILE_STREAM)
-    free(objMeshBuffer);
 
   return 0;
 }

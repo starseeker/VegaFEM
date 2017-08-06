@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder      *
@@ -38,7 +38,7 @@ template<class TriangleClass>
 const double ObjMeshOctree<TriangleClass>::bboxExpansionRatio = 1.05;
 
 template<class TriangleClass>
-ObjMeshOctree<TriangleClass>::ObjMeshOctree( ObjMesh * objMeshIn, int maxNumTrianglesInLeafNode_, int maxTreeDepth_, int printInfo ) : 
+ObjMeshOctree<TriangleClass>::ObjMeshOctree(const ObjMesh * objMeshIn, int maxNumTrianglesInLeafNode_, int maxTreeDepth_, int printInfo) : 
   maxNumTrianglesInLeafNode(maxNumTrianglesInLeafNode_), maxTreeDepth(maxTreeDepth_)
 {
   // copy mesh
@@ -89,7 +89,7 @@ ObjMeshOctree<TriangleClass>::ObjMeshOctree( ObjMesh * objMeshIn, int maxNumTria
 }
 
 template<>
-ObjMeshOctree<TriangleWithCollisionInfoAndPseudoNormals>::ObjMeshOctree( ObjMesh * objMeshIn, int maxNumTrianglesInLeafNode_, int maxTreeDepth_, int printInfo) :
+ObjMeshOctree<TriangleWithCollisionInfoAndPseudoNormals>::ObjMeshOctree(const ObjMesh * objMeshIn, int maxNumTrianglesInLeafNode_, int maxTreeDepth_, int printInfo) :
   maxNumTrianglesInLeafNode(maxNumTrianglesInLeafNode_), maxTreeDepth(maxTreeDepth_)
 {
   // copy mesh
@@ -133,17 +133,20 @@ ObjMeshOctree<TriangleWithCollisionInfoAndPseudoNormals>::ObjMeshOctree( ObjMesh
       if (pseudoNormalObjMesh->getEdgePseudoNormal(index0, index1, &pseudoNormals[3]) != 0)
       {
         cout << "Error: encountered an edge without a pseudonormal. Degenerate face? Vertices: " << index0 << " " << index1 << endl;
-        exit(1);
+        delete(objMesh);
+        throw(1);
       }
       if (pseudoNormalObjMesh->getEdgePseudoNormal(index1, index2, &pseudoNormals[4]) != 0)
       {
         cout << "Error: encountered an edge without a pseudonormal. Degenerate face? Vertices: " << index1 << " " << index2 << endl;
-        exit(1);
+        delete(objMesh);
+        throw(1);
       }
       if (pseudoNormalObjMesh->getEdgePseudoNormal(index2, index0, &pseudoNormals[5]) != 0)
       {
         cout << "Error: encountered an edge without a pseudonormal. Degenerate face? Vertices: " << index2 << " " << index0 << endl;
-        exit(1);
+        delete(objMesh);
+        throw(1);
       }
 
       // face pseudo normal
@@ -166,7 +169,8 @@ ObjMeshOctree<TriangleWithCollisionInfoAndPseudoNormals>::ObjMeshOctree( ObjMesh
           cout << "  "  << p1 << endl;
           cout << "  "  << p2 << endl;
           cout << "Feature: " << normali << endl;
-          exit(1);
+          delete(objMesh);
+          throw(1);
         }
       }
 
@@ -210,8 +214,8 @@ ObjMeshOctree<TriangleWithCollisionInfoAndPseudoNormals>::ObjMeshOctree( ObjMesh
   cout << "Octree creation completed successfully." << endl;
 }
 
-template ObjMeshOctree<TriangleBasic>::ObjMeshOctree( ObjMesh * objMesh, int maxNumTrianglesInLeafNode_, int maxTreeDepth_, int printInfo );  
-template ObjMeshOctree<TriangleWithCollisionInfo>::ObjMeshOctree( ObjMesh * objMesh, int maxNumTrianglesInLeafNode_, int maxTreeDepth_, int printInfo );  
+template ObjMeshOctree<TriangleBasic>::ObjMeshOctree(const ObjMesh * objMesh, int maxNumTrianglesInLeafNode_, int maxTreeDepth_, int printInfo);  
+template ObjMeshOctree<TriangleWithCollisionInfo>::ObjMeshOctree(const ObjMesh * objMesh, int maxNumTrianglesInLeafNode_, int maxTreeDepth_, int printInfo);
 #if defined(_WIN32) || defined(WIN32)  
   //template ObjMeshOctree<TriangleWithCollisionInfoAndPseudoNormals>::ObjMeshOctree( ObjMesh * objMesh, int maxNumTrianglesInLeafNode_, int maxTreeDepth_, int printInfo );  
 #endif

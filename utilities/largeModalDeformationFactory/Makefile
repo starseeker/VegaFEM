@@ -5,8 +5,8 @@ ifndef CLEANFOLDER
 CLEANFOLDER=LARGEMODALDEFORMATIONFACTORY
 endif
 
-include ../../Makefile-headers/Makefile-header
 R ?= ../..
+include $(R)/Makefile-headers/Makefile-header
 
 # the object files to be compiled for this utility
 LARGEMODALDEFORMATIONFACTORY_OBJECTS=cubicPolynomials.o fixedVertices.o frequencies.o largeModalDeformationFactory.o linearModes.o main.o nonlinearModes.o view.o renderingMesh.o simulationMesh.o canvas.o modalDerivatives.o sketch.o interpolate.o convert.o runtime.o StVKReducedInternalForcesWX.o

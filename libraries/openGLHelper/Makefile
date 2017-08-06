@@ -5,8 +5,8 @@ ifndef CLEANFOLDER
 CLEANFOLDER=OPENGLHELPER
 endif
 
-include ../../Makefile-headers/Makefile-header
 R ?= ../..
+include $(R)/Makefile-headers/Makefile-header
 
 # the object files to be compiled for this library
 OPENGLHELPER_OBJECTS=openGLHelper.o printBitmap.o saveScreenShot.o

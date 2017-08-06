@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC     *
+ * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -128,7 +128,7 @@ public:
   // copies the state into spaces provided by q,qvel,qaccel (each a vector of length r; if NULL is provided for either of q,qvel,qccel, that part of the state is not copied)
   virtual void GetqState(double * q, double * qvel=NULL, double * qaccel=NULL);
 
-  // set/get invidivual position components:
+  // set/get individual position components:
   inline virtual void SetQ(int index, double qIndex) { q[index] = qIndex; } 
   inline virtual double GetQ(int index) { return q[index]; } 
 

@@ -5,8 +5,8 @@ ifndef CLEANFOLDER
 CLEANFOLDER=IHFEM
 endif
 
-include ../../Makefile-headers/Makefile-header
 R ?= ../..
+include $(R)/Makefile-headers/Makefile-header
 
 # the object files to be compiled for this library
 IHFEM_OBJECTS=isotropicMaterial.o isotropicMaterialWithCompressionResistance.o MooneyRivlinIsotropicMaterial.o neoHookeanIsotropicMaterial.o StVKIsotropicMaterial.o homogeneousMooneyRivlinIsotropicMaterial.o homogeneousStVKIsotropicMaterial.o homogeneousNeoHookeanIsotropicMaterial.o isotropicHyperelasticFEM.o isotropicHyperelasticFEMMT.o

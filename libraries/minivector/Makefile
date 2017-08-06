@@ -5,18 +5,17 @@ ifndef CLEANFOLDER
 CLEANFOLDER=MINIVECTOR
 endif
 
-include ../../Makefile-headers/Makefile-header
 R ?= ../..
-
+include $(R)/Makefile-headers/Makefile-header
 
 # the object files to be compiled for this library
-MINIVECTOR_OBJECTS=mat3d.o vec3d.o vec2d.o eig3.o
+MINIVECTOR_OBJECTS=mat3d.o vec3d.o vec3.o vec2d.o eig3.o
 
 # the libraries this library depends on
 MINIVECTOR_LIBS=
 
 # the headers in this library
-MINIVECTOR_HEADERS=eig3.h mat3d.h minivector.h vec2d.h vec3d.h
+MINIVECTOR_HEADERS=eig3.h mat3d.h minivector.h vec2d.h vec3d.h vec3.h
 
 MINIVECTOR_OBJECTS_FILENAMES=$(addprefix $(L)/minivector/, $(MINIVECTOR_OBJECTS))
 MINIVECTOR_HEADER_FILENAMES=$(addprefix $(L)/minivector/, $(MINIVECTOR_HEADERS))

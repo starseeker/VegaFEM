@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
  * "Interactive deformable object simulator" driver application,         *
- *  Copyright (C) 2007 CMU, 2009 MIT, 2015 USC                           *
+ *  Copyright (C) 2007 CMU, 2009 MIT, 2016 USC                           *
  *                                                                       *
  * All rights reserved.                                                  *
  *                                                                       *
@@ -63,7 +63,7 @@ Supported materials:
 #include <float.h>
 using namespace std;
 
-#ifdef WIN32
+#if defined(WIN32) || defined(_WIN32)
   #include <windows.h>
 #endif
 
@@ -244,7 +244,6 @@ CorotationalLinearFEMForceModel * corotationalLinearFEMForceModel = NULL;
 int enableCompressionResistance = 1;
 double compressionResistance = 500;
 int centralDifferencesTangentialDampingUpdateMode = 1;
-int positiveDefinite = 0;
 int addGravity=0;
 double g=9.81;
 VolumetricMesh * volumetricMesh = NULL;
@@ -1500,7 +1499,6 @@ void initSimulation()
     {
       case INV_STVK:
       {
-
         isotropicMaterial = new StVKIsotropicMaterial(tetMesh, enableCompressionResistance, compressionResistance);
         printf("Invertible material: StVK.\n");
         break;
@@ -1550,13 +1548,13 @@ void initSimulation()
   integratorBaseSparse = NULL;
   if (solver == IMPLICITNEWMARK)
   {
-    implicitNewmarkSparse = new ImplicitNewmarkSparse(3*n, timeStep, massMatrix, forceModel, positiveDefinite, numFixedDOFs, fixedDOFs,
+    implicitNewmarkSparse = new ImplicitNewmarkSparse(3*n, timeStep, massMatrix, forceModel, numFixedDOFs, fixedDOFs,
        dampingMassCoef, dampingStiffnessCoef, maxIterations, epsilon, newmarkBeta, newmarkGamma, numSolverThreads);
     integratorBaseSparse = implicitNewmarkSparse;
   }
   else if (solver == IMPLICITBACKWARDEULER)
   {
-    implicitNewmarkSparse = new ImplicitBackwardEulerSparse(3*n, timeStep, massMatrix, forceModel, positiveDefinite, numFixedDOFs, fixedDOFs,
+    implicitNewmarkSparse = new ImplicitBackwardEulerSparse(3*n, timeStep, massMatrix, forceModel, numFixedDOFs, fixedDOFs,
        dampingMassCoef, dampingStiffnessCoef, maxIterations, epsilon, numSolverThreads);
     integratorBaseSparse = implicitNewmarkSparse;
   }

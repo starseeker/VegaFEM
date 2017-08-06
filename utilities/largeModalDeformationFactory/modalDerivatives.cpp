@@ -1,12 +1,12 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
  * "Large Modal Deformation Factory",                                    *
  * a pre-processing utility for model reduction of                       *
  * deformable objects undergoing large deformations.                     *
  *                                                                       *
- *  Copyright (C) 2007 CMU, 2009 MIT, 2015 USC                           *
+ *  Copyright (C) 2007 CMU, 2009 MIT, 2016 USC                           *
  *                                                                       *
  * All rights reserved.                                                  *
  *                                                                       *
@@ -50,6 +50,8 @@
 #ifdef USE_OPENMP
   #include <omp.h>
 #endif
+
+using namespace std;
 
 void MyFrame::OnLoadModalDerivatives(wxCommandEvent& event)
 {
@@ -415,11 +417,10 @@ void MyFrame::ComputeModalDerivatives(int * code, double ** modalDerivatives)
   LinearSolver * solver;
 
   #ifdef PARDISO_SOLVER_IS_AVAILABLE
-    int positiveDefinite = 0;
-    int directIterative = 0;
+    //int directIterative = 0;
     int numThreads = wxThread::GetCPUCount();
-    PardisoSolver * pardisoSolver = new PardisoSolver(stiffnessMatrix, numThreads, positiveDefinite, directIterative);
-    pardisoSolver->ComputeCholeskyDecomposition(stiffnessMatrix);
+    PardisoSolver * pardisoSolver = new PardisoSolver(stiffnessMatrix, numThreads, PardisoSolver::REAL_SYM_INDEFINITE);
+    pardisoSolver->FactorMatrix(stiffnessMatrix);
     solver = pardisoSolver;
   #elif defined(SPOOLES_SOLVER_IS_AVAILABLE)
     int numThreads = wxThread::GetCPUCount();
@@ -431,14 +432,23 @@ void MyFrame::ComputeModalDerivatives(int * code, double ** modalDerivatives)
     solver = new CGSolver(stiffnessMatrix);
   #endif
 
-  #ifdef USE_OPENMP
-    #pragma omp parallel for
+  #ifdef PARDISO_SOLVER_IS_AVAILABLE
+    // with Pardiso, we cannot parallelize the multiple solves using OpenMP, as Pardiso is not thread-safe in this way
+    printf("Solving for modal derivatives using PARDISO.\n"); fflush(NULL);
+    pardisoSolver->SolveLinearSystemMultipleRHS(modalDerivativesConstrained, rhsConstrained, precomputationState.numDeriv);
+  #else
+    #ifdef USE_OPENMP
+      #ifndef SPOOLES_SOLVER_IS_AVAILABLE
+        // we can parallelize the CG solver using OpenMP:
+        #pragma omp parallel for
+      #endif
+    #endif
+    for(int i=0; i< precomputationState.numDeriv; i++)
+    {
+      printf("Solving for derivative #%d out of %d.\n", i + 1, precomputationState.numDeriv); fflush(NULL);
+      solver->SolveLinearSystem(&modalDerivativesConstrained[ELT(numRetainedDOFs, 0, i)], &rhsConstrained[ELT(numRetainedDOFs, 0, i)]);
+    }
   #endif
-  for(int i=0; i< precomputationState.numDeriv; i++)
-  {
-    printf("Solving for derivative #%d out of %d.\n", i + 1, precomputationState.numDeriv); fflush(NULL);
-    solver->SolveLinearSystem(&modalDerivativesConstrained[ELT(numRetainedDOFs, 0, i)], &rhsConstrained[ELT(numRetainedDOFs, 0, i)]);
-  }
 
   free(rhsConstrained);
   delete(solver);
@@ -504,7 +514,7 @@ void MyFrame::RemoveSixRigidModes(int numVectors, double * x)
   double * defoPos6 = (double*) malloc (sizeof(double) * n3);
   for(int i=0; i<n3/3; i++)
   {
-    Vec3d restPos = *((precomputationState.simulationMesh)->getVertex(i));
+    Vec3d restPos = (precomputationState.simulationMesh)->getVertex(i);
     for(int j=0; j<3; j++)
       defoPos6[3*i+j] = restPos[j];
   }

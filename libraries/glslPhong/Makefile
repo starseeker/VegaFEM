@@ -5,8 +5,8 @@ ifndef CLEANFOLDER
 CLEANFOLDER=GLSLPHONG
 endif
 
-include ../../Makefile-headers/Makefile-header
 R ?= ../..
+include $(R)/Makefile-headers/Makefile-header
 
 
 # the object files to be compiled for this library
@@ -32,7 +32,7 @@ $(L)/glslPhong/libglslPhong.a: $(GLSLPHONG_OBJECTS_FILENAMES)
 	ar r $@ $^; cp $@ $(L)/lib; cp $(L)/glslPhong/*.h $(L)/include
 
 $(GLSLPHONG_OBJECTS_FILENAMES): %.o: %.cpp $(GLSLPHONG_LIB_FILENAMES) $(GLSLPHONG_HEADER_FILENAMES)
-	$(CXX) $(CXXFLAGS) -c $(INCLUDE) $< -o $@
+	$(CXX) $(CXXFLAGS) -c $(INCLUDE) $(GLEW_INCLUDE) $< -o $@
 
 ifeq ($(CLEANFOLDER), GLSLPHONG)
 clean: cleanglslPhong

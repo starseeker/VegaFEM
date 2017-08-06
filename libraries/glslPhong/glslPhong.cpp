@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "glslPhong" library , Copyright (C) 2015 USC                          *
+ * "glslPhong" library , Copyright (C) 2016 USC                          *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -74,15 +74,12 @@ char GLSLPhong::fragmentShaderStringAll [] = "varying vec3 normal, eyeVec;\n"
 "  {\n"
 "    final_color += gl_LightSource[i].ambient * gl_FrontMaterial.ambient;\n"
 "    vec3 L = normalize(lightDir[i]);\n"
-"    float lambertTerm = dot(N,L);\n"
-"    if (lambertTerm > 0.0)\n"
-"    {\n"
-"      final_color += gl_LightSource[i].diffuse * gl_FrontMaterial.diffuse * lambertTerm;\n"
-"      vec3 E = normalize(eyeVec);\n"
-"      vec3 R = reflect(-L, N);\n"
-"      float specular = pow(max(dot(R, E), 0.0), gl_FrontMaterial.shininess);\n"
-"      final_color += gl_LightSource[i].specular * gl_FrontMaterial.specular * specular;\n"
-"    }\n"
+"    float lambert = max(dot(N,L), 0.0);\n"
+"    final_color += gl_LightSource[i].diffuse * gl_FrontMaterial.diffuse * lambert;\n"
+"    vec3 E = normalize(eyeVec);\n"
+"    vec3 R = reflect(-L, N);\n"
+"    float specular = pow(max(dot(R,E), 0.0), gl_FrontMaterial.shininess);\n"
+"    final_color += gl_LightSource[i].specular * gl_FrontMaterial.specular * specular;\n"
 "  }\n"
 "  gl_FragColor = final_color;\n"
 "}\n";

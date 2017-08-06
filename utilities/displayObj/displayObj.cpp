@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
  * OBJ mesh visualization utility                                        *
- * Copyright (C) 2007 CMU, 2009 MIT, 2013 USC                            *
+ * Copyright (C) 2007 CMU, 2009 MIT, 2016 USC                            *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -55,7 +55,7 @@
   #ifndef M_PI
     #define M_PI 3.141592654 
   #endif
-  #include "GL\glew.h"
+  #include "GL/glew.h"
 #endif
 
 #include "openGL-headers.h"
@@ -1349,7 +1349,7 @@ int main( int argc, char** argv )
   {
     // parse the 0-indexed list
     LoadList list;
-    int * vertexIndices;
+    int * vertexIndices = NULL;
     list.load(renderExternalVerticesZeroIndexedFilename, &numExternalVertices, &vertexIndices);
     printf("Detected %d external vertices to render.\n", numExternalVertices);
     renderExternalVertices = true;
@@ -1369,7 +1369,7 @@ int main( int argc, char** argv )
   {
     // parse the 1-indexed list
     LoadList list;
-    int * vertexIndices;
+    int * vertexIndices = NULL;
     list.load(renderExternalVerticesOneIndexedFilename, &numExternalVertices, &vertexIndices);
     //list.printList(numExternalVertices, vertexIndices);
     printf("Detected %d external vertices to render.\n", numExternalVertices);

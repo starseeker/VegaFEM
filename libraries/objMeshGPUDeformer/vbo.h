@@ -21,10 +21,10 @@ bool InitializeVBOs(void);
 // === no user-callable code below ===
 
 // external function pointers 
-extern PFNGLBINDBUFFERARBPROC glBindBufferARB;
-extern PFNGLBUFFERDATAARBPROC glBufferDataARB;
-extern PFNGLGENBUFFERSARBPROC glGenBuffersARB;
-extern PFNGLDELETEBUFFERSARBPROC glDeleteBuffersARB;
+//extern PFNGLBINDBUFFERARBPROC glBindBufferARB;
+//extern PFNGLBUFFERDATAARBPROC glBufferDataARB;
+//extern PFNGLGENBUFFERSARBPROC glGenBuffersARB;
+//extern PFNGLDELETEBUFFERSARBPROC glDeleteBuffersARB;
 
 #else
   bool InitializeVBOs(void);

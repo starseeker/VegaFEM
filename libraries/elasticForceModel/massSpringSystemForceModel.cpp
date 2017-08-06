@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "forceModel" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC     *
+ * "forceModel" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -31,6 +31,11 @@
 MassSpringSystemForceModel::MassSpringSystemForceModel(MassSpringSystem * massSpringSystem_): massSpringSystem(massSpringSystem_)
 { 
   r = 3 * massSpringSystem->GetNumParticles(); 
+}
+
+double MassSpringSystemForceModel::GetElasticEnergy(double * u)
+{
+  return massSpringSystem->ComputeEnergy(u);
 }
 
 void MassSpringSystemForceModel::GetInternalForce(double * u, double * internalForces)

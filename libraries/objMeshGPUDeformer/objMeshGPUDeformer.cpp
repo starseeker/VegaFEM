@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
  * "objMeshGPUDeformer" library , Copyright (C) 2007 CMU, 2009 MIT,      *
- *                                                        2015 USC       *
+ *                                                        2016 USC       *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -877,22 +877,47 @@ void ObjMeshGPUDeformer::ReadBack_u(double * u)
 void ObjMeshGPUDeformer::DeleteCGShaders()
 {
   if (VertexPass2Program) 
+  {
+    #ifndef __APPLE__
+      cgGLUnloadProgram(VertexPass2Program);
+    #endif
     cgDestroyProgram(VertexPass2Program);
+  }
   
   if (VertexPass2ProgramShadow)
+  {
+    #ifndef __APPLE__
+      cgGLUnloadProgram(VertexPass2ProgramShadow);
+    #endif
     cgDestroyProgram(VertexPass2ProgramShadow);
+  }
 
   //if (VertexPass2ProgramDeformedNormals)
     //cgDestroyProgram(VertexPass2ProgramDeformedNormals);
 
-  if (VertexPass2ProgramPoints) 
+  if (VertexPass2ProgramPoints)
+  {
+    #ifndef __APPLE__
+      cgGLUnloadProgram(VertexPass2ProgramPoints);
+    #endif
     cgDestroyProgram(VertexPass2ProgramPoints);
+  }
     
   if (VertexPass2ProgramEdges)
+  {
+    #ifndef __APPLE__
+      cgGLUnloadProgram(VertexPass2ProgramEdges);
+    #endif
     cgDestroyProgram(VertexPass2ProgramEdges);
+  }
 
   if (FragmentPass2Program)
+  {
+    #ifndef __APPLE__
+      cgGLUnloadProgram(FragmentPass2Program);
+    #endif
     cgDestroyProgram(FragmentPass2Program);
+  }
     
   if (Context)
     cgDestroyContext(Context);

@@ -1,12 +1,12 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
  * "Large Modal Deformation Factory",                                    *
  * a pre-processing utility for model reduction of                       *
  * deformable objects undergoing large deformations.                     *
  *                                                                       *
- *  Copyright (C) 2007 CMU, 2009 MIT, 2015 USC                           *
+ *  Copyright (C) 2007 CMU, 2009 MIT, 2016 USC                           *
  *                                                                       *
  * All rights reserved.                                                  *
  *                                                                       *
@@ -39,7 +39,7 @@
 #define _LARGEMODALDEFORMATIONFACTORY_H_
 
 #include <set>
-using namespace std;
+#include <string>
 
 #include "wx/wx.h" 
 #include "wx/spinctrl.h" 
@@ -182,8 +182,8 @@ protected:
   void UpdateMenus();
   void CreateOpenGLWindow();
   void InitOpenGL();
-  string int2string(int n);
-  string double2string(double d);
+  std::string int2string(int n);
+  std::string double2string(double d);
   double MaxModeMagnitude(ModalMatrix * modalMatrix);
   void DeleteRenderingMesh();
   int LoadSimulationMesh(wxString & meshFilename);

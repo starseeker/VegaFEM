@@ -1,18 +1,14 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "clothBW" library , Copyright (C) 2015 USC                            *
+ * "clothBW" library , Copyright (C) 2016 USC                            *
  * All rights reserved.                                                  *
  *                                                                       *
- * Code author: Andy Pierce, Yu Yu Xu, Jernej Barbic                     *
+ * Code authors: Andy Pierce, Yijing Li, Yu Yu Xu, Jernej Barbic         *
  * http://www.jernejbarbic.com/code                                      *
  *                                                                       *
- * Research: Jernej Barbic, Fun Shing Sin, Daniel Schroeder,             *
- *           Doug L. James, Jovan Popovic                                *
- *                                                                       *
- * Funding: National Science Foundation, Link Foundation,                *
- *          Singapore-MIT GAMBIT Game Lab,                               *
+ * Funding: National Science Foundation                                  *
  *          Zumberge Research and Innovation Fund at USC                 *
  *                                                                       *
  * This library is free software; you can redistribute it and/or         *
@@ -36,69 +32,62 @@
 
 #include "clothBW.h"
 
-enum ClothBWMT_computationTargetType { STRETCH_SHEAR_FORCE, BEND_FORCE, STRETCH_SHEAR_STIFFNESS, BEND_STIFFNESS };
-
 class ClothBWMT : public ClothBW
 {
 public:
   
   // constructor that does not require triangleUVs input (it computes UVs automatically; note: the UVs are continuous only within each triangle; the UV map is not global (which is fine, provided one does not want to simulate anisotropic effects) )
-  ClothBWMT(int numParticles, double * masses, double * restPositions, int numTriangles,
-          int * triangles, int * triangleGroups, int numMaterialGroups,
-          double * groupTensileStiffness, double * groupShearStiffness,
-          double * groupBendStiffnessU, double * groupBendStiffnessV,
-          double * groupDamping, int addGravity=0, int numThreads=1);
+  ClothBWMT(int numVertices, const double * restPositions, const double * masses,
+      int numTriangles, const int * triangles, const int * triangleGroups,
+      int numMaterialGroups, const MaterialGroup * materialGroups, int addGravity=0, int numThreads=1);
   
   // constructor with triangleUVs input
-  ClothBWMT(int numParticles, double * masses, double * restPositions, int numTriangles,
-          int * triangles, double * traingleUVs, int * triangleGroups, int numMaterialGroups,
-          double * groupTensileStiffness, double * groupShearStiffness,
-          double * groupBendStiffnessU, double * groupBendStiffnessV,
-          double * groupDamping, int addGravity=0, int numThreads=1);	
-  
+  ClothBWMT(int numVertices, const double * restPositions, const double * masses,
+      int numTriangles, const int * triangles,  const double * triangleUVs, const int * triangleGroups,
+      int numMaterialGroups, const MaterialGroup * materialGroups, int addGravity=0, int numThreads=1);
+
   // constructor from regular clothBW and thread count
-  ClothBWMT(ClothBW & clothBW, int numThreads_);
-  
+  ClothBWMT(ClothBW & clothBW, int numThreads);
+
   // destructor
   virtual ~ClothBWMT();
   
   // multi-threaded computations
+
+  // compute the energy, under the deformation u
+  virtual double ComputeEnergy(const double * u);
+
   // compute the internal elastic force, under deformation u
   // note: the force has the same sign as an external force acting on the body (opposite sign as in the StVK class)
-  virtual void ComputeForce(double * u, double * f, bool addForce=true); // if addForce is "true", f will be not be reset to zero prior to adding the forces
+  virtual void ComputeForce(const double * u, double * f, bool addForce=false); // if addForce is "true", f will be not be reset to zero prior to adding the forces
   
+  virtual void ComputeStiffnessMatrix(const double * u, SparseMatrix * K, bool addMatrix=false);
+
+  virtual void ComputeForceAndMatrix(const double * u, double * f, SparseMatrix * K, bool addQuantity = false);
+
   // compute the damping force
   // unimplemented
   // you can use the damping available in the integrator class
-  virtual void ComputeDampingForce(double * u, double * uvel, double * f, bool addForce=false);
-  
-  virtual void ComputeStiffnessMatrix(double * u, SparseMatrix * K, bool addMatrix=false);
-  
-  // for stretch/shear
-  int GetStartTriangle(int rank);
-  int GetEndTriangle(int rank);
-  
-  // for bend
-  int GetStartQuad(int rank);
-  int GetEndQuad(int rank);
-  
+  // virtual void ComputeDampingForce(const double * u, double * uvel, double * f, bool addForce=false);
+
 protected:
+  static void * ClothBWMT_WorkerThread(void * arg);
+
   int numThreads;
   
-  int * startTriangle;
-  int * endTriangle;
+  std::vector<int> startTriangle;
+  std::vector<int> endTriangle;
   
-  int * startQuad;
-  int * endQuad;
+  std::vector<int> startQuad;
+  std::vector<int> endQuad;
   
-  bool forceAlreadyCleared; // need this to make sure we don't erase a force
-  bool matrixAlreadyCleared; // likewise with respect to a stiffness matrix
-  
-  double * internalForceBuffer;
-  SparseMatrix ** sparseMatrixBuffer;
+  std::vector<double> internalForceBuffer;
+  std::vector<SparseMatrix *> sparseMatrixBuffer;
+  std::vector<double> energyBuffer;
   
   void Initialize();
-  void ComputeHelper(enum ClothBWMT_computationTargetType computationTarget, double * u, double * uSecondary, void * target, bool addQuantity);
+
+  void ComputeHelper(const double * u, double * energy, double * f, SparseMatrix * stiffnessMatrix, bool addQuantity);
   
 };
 

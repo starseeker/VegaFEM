@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC     *
+ * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -57,8 +57,7 @@ CentralDifferencesSparse::CentralDifferencesSparse(int numDOFs, double timestep,
 
   #ifdef PARDISO
     printf("Creating Pardiso solver for central differences.\n");
-    int positiveDefiniteSolver = 0;
-    pardisoSolver = new PardisoSolver(systemMatrix, numSolverThreads, positiveDefiniteSolver);
+    pardisoSolver = new PardisoSolver(systemMatrix, numSolverThreads, PardisoSolver::REAL_SYM_INDEFINITE);
   #endif
 
   #ifdef SPOOLES
@@ -114,7 +113,7 @@ void CentralDifferencesSparse::DecomposeSystemMatrix()
   //systemMatrix->SaveToMatlabFormat("system.mat");
   
   #ifdef PARDISO
-    int info = pardisoSolver->ComputeCholeskyDecomposition(systemMatrix);
+    int info = pardisoSolver->FactorMatrix(systemMatrix);
     if (info != 0)
     {
       printf("Error: PARDISO solver returned non-zero exit code %d.\n", info);

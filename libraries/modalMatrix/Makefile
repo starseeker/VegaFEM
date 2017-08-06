@@ -5,14 +5,14 @@ ifndef CLEANFOLDER
 CLEANFOLDER=MODALMATRIX
 endif
 
-include ../../Makefile-headers/Makefile-header
 R ?= ../..
+include $(R)/Makefile-headers/Makefile-header
 
 # the object files to be compiled for this library
 MODALMATRIX_OBJECTS=modalMatrix.o modalMatrixTransposed.o
 
 # the libraries this library depends on
-MODALMATRIX_LIBS=
+MODALMATRIX_LIBS=matrixIO
 
 # the headers in this library
 MODALMATRIX_HEADERS=modalMatrix.h modalMatrixTransposed.h

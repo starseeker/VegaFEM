@@ -5,9 +5,9 @@
 #CC=gcc
 
 # Compiler options
-OPTS=-g
-OPTS=-O0
-#OPTS=-O2
+#OPTS=-g
+#OPTS=-O0
+OPTS=-O2
 
 UNAME = $(shell uname)
 
@@ -31,13 +31,13 @@ LIBS    = -lXmu -lXext -lX11 -lXi -lm
 # CPPFLAGS += -I/usr/X11R6/include -DGLUI_OPENGLUT
 
 # (2) FreeGLUT
-# LIBGLUT   = -L/usr/X11R6/lib -lfreeglut
-# CPPFLAGS += -I/usr/X11R6/include -DGLUI_FREEGLUT
+LIBGLUT   = -L/usr/X11R6/lib -lglut
+CPPFLAGS += -I/usr/X11R6/include -DGLUI_FREEGLUT
 
 # (3) GLUT
-LIBGLUT   = -framework OpenGL -framework GLUT
+#LIBGLUT   = -framework OpenGL -framework GLUT
 #LIBGLUT   = -L/usr/X11R6/lib -lglut
-CPPFLAGS += -I/usr/X11R6/include
+#CPPFLAGS += -I/usr/X11R6/include
 
 #######################################
 

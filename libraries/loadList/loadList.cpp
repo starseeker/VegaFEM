@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
  * "loadList" library , Copyright (C) 2007 CMU, 2009 MIT                 *
  * All rights reserved.                                                  *
@@ -51,7 +51,7 @@ int compareLoadList(const void * a, const void * b)
   return ( *(int*)a - *(int*)b );
 }
 
-int LoadList::load(const char * filename, int * numListEntries, int ** listEntries, int offset)
+int LoadList::load(const char * filename, int * numListEntries, int ** listEntries, int offset, bool sort)
 {
    // comma-separated text file of fixed vertices
   FILE * fin;
@@ -98,7 +98,8 @@ int LoadList::load(const char * filename, int * numListEntries, int ** listEntri
   }
 
   // sort the list entries
-  qsort ((*listEntries), *numListEntries, sizeof(int), compareLoadList);
+  if (sort)
+    qsort ((*listEntries), *numListEntries, sizeof(int), compareLoadList);
 
   fclose(fin);
 

@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "graph" library , Copyright (C) 2015 USC                              *
+ * "graph" library , Copyright (C) 2016 USC                              *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -376,7 +376,7 @@ void Graph::GetCartesianProductVertexIndexComponents(int productVertex, int * ve
 void Graph::ShortestPath(std::set<int> & seedVertices, std::vector<int> & distances)
 {
   distances.clear();
-  distances.reserve(numVertices);
+  distances.resize(numVertices);
   
   for(set<int> :: iterator iter = seedVertices.begin(); iter != seedVertices.end(); iter++)
     distances[*iter] = 0;

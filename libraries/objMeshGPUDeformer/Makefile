@@ -5,8 +5,8 @@ ifndef CLEANFOLDER
 CLEANFOLDER=OBJMESHGPUDEFORMER
 endif
 
-include ../../Makefile-headers/Makefile-header
 R ?= ../..
+include $(R)/Makefile-headers/Makefile-header
 
 # the object files to be compiled for this library
 OBJMESHGPUDEFORMER_OBJECTS=objMeshGPUDeformer.o objMeshGPUDeformer_coarseToFine.o objMeshGPUDeformer_coarseToFine_fbo.o objMeshGPUDeformer_uUq.o objMeshGPUDeformer_uUq_fbo.o objMeshGPUDeformer_uUq_pbuffer.o objMeshGPUDeformer_uUq_setLighting.o vbo.o

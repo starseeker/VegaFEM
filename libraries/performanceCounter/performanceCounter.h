@@ -71,7 +71,7 @@ public:
   void StartCounter(); // call this before your code block
   void StopCounter(); // call this after your code block
 
-  // read elapsed time (units are seconds, accuracy is up to microseconds)
+  // read the elapsed time (units are seconds, accuracy is up to microseconds)
   double GetElapsedTime();
 
 protected:

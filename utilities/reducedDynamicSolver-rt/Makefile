@@ -5,8 +5,8 @@ ifndef CLEANFOLDER
 CLEANFOLDER=REDUCEDDYNAMICSOLVERRT
 endif
 
-include ../../Makefile-headers/Makefile-header
 R ?= ../..
+include $(R)/Makefile-headers/Makefile-header
 
 # the object files to be compiled for this utility
 REDUCEDDYNAMICSOLVERRT_OBJECTS=reducedDynamicSolver-rt.o initGraphics.o

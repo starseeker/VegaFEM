@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
  * "matrix" library , Copyright (C) 2007 CMU, 2009 MIT                   *
  * All rights reserved.                                                  *
@@ -31,7 +31,7 @@
 // writes out the m x n matrix onto the stream, in binary format
 // LAPACK column-major order
 template <class real>
-int WriteMatrixToStream(FILE * file, int m, int n, real * matrix)
+int WriteMatrixToStream(FILE * file, int m, int n, const real * matrix)
 {
   if ((int)(fwrite(matrix,sizeof(real),m*n,file)) < m*n)
     return 1;
@@ -52,7 +52,7 @@ int WriteMatrixHeaderToStream(FILE * file, int m, int n)
 
 
 template <class real>
-int WriteMatrixToDisk(const char * filename, int m, int n, real * matrix)
+int WriteMatrixToDisk(const char * filename, int m, int n, const real * matrix)
 {
   FILE * file;
   file = fopen(filename, "wb");
@@ -80,7 +80,7 @@ int WriteMatrixToDisk(const char * filename, int m, int n, real * matrix)
 }
 
 template <class real>
-int AppendMatrixToDisk(const char * filename, int mAppendix, int nAppendix, real * matrixAppendix)
+int AppendMatrixToDisk(const char * filename, int mAppendix, int nAppendix, const real * matrixAppendix)
 {
   int m, n;
   real * matrix;
@@ -276,7 +276,7 @@ int ReadMatrixFromDiskListOfFiles(const char * fileList, int * m, int * n, real 
 }
 
 template <class real>
-int WriteMatrixToDisk_(const char * filename, int m, int n, real * matrix)
+int WriteMatrixToDisk_(const char * filename, int m, int n, const real * matrix)
 {
   if (WriteMatrixToDisk(filename, m, n, matrix) != 0)
     exit(1);
@@ -285,7 +285,7 @@ int WriteMatrixToDisk_(const char * filename, int m, int n, real * matrix)
 }
 
 template <class real>
-int AppendMatrixToDisk_(const char * filename, int mAppendix, int nAppendix, real * matrixAppendix)
+int AppendMatrixToDisk_(const char * filename, int mAppendix, int nAppendix, const real * matrixAppendix)
 {
   if (AppendMatrixToDisk(filename, mAppendix, nAppendix, matrixAppendix) != 0)
     exit(1);
@@ -594,7 +594,7 @@ int ReadMatrixFromDiskTextFile(const char * filename, int * m, int * n, real ** 
 }
 
 template <class real>
-int WriteMatrixToDiskTextFile(const char * filename, int m, int n, real * matrix)
+int WriteMatrixToDiskTextFile(const char * filename, int m, int n, const real * matrix)
 {
   // open file
   FILE * fout;
@@ -787,17 +787,17 @@ template int ReadModesFromDisk<float>(const char * filename, int * n, int * r, f
 template int WriteModesToDisk<double>(const char * filename, int n, int r, double * frequencies, double * modes);
 template int WriteModesToDisk<float>(const char * filename, int n, int r, float * frequencies, float * modes);
 
-template int WriteMatrixToStream<double>(FILE * file, int m, int n, double * matrix);
-template int WriteMatrixToStream<float>(FILE * file, int m, int n, float * matrix);
+template int WriteMatrixToStream<double>(FILE * file, int m, int n, const double * matrix);
+template int WriteMatrixToStream<float>(FILE * file, int m, int n, const float * matrix);
 
-template int WriteMatrixToDisk<double>(const char * filename, int m, int n, double * matrix);
-template int WriteMatrixToDisk<float>(const char * filename, int m, int n, float * matrix);
+template int WriteMatrixToDisk<double>(const char * filename, int m, int n, const double * matrix);
+template int WriteMatrixToDisk<float>(const char * filename, int m, int n, const float * matrix);
 
-template int WriteMatrixToDisk_<double>(const char * filename, int m, int n, double * matrix);
-template int WriteMatrixToDisk_<float>(const char * filename, int m, int n, float * matrix);
+template int WriteMatrixToDisk_<double>(const char * filename, int m, int n, const double * matrix);
+template int WriteMatrixToDisk_<float>(const char * filename, int m, int n, const float * matrix);
 
-template int AppendMatrixToDisk_<double>(const char * filename, int m, int n, double * matrix);
-template int AppendMatrixToDisk_<float>(const char * filename, int m, int n, float * matrix);
+template int AppendMatrixToDisk_<double>(const char * filename, int m, int n, const double * matrix);
+template int AppendMatrixToDisk_<float>(const char * filename, int m, int n, const float * matrix);
 
 template int ReadMatrixFromDiskListOfFiles<double>(const char * fileList, int * m, int * n, double ** matrix);
 template int ReadMatrixFromDiskListOfFiles<float>(const char * fileList, int * m, int * n, float ** matrix);
@@ -814,8 +814,8 @@ template int ReadMatrixFromDisk_<float>(const char * filename, int * m, int * n,
 template int ReadMatrixFromDiskTextFile<double>(const char * filename, int * m, int * n, double ** matrix);
 template int ReadMatrixFromDiskTextFile<float>(const char * filename, int * m, int * n, float ** matrix);
 
-template int WriteMatrixToDiskTextFile<double>(const char * filename, int m, int n, double * matrix);
-template int WriteMatrixToDiskTextFile<float>(const char * filename, int m, int n, float * matrix);
+template int WriteMatrixToDiskTextFile<double>(const char * filename, int m, int n, const double * matrix);
+template int WriteMatrixToDiskTextFile<float>(const char * filename, int m, int n, const float * matrix);
 
 template int ReadBinary(FILE * fin, bool * data);
 template int ReadBinary(FILE * fin, int * data);

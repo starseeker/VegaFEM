@@ -1,0 +1,146 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros">
+    <FreeGLUTIncludeDir>C:\lib\OpenGL\freeglut-3.0.0\include</FreeGLUTIncludeDir>
+    <FreeGLUTLibDir>C:\lib\OpenGL\freeglut-3.0.0\build-64\lib\Debug</FreeGLUTLibDir>
+    <GLEXTIncludeDir>C:\lib\OpenGL\glext</GLEXTIncludeDir>
+    <GLEWLibDir>C:\lib\OpenGL\glew-1.13.0\lib\Debug\x64</GLEWLibDir>
+    <GLEWIncludeDir>C:\lib\OpenGL\glew-1.13.0\include</GLEWIncludeDir>
+    <PThreadIncludeDir>C:\lib\pthreads-w32-2-9-1-release\Pre-built.2\include</PThreadIncludeDir>
+    <PThreadLib>C:\lib\pthreads-w32-2-9-1-release\Pre-built.2\lib\x64\pthreadVC2.lib</PThreadLib>
+    <CgDir>C:\Program Files (x86)\NVIDIA Corporation\Cg\</CgDir>
+    <CgIncludeDir>$(CgDir)include\</CgIncludeDir>
+    <CgLibDir>$(CgDir)lib.x64\</CgLibDir>
+    <LibTIFFIncludeDir>C:\lib\Image\tiff-4.0.6\libtiff</LibTIFFIncludeDir>
+    <LibTiffLibDir>C:\lib\Image\tiff-4.0.6\build-64\libtiff\Debug</LibTiffLibDir>
+    <LibJPEGIncludeDir>C:\lib\Image\jpeg-9b</LibJPEGIncludeDir>
+    <LibJPEGLibDir>C:\lib\Image\jpeg-9b\x64\Release</LibJPEGLibDir>
+    <libPNGIncludeDir>C:\lib\Image\libpng-1.6.21</libPNGIncludeDir>
+    <libPNGLibDir>C:\lib\Image\libpng-1.6.21\projects\vstudio\x64\Debug</libPNGLibDir>
+    <IntelComposerDir>C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2016\windows\</IntelComposerDir>
+    <MKLDir>C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2016\windows\mkl\</MKLDir>
+    <MKLIncludeDir>$(MKLDir)include\</MKLIncludeDir>
+    <MKLLibDir>$(MKLDir)lib\intel64\</MKLLibDir>
+    <MKLStaticLibSuffix />
+    <MKLDynamicLibSuffix>_dll</MKLDynamicLibSuffix>
+    <WxWidgetsLibDir>C:\lib\wxWidgets-3.1.0\lib\vc_x64_dll</WxWidgetsLibDir>
+    <WxWidgetsIncludeDir>C:\lib\wxWidgets-3.1.0\include;C:\lib\wxWidgets-3.1.0\include\msvc</WxWidgetsIncludeDir>
+    <ArpackLib> </ArpackLib>
+   <MKLLibSuffix>$(MKLStaticLibSuffix)</MKLLibSuffix>
+  </PropertyGroup>
+  <PropertyGroup>
+    <IntDir>$(Configuration)\</IntDir>
+    <OutDir>$(ProjectDir)</OutDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(SolutionDir)\libraries\include;$(SolutionDir)libraries\glui\glui-2.35\src\include;$(FreeGLUTIncludeDir);$(GLEWIncludeDir);$(GLEXTIncludeDir);$(PThreadIncludeDir);$(CgIncludeDir);$(LibTIFFIncludeDir);$(LibJPEGIncludeDir);$(libPNGIncludeDir);$(MKLIncludeDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <Optimization>MaxSpeed</Optimization>
+      <PreprocessorDefinitions>WIN32;USE_OPENMP;_CRT_SECURE_NO_WARNINGS;GLUT_BUILDING_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <OpenMPSupport>true</OpenMPSupport>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+    </ClCompile>
+    <PostBuildEvent>
+      <Command>IF EXIST "$(ProjectDir)..\include" IF EXIST "$(ProjectDir)*.h" copy "$(ProjectDir)*.h" "$(ProjectDir)..\include\"; 
+IF EXIST "$(ProjectDir)..\lib" IF EXIST "$(ProjectDir)*.lib" (
+  IF NOT EXIST "$(ProjectDir)..\lib\$(Configuration)" mkdir "$(ProjectDir)..\lib\$(Configuration)";
+  copy "$(ProjectDir)*.lib" "$(ProjectDir)..\lib\$(Configuration)\";
+)
+IF EXIST "$(ProjectDir)..\bin" IF EXIST "$(ProjectDir)*.exe" (
+  IF NOT EXIST "$(ProjectDir)..\bin\$(Configuration)" mkdir "$(ProjectDir)..\bin\$(Configuration)";
+  copy "$(ProjectDir)*.exe" "$(ProjectDir)..\bin\$(Configuration)\";
+)</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Copying *.h, *.lib, *.exe to target directories</Message>
+    </PostBuildEvent>
+    <Link>
+      <SubSystem>NotSet</SubSystem>
+      <AdditionalDependencies>massSpringSystem.lib;integratorSparse.lib;integrator.lib;elasticForceModel.lib;forceModel.lib;sparseMatrix.lib;loadList.lib;insertRows.lib;configFile.lib;volumetricMesh.lib;getopts.lib;graph.lib;isotropicHyperelasticFEM.lib;minivector.lib;stvk.lib;corotationalLinearFEM.lib;polarDecomposition.lib;matrixIO.lib;objMesh.lib;sparseSolver.lib;uniqueIntegerID.lib;clothBW.lib;windingNumber.lib;hashTable.lib;multicore.lib;glslPhong.lib;imageIO.lib;lighting.lib;camera.lib;sceneObject.lib;renderVolumetricMesh.lib;openGLHelper.lib;$(SolutionDir)libraries\glui\glui-2.35\src\msvc\lib\$(Configuration)\glui32.lib;$(PThreadLib);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(WxWidgetsLibDir);$(GLEWLibDir);$(FreeGLUTLibDir);$(LibTiffLibDir);$(LibJPEGLibDir);$(libPNGLibDir);$(MKLLibDir);$(CgLibDir);$(IntelComposerDir)\compiler\lib\intel64;$(SolutionDir)\libraries\lib\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <BuildMacro Include="FreeGLUTIncludeDir">
+      <Value>$(FreeGLUTIncludeDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="FreeGLUTLibDir">
+      <Value>$(FreeGLUTLibDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="GLEXTIncludeDir">
+      <Value>$(GLEXTIncludeDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="GLEWIncludeDir">
+      <Value>$(GLEWIncludeDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="GLEWLibDir">
+      <Value>$(GLEWLibDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="PThreadIncludeDir">
+      <Value>$(PThreadIncludeDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="PThreadLib">
+      <Value>$(PThreadLib)</Value>
+    </BuildMacro>
+    <BuildMacro Include="CgDir">
+      <Value>$(CgDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="CgIncludeDir">
+      <Value>$(CgIncludeDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="CgLibDir">
+      <Value>$(CgLibDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="LibTIFFIncludeDir">
+      <Value>$(LibTIFFIncludeDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="LibTiffLibDir">
+      <Value>$(LibTiffLibDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="LibJPEGIncludeDir">
+      <Value>$(LibJPEGIncludeDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="LibJPEGLibDir">
+      <Value>$(LibJPEGLibDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="libPNGIncludeDir">
+      <Value>$(libPNGIncludeDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="libPNGLibDir">
+      <Value>$(libPNGLibDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="IntelComposerDir">
+      <Value>$(IntelComposerDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MKLDir">
+      <Value>$(MKLDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MKLIncludeDir">
+      <Value>$(MKLIncludeDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MKLLibDir">
+      <Value>$(MKLLibDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MKLStaticLibSuffix">
+      <Value>$(MKLStaticLibSuffix)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MKLDynamicLibSuffix">
+      <Value>$(MKLDynamicLibSuffix)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MKLLibSuffix">
+      <Value>$(MKLLibSuffix)</Value>
+    </BuildMacro>
+    <BuildMacro Include="WxWidgetsLibDir">
+      <Value>$(WxWidgetsLibDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="WxWidgetsIncludeDir">
+      <Value>$(WxWidgetsIncludeDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="ArpackLib">
+      <Value>$(ArpackLib)</Value>
+    </BuildMacro>
+  </ItemGroup>
+</Project>

@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "imageIO" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC        *
+ * "imageIO" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Yili Zhao, Jernej Barbic                                 *
@@ -140,12 +140,13 @@ ImageIO::errorType ImageIO::loadPPM(const char * filename)
   bytesPerPixel = 3;
 
   // read the pixels
-  free(pixels);
+  if(ownPixels)
+    free(pixels);
   pixels = (unsigned char*) malloc (sizeof(unsigned char) * 3 * width * height);
+  ownPixels = 1;
   if(fread(pixels, sizeof(unsigned char), 3 * width * height, file) < 3 * width * height)
   {
     printf("Error in loadPPM: Error reading ppm image from %s.\n", filename);
-    free(pixels);
     fclose(file);
     return IO_ERROR;
   }
@@ -182,6 +183,8 @@ ImageIO::errorType ImageIO::savePPM(const char * filename)
     if (fwrite(&pixelsNoAlphaChannel[pos], sizeof(unsigned char), 3 * width, file) != 3 * width)
     {
       printf("Error in savePPM: Error while saving ppm image to %s.\n", filename);
+      if (bytesPerPixel == 4)
+        free(pixelsNoAlphaChannel);
       fclose(file);
       return IO_ERROR;
     }
@@ -250,14 +253,15 @@ ImageIO::errorType ImageIO::loadTGA(const char * filename)
   vegalong imageSize = width * height * bytesPerPixel;
 
   // allocate memory for image data
-  free(pixels);
+  if(ownPixels)
+    free(pixels);
   pixels = (unsigned char*) malloc (sizeof(unsigned char) * imageSize);
+  ownPixels = 1;
 
   // read image data
   if ( (int)fread(pixels, sizeof(unsigned char), imageSize, file) < imageSize)
   {
     printf("Error in loadTGA: Error reading tga image from %s.\n", filename);
-    free(pixels);
     fclose(file);
     return IO_ERROR;
   }
@@ -393,12 +397,14 @@ ImageIO::errorType ImageIO::loadJPEG(const char * filename)
   width = jpgPicturePtr->image_width;
   height = jpgPicturePtr->image_height;
 
-  // CAREFULL we must be!! the bytesPerPixel information is not in the jpeg header.
-  // It is only available after calling jpeg_start_decompress()
+  // Careful: the bytesPerPixel information is not available in the jpeg header.
+  // It is only available after calling jpeg_start_decompress().
   bytesPerPixel = jpgPicturePtr->output_components;
- 
-  free(pixels);
+
+  if(ownPixels)
+    free(pixels);
   pixels = (unsigned char *) malloc(sizeof(unsigned char) * width * height * bytesPerPixel);
+  ownPixels = 1;
 //  printf("Width = %d; Height = %d, bytesPerPixel = %d\n", width, height, bytesPerPixel);
 //  fflush(NULL);
 
@@ -410,7 +416,6 @@ ImageIO::errorType ImageIO::loadJPEG(const char * filename)
     if (jpeg_read_scanlines(jpgPicturePtr, (JSAMPARRAY)rowPtr, maxNumLines) != maxNumLines)
     {
       printf("Error in loadJPEG: Error reading jpg image from %s.\n", filename);
-      free(pixels);
       jpeg_destroy_decompress(jpgPicturePtr);
       fclose(file);
       return IO_ERROR;
@@ -554,7 +559,10 @@ ImageIO::errorType ImageIO::loadTIFF(const char * filename)
     return IO_ERROR;
   }
 
+  if(ownPixels)
+    free(pixels);
   pixels = (unsigned char*) malloc (sizeof(unsigned char) * width * height * bytesPerPixel);
+  ownPixels = 1;
 
   // write tiff_pixels into the pixels array
   int counter = 0;
@@ -804,8 +812,7 @@ ImageIO::errorType ImageIO::loadPNG(const char * filename)
   default:
     printf("Error in loadPNG: image transformation failed.\n");
     fclose(file);
-    exit(0);  // comment this out after debugging, use return IO_ERROR
-    //return (IO_ERROR);
+    return (IO_ERROR);
     break;
   }
 
@@ -814,12 +821,14 @@ ImageIO::errorType ImageIO::loadPNG(const char * filename)
   {
     printf("Error in loadPNG: the number of bytes per row, which is %lu, does not match bytesPerPixel * width, which is %d.\n", png_get_rowbytes(png_ptr, info_ptr), bytesPerPixel * width);  
     fclose(file);
-    exit(0); // comment this out after debugging, use return IO_ERROR
     return (IO_ERROR);
   }
 
   unsigned int bytesPerRow = bytesPerPixel * width;
+  if(ownPixels)
+    free(pixels);
   pixels = (unsigned char *) malloc (sizeof(unsigned char) * bytesPerRow * height);
+  ownPixels = 1;
 
   png_bytep * row_pointers = (png_bytep*) malloc (sizeof(png_bytep) * height);
   for(unsigned int row = 0; row < height; row++)

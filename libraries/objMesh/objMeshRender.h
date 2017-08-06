@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder      *
@@ -109,20 +109,32 @@ public:
   unsigned int createDisplayList(int geometryMode, int renderMode);
 
   // set custom colors, for OBJMESHRENDER_CUSTOMCOLOR mode
-  void setCustomColors(Vec3d color); // constant color for each mesh vertex
-  void setCustomColors(std::vector<Vec3d> colors); // specific color for every mesh vertex
+  void setCustomColors(const Vec3d & color); // constant color for each mesh vertex
+  void setCustomColors(const std::vector<Vec3d> & colors); // specific color for every mesh vertex
 
   // set custom colors, for OBJMESHRENDER_CUSTOMCOLORFACES mode
-  void setCustomColorsFaces(Vec3d color); // constant color for each mesh face
-  void setCustomColorsFaces(std::vector<Vec3d> colors); // specific color for every mesh face
+  void setCustomColorsFaces(const Vec3d & color); // constant color for each mesh face
+  void setCustomColorsFaces(const std::vector<Vec3d> & colors); // specific color for every mesh face
 
   void renderSpecifiedVertices(int * specifiedVertices, int numSpecifiedVertices);
   void renderVertex(int index);
 
-  // the more specific rendering versions for various SceneObject functions
+  // the more specific rendering versions 
   void renderGroup(unsigned int groupIndex, int geometryMode, int renderMode);
   void renderGroup(const char * groupName, int geometryMode, int renderMode);
   void renderGroupEdges(const char * groupName);
+
+  // render boundary edges
+  void renderBoundaryEdges(); // does not use the display list
+  unsigned int createBoundaryEdgesDisplayList();
+
+  // render crease edges
+  void renderCreaseEdges(double thresholdAngle=90.0); // does not use the display list 
+  unsigned int createCreaseEdgesDisplayList(double thresholdAngle=90.0);
+
+  // render silhouette edges
+  void renderSilhouetteEdges(double cameraPos[3]); // does not use the display list 
+  unsigned int createSilhouetteEdgesDisplayList(double cameraPos[3]);
 
   int numTextures();
   int maxBytesPerPixelInTextures();

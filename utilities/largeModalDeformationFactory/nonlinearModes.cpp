@@ -1,12 +1,12 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
  * "Large Modal Deformation Factory",                                    *
  * a pre-processing utility for model reduction of                       *
  * deformable objects undergoing large deformations.                     *
  *                                                                       *
- *  Copyright (C) 2007 CMU, 2009 MIT, 2015 USC                           *
+ *  Copyright (C) 2007 CMU, 2009 MIT, 2016 USC                           *
  *                                                                       *
  * All rights reserved.                                                  *
  *                                                                       *
@@ -182,10 +182,10 @@ void MyFrame::OnComputeNonLinearModes(wxCommandEvent& event)
      )
   {
     this->errMsg( _T("Cannot compute the simulation basis"),  
-      _T("You must compute/provide at least one of the following:\n"
-         "  (1) linear modes, frequencies, and modal derivatives, OR\n"
-         "  (2) external simulation data.\n"
-      ) );
+      _T("You must compute/provide at least one of the following:\n")
+      _T("  (1) linear modes, frequencies, and modal derivatives, OR\n")
+      _T("  (2) external simulation data.\n")
+      );
       return;
   }
 

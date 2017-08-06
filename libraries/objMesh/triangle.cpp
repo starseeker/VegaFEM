@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder      *
@@ -43,39 +43,15 @@
 #include "tribox3.h"
 using namespace std;
 
-bool TriangleBasic::doesIntersectBox(BoundingBox & bbox)
+bool TriangleBasic::doesIntersectBox(const BoundingBox & bbox) const
 {   
   // prepare the data and call the "triBoxOverlap" worker routine
-
-  double boxcenter[3];
-  double boxhalfsize[3];
-  double triverts[3][3];
-
-  Vec3d center_ = bbox.center();
-  Vec3d halfSides_ = bbox.halfSides();
-  boxcenter[0] = center_[0];
-  boxcenter[1] = center_[1];
-  boxcenter[2] = center_[2];
-  boxhalfsize[0] = halfSides_[0];
-  boxhalfsize[1] = halfSides_[1];
-  boxhalfsize[2] = halfSides_[2];
-
-  triverts[0][0] = first_[0];
-  triverts[0][1] = first_[1];
-  triverts[0][2] = first_[2];
-
-  triverts[1][0] = second_[0];
-  triverts[1][1] = second_[1];
-  triverts[1][2] = second_[2];
-
-  triverts[2][0] = third_[0];
-  triverts[2][1] = third_[1];
-  triverts[2][2] = third_[2];
-
-  return triBoxOverlap(boxcenter,boxhalfsize,triverts);
+  const Vec3d & center = bbox.center();
+  const Vec3d & halfSides = bbox.halfSides();
+  return triBoxOverlap(&center[0], &halfSides[0], &first_[0], &second_[0], &third_[0]);
 }
 
-int TriangleBasic::lineSegmentIntersection(Vec3d segmentStart, Vec3d segmentEnd, Vec3d * intersectionPoint)
+int TriangleBasic::lineSegmentIntersection(const Vec3d & segmentStart, const Vec3d & segmentEnd, Vec3d * intersectionPoint) const
 {
   // Jernej Barbic, CMU, 2005
   // code modified from the following code:
@@ -153,7 +129,7 @@ int TriangleBasic::lineSegmentIntersection(Vec3d segmentStart, Vec3d segmentEnd,
   return 1;                      // intersectionPoint is in T
 }
 
-void TriangleBasic::render()
+void TriangleBasic::render() const
 {
    Vec3d a = first_;
    Vec3d b = second_;
@@ -166,7 +142,7 @@ void TriangleBasic::render()
    glEnd();
 }
 
-void TriangleBasic::renderEdges()
+void TriangleBasic::renderEdges() const
 {
    Vec3d a = first_;
    Vec3d b = second_;
@@ -183,7 +159,7 @@ void TriangleBasic::renderEdges()
 }
 
 template<class TriangleClass>
-void makeUniqueList(vector<TriangleClass*> &triangleList, vector<TriangleClass*> & uniqueList)
+void makeUniqueList(const vector<TriangleClass*> & triangleList, vector<TriangleClass*> & uniqueList)
 {
   uniqueList.clear();
   set<int> indices;
@@ -200,7 +176,7 @@ void makeUniqueList(vector<TriangleClass*> &triangleList, vector<TriangleClass*>
 }
 
 template<class TriangleClass>
-void makeUniqueList(vector<TriangleClass*> &triangleList)
+void makeUniqueList(vector<TriangleClass*> & triangleList)
 {
   vector<TriangleClass*> uniqueList;
   makeUniqueList(triangleList,uniqueList);
@@ -384,7 +360,7 @@ void TriangleWithCollisionInfo::ComputeCollisionInfo()
 #include "triangle-closestPoint.cpp"
 
 TriangleWithCollisionInfoAndPseudoNormals::TriangleWithCollisionInfoAndPseudoNormals
-(Vec3d first_g, Vec3d second_g, Vec3d third_g, Vec3d * pseudoNormals): TriangleWithCollisionInfo(first_g,second_g,third_g)
+(const Vec3d & first_g, const Vec3d & second_g, const Vec3d & third_g, const Vec3d pseudoNormals[7]): TriangleWithCollisionInfo(first_g,second_g,third_g)
 { 
   ComputeCollisionInfo(); 
   pseudoNormal_[0] = pseudoNormals[0]; 
@@ -404,12 +380,12 @@ TriangleWithCollisionInfoAndPseudoNormals::TriangleWithCollisionInfoAndPseudoNor
   pseudoClosestPosition_[6] = 1.0 / 3 * (first_ + second_ + third_);
 }
 
-template void makeUniqueList<TriangleBasic>(vector<TriangleBasic*> &triangleList, vector<TriangleBasic*> & uniqueList);
-template void makeUniqueList<TriangleBasic>(vector<TriangleBasic*> &triangleList);
+template void makeUniqueList<TriangleBasic>(const vector<TriangleBasic*> & triangleList, vector<TriangleBasic*> & uniqueList);
+template void makeUniqueList<TriangleBasic>(vector<TriangleBasic*> & triangleList);
 
-template void makeUniqueList<TriangleWithCollisionInfo>(vector<TriangleWithCollisionInfo*> &triangleList, vector<TriangleWithCollisionInfo*> & uniqueList);
-template void makeUniqueList<TriangleWithCollisionInfo>(vector<TriangleWithCollisionInfo*> &triangleList);
+template void makeUniqueList<TriangleWithCollisionInfo>(const vector<TriangleWithCollisionInfo*> & triangleList, vector<TriangleWithCollisionInfo*> & uniqueList);
+template void makeUniqueList<TriangleWithCollisionInfo>(vector<TriangleWithCollisionInfo*> & triangleList);
 
-template void makeUniqueList<TriangleWithCollisionInfoAndPseudoNormals>(vector<TriangleWithCollisionInfoAndPseudoNormals*> &triangleList, vector<TriangleWithCollisionInfoAndPseudoNormals*> & uniqueList);
-template void makeUniqueList<TriangleWithCollisionInfoAndPseudoNormals>(vector<TriangleWithCollisionInfoAndPseudoNormals*> &triangleList);
+template void makeUniqueList<TriangleWithCollisionInfoAndPseudoNormals>(const vector<TriangleWithCollisionInfoAndPseudoNormals*> & triangleList, vector<TriangleWithCollisionInfoAndPseudoNormals*> & uniqueList);
+template void makeUniqueList<TriangleWithCollisionInfoAndPseudoNormals>(vector<TriangleWithCollisionInfoAndPseudoNormals*> & triangleList);
 

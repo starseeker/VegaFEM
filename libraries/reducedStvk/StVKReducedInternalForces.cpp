@@ -254,6 +254,7 @@ int StVKReducedInternalForces::LoadFromStream(FILE * fin, int rTarget, int bigEn
   reducedGravityForce = NULL;
   precomputedIntegrals = NULL;
   numElementVertices = 0;
+  lambdaLame = NULL;
   muLame = NULL;
 
   InitBuffers();
@@ -269,7 +270,12 @@ int StVKReducedInternalForces::LoadFromStream(FILE * fin, int rTarget, int bigEn
 
 StVKReducedInternalForces::~StVKReducedInternalForces()
 {
-  if (!shallowCopy)
+  if (shallowCopy >= 1)
+  {
+    if (shallowCopy == 2)
+      free(reducedGravityForce);
+  }
+  else
   {
     free(unitReducedGravityForce);
     free(reducedGravityForce);
@@ -1301,11 +1307,16 @@ void StVKReducedInternalForces::Scale(double scalingFactor)
     cubicCoef_[i] *= scalingFactor;
 }
 
-StVKReducedInternalForces * StVKReducedInternalForces::ShallowClone()
+StVKReducedInternalForces * StVKReducedInternalForces::ShallowClone(int deepCloneGravityBuffer)
 {
   StVKReducedInternalForces * output = new StVKReducedInternalForces(*this); // invoke default copy constructor
   output->shallowCopy = 1;
   output->InitBuffers();
+  if (deepCloneGravityBuffer)
+  {
+    output->reducedGravityForce = NULL;
+    output->shallowCopy = 2;
+  }
   return output;
 }
 

@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "corotational linear FEM" library , Copyright (C) 2015 USC            *
+ * "corotational linear FEM" library , Copyright (C) 2016 USC            *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -60,7 +60,7 @@ public:
 
   void GetStiffnessMatrixTopology(SparseMatrix ** stiffnessMatrixTopology); // returns a zero matrix containing the locations of non-zero elements in the stiffness matrix
 
-  // computes the internal forces and (warped) stiffness matrix for the entire mesh
+  // computes elastic energy, the internal forces and (warped) stiffness matrix for the entire mesh
   // vertex displacements (input) and internal forces (output) must be (pre-allocated) vectors of length 3 * numVertices
   // the internal forces are returned with the sign corresponding to f_int(x) on the left side of the equation M * x'' + f_int(x) = f_ext
   // i.e., the computed internal forces are *negatives* of the actual physical internal forces acting on the material
@@ -68,12 +68,17 @@ public:
   //   0: no warping (linear FEM)
   //   1: stiffness warping (corotational linear FEM with approximate stiffness matrix) [Mueller 2004]
   //   2: corotational linear FEM with exact tangent stiffness matrix (see the technical report [Barbic 2012])
-  virtual void ComputeForceAndStiffnessMatrix(double * vertexDisplacements, double * internalForces, SparseMatrix * stiffnessMatrix, int warp=1);
+  // if you do not want to compute the energy, internal forces or stiffness matrix (any combination), pass a NULL pointer for that argument
+  virtual void ComputeEnergyAndForceAndStiffnessMatrix(const double * vertexDisplacements, double * energy, double * internalForces, SparseMatrix * stiffnessMatrix, int warp=1);
 
-  // this routine is same as above, except that it only traverses elements from elementLo <= element <= elementHi - 1
-  void ComputeForceAndStiffnessMatrixOfSubmesh(double * vertexDisplacements, double * internalForces, SparseMatrix * stiffnessMatrix, int warp, int elementLo, int elementHi);
+  // this routine is same as above, except that (1) it adds to the existing value, (2) only traverses elements from elementLo <= element <= elementHi - 1
+  // if you do not want to compute the energy, internal forces or stiffness matrix (any combination), pass a NULL pointer for that argument
+  void AddEnergyAndForceAndStiffnessMatrixOfSubmesh(const double * vertexDisplacements, double * energy, double * internalForces, SparseMatrix * stiffnessMatrix, int warp, int elementLo, int elementHi);
 
   inline TetMesh * GetTetMesh() { return tetMesh; }
+
+  static void inverse3x3(double * A, double * AInv); // inverse of a row-major 3x3 matrix
+  static void inverse4x4(double * A, double * AInv); // inverse of a row-major 4x4 matrix
 
 protected:
   int numVertices;
@@ -83,8 +88,6 @@ protected:
   double ** KElementUndeformed;
 
   void WarpMatrix(double * K, double * R, double * RK, double * RKRT);
-  void inverse3x3(double * A, double * AInv); // inverse of a row-major 3x3 matrix
-  void inverse4x4(double * A, double * AInv); // inverse of a row-major 4x4 matrix
 
   // acceleration indices
   int ** rowIndices;

@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder      *
@@ -38,8 +38,35 @@ using namespace std;
 #include "boundingBox.h"
 #include "triangle.h"
 
+
+BoundingBox::BoundingBox(const vector<Vec3d> & vertices)
+{
+  // set bmin_, bmax_
+  bmin_ = Vec3d(+DBL_MAX, +DBL_MAX, +DBL_MAX);
+  bmax_ = Vec3d(-DBL_MAX, -DBL_MAX, -DBL_MAX);
+  for(size_t i = 0; i < vertices.size(); i++)
+  {
+    const Vec3d& p = vertices[i];
+    if (p[0] < bmin_[0])
+      bmin_[0] = p[0];
+    if (p[0] > bmax_[0])
+      bmax_[0] = p[0];
+
+    if (p[1] < bmin_[1])
+      bmin_[1] = p[1];
+    if (p[1] > bmax_[1])
+      bmax_[1] = p[1];
+
+    if (p[2] < bmin_[2])
+      bmin_[2] = p[2];
+    if (p[2] > bmax_[2])
+      bmax_[2] = p[2];
+  }
+  updateData();
+}
+
 template<class Triangle> 
-BoundingBox::BoundingBox(vector<Triangle> & tripool)
+BoundingBox::BoundingBox(const vector<Triangle> & tripool)
 {
   // set bmin_, bmax_
   bmin_ = Vec3d(+DBL_MAX, +DBL_MAX, +DBL_MAX);
@@ -125,13 +152,18 @@ void BoundingBox::updateData()
   halfSides_ = 0.5 * (bmax_ - bmin_);
 }
 
-void BoundingBox::verifyBox()
+void BoundingBox::verifyBox() const
 {
   if (!((bmin_[0] <= bmax_[0]) && (bmin_[1] <= bmax_[1]) && (bmin_[2] <= bmax_[2])))
     printf("Error: inconsistent bounding box.\n");
 }
 
-void BoundingBox::render()
+bool BoundingBox::checkInside(const Vec3d & p) const
+{
+  return bmin_[0] <= p[0] && p[0] <= bmax_[0] && bmin_[1] <= p[1] && p[1] <= bmax_[1] && bmin_[2] <= p[2] && p[2] <= bmax_[2];
+}
+
+void BoundingBox::render() const
 {
   // render the bounding box
   Vec3d p0(bmin_[0],bmin_[1],bmin_[2]);
@@ -186,7 +218,7 @@ void BoundingBox::expand(double expansionFactor)
   updateData();
 }
 
-bool BoundingBox::lineSegmentIntersection(Vec3d segmentStart, Vec3d segmentEnd, Vec3d * intersection)
+bool BoundingBox::lineSegmentIntersection(const Vec3d & segmentStart, const Vec3d & segmentEnd, Vec3d * intersection) const
 {
   /*
     Jernej Barbic, CMU, 2005
@@ -278,7 +310,7 @@ bool BoundingBox::lineSegmentIntersection(Vec3d segmentStart, Vec3d segmentEnd, 
   #undef MIDDLE
 }
 
-double BoundingBox::distanceToPoint(Vec3d point)
+double BoundingBox::distanceToPoint(const Vec3d & point) const
 {
   double distance = 0.0;
   for(int dim=0; dim<3; dim++)
@@ -291,11 +323,11 @@ double BoundingBox::distanceToPoint(Vec3d point)
   return sqrt(distance);
 }
 
-void BoundingBox::print()
+void BoundingBox::print() const
 {
   cout << bmin_ << " " << bmax_ << endl;
 }
 
-template BoundingBox::BoundingBox(vector<TriangleBasic> & tripool);
-template BoundingBox::BoundingBox(vector<TriangleWithCollisionInfo> & tripool);
-template BoundingBox::BoundingBox(vector<TriangleWithCollisionInfoAndPseudoNormals> & tripool);
+template BoundingBox::BoundingBox(const vector<TriangleBasic> & tripool);
+template BoundingBox::BoundingBox(const vector<TriangleWithCollisionInfo> & tripool);
+template BoundingBox::BoundingBox(const vector<TriangleWithCollisionInfoAndPseudoNormals> & tripool);

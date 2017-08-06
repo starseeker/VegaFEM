@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
  * "objMeshGPUDeformer" library , Copyright (C) 2007 CMU, 2009 MIT,      *
- *                                                        2015 USC       *
+ *                                                        2016 USC       *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -126,9 +126,14 @@ void ObjMeshGPUDeformer_uUq::Init(ObjMesh * mesh_, ObjMeshRender * meshRender_, 
 
 ObjMeshGPUDeformer_uUq::~ObjMeshGPUDeformer_uUq()
 {
-  DeleteCGShaders();
-  if (Fragment_uUqProgram)
+  if (Fragment_uUqProgram) 
+  {
+    #ifndef __APPLE__
+      cgGLUnloadProgram(Fragment_uUqProgram);
+    #endif
     cgDestroyProgram(Fragment_uUqProgram);
+  }
+  DeleteCGShaders();
   DeleteRTT();
 }
 

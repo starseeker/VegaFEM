@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "sparseSolver" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC   *
+ * "sparseSolver" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC   *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -25,23 +25,6 @@
  * LICENSE.TXT for more details.                                         *
  *                                                                       *
  *************************************************************************/
-
-/*
-
-  Solves A * x = rhs, where A is sparse, usually large, and symmetric.
-
-  The solution is obtained using the SPOOLES library (which is free software).
-  The solution method is direct (not iterative). As such, convergence
-  is often very robust, and there is no need to tune convergence parameters,
-  unlike, say, in the Conjugate gradient method.
-  Memory requirements are minimized by re-ordering the matrix before applying
-  Cholesky decomposition.
-  However, for very large systems (e.g. 200,000 x 200,000 matrices on a 
-  2Gb machine), the Cholesky decomposition might run out of memory.
-  
-  Jernej Barbic, MIT, 2007-2009
-
-*/
 
 #include "SPOOLESSolver.h"
 #include "sparseSolverAvailability.h"

@@ -5,8 +5,8 @@ ifndef CLEANFOLDER
 CLEANFOLDER=HASHTABLE
 endif
 
-include ../../Makefile-headers/Makefile-header
 R ?= ../..
+include $(R)/Makefile-headers/Makefile-header
 
 
 # the object files to be compiled for this library

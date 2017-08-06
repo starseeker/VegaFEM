@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Somya Sharma, Jernej Barbic                             *
@@ -42,14 +42,13 @@ using namespace std;
   Note: lower-left-front corner is boxCenter - boxHalfSize, upper-right-back corner is boxCenter + boxHalfSize.
 */
 
-bool triBoxOverlap(double boxcenter[3], double boxhalfsize[3], double triverts[3][3])
+bool triBoxOverlap(const double boxcenter[3], const double boxhalfsize[3], const double trivert0[3], const double trivert1[3], const double trivert2[3])
 {
-  bool overlap = true;
-  
   // translate so that box's center coincides with the origin
-  VECTOR_SUBTRACTEQUAL3(triverts[0], boxcenter);
-  VECTOR_SUBTRACTEQUAL3(triverts[1], boxcenter);
-  VECTOR_SUBTRACTEQUAL3(triverts[2], boxcenter);
+  double triverts[3][3];
+  VECTOR_SUBTRACT3(trivert0, boxcenter, triverts[0]);
+  VECTOR_SUBTRACT3(trivert1, boxcenter, triverts[1]);
+  VECTOR_SUBTRACT3(trivert2, boxcenter, triverts[2]);
 
   // test AABB against minimal AABB around the triangle
   // 3 tests
@@ -62,11 +61,7 @@ bool triBoxOverlap(double boxcenter[3], double boxhalfsize[3], double triverts[3
   double maxz = max( max(triverts[0][2], triverts[1][2]), triverts[2][2] );
   
   if ( ( boxhalfsize[0] < minx ) || ( maxx < -boxhalfsize[0] ) || ( boxhalfsize[1] < miny ) || ( maxy < -boxhalfsize[1] ) || ( boxhalfsize[2] < minz ) || ( maxz < -boxhalfsize[2] ) )
-  {
-    //no overlap
-    overlap = false;
-    return overlap;
-  }
+    return false; //no overlap
 
   // normals of AABB at origin
 
@@ -96,15 +91,10 @@ bool triBoxOverlap(double boxcenter[3], double boxhalfsize[3], double triverts[3
       p0 = VECTOR_DOT_PRODUCT3(a, triverts[0]);\
       p1 = VECTOR_DOT_PRODUCT3(a, triverts[1]);\
       p2 = VECTOR_DOT_PRODUCT3(a, triverts[2]);\
-\
       radius = ( boxhalfsize[0] * fabs(a[0]) ) + ( boxhalfsize[1] * fabs(a[1]) ) + ( boxhalfsize[2] * fabs(a[2]) );\
-\
       if ( (min( min(p0, p1), p2 ) > radius) || (max( max(p0, p1), p2 ) < -radius ) )\
-      {\
-        overlap = false;\
-        return overlap;\
-      }\
-    }\
+        return false;\
+    }
 
   LOOP1(0, 0);
   LOOP1(0, 1);
@@ -196,13 +186,9 @@ bool triBoxOverlap(double boxcenter[3], double boxhalfsize[3], double triverts[3
 */
   
   if ( VECTOR_DOT_PRODUCT3(normal, nearestPoint) + planeDist > 0 )
-  {
-    overlap = false;
-    return overlap;
-  }
+    return false; // no overlap
   
-  overlap = ( VECTOR_DOT_PRODUCT3(normal, farthestPoint) + planeDist >= 0 );
-  
+  bool overlap = ( VECTOR_DOT_PRODUCT3(normal, farthestPoint) + planeDist >= 0 );
   return overlap;
 }
 

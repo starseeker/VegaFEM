@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder      *
@@ -44,7 +44,7 @@ public:
   // maxNumTrianglesInLeafNode = max number of triangles in an octree leaf node
   // maxTreeDepth = max tree depth
   // (if tree depth were to exceed maxTreeDepth, a leaf node may have more than maxNumTrianglesInLeafNode triangles)
-  ObjMeshOctree( ObjMesh * objMesh, int maxNumTrianglesInLeafNode, int maxTreeDepth, int printInfo = 1);
+  ObjMeshOctree(const ObjMesh * objMesh, int maxNumTrianglesInLeafNode, int maxTreeDepth, int printInfo = 0);
   ~ObjMeshOctree() { delete(root); }
 
   // sphere-triangles query
@@ -56,8 +56,8 @@ public:
   // line segment-triangles query
   // retrieves all triangles intersected by the line segment
   // (can potentially return the same triangle several times; call <TriangleClass>::makeUniqueList to make the list unique if needed)
-  void lineSegmentIntersection(std::vector< TriangleClass* > & triangleList, Vec3d segmentStart, Vec3d segmentEnd)
-    { root->buildCollisionList(triangleList, segmentStart, segmentEnd); }
+  void lineSegmentIntersection(std::vector< TriangleClass* > & triangleList, const Vec3d & segmentStart, const Vec3d & segmentEnd, std::vector<Vec3d> * intersectionList = NULL)
+    { root->buildCollisionList(triangleList, segmentStart, segmentEnd, intersectionList); }
 
   void renderOctree() { root->render(); }
   void renderOctree(int level) { root->render(level); }

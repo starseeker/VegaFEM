@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder      *
@@ -32,6 +32,7 @@
 #include "openGL-headers.h"
 #include <iostream>
 #include "octree.h"
+using namespace std;
 
 template<class TriangleClass>
 Octree<TriangleClass>::Octree(int maxDepth_, int depth_): maxDepth(maxDepth_), depth(depth_) 
@@ -70,7 +71,7 @@ bool Octree<TriangleClass>::build(std::vector<TriangleClass> & triangleList, Bou
   // max depth checking is necessary, since otherwise vertices with high valence will always be contained in some box, and that box will be split forever
   if ((numTriangles <= maxNumTriangles) || (depth >= maxDepth))
   {
-    //cout << "L" << numTriangles << " " << depth << " ";
+    // cout << "L" << numTriangles << " " << depth << " " << endl;
     for(int i=0; i<numTriangles; i++)
       triangles.push_back(triangleList[i]);
 
@@ -113,8 +114,9 @@ bool Octree<TriangleClass>::build(std::vector<TriangleClass> & triangleList, Bou
       if (triangleList[i].doesIntersectBox(childCubeBoxes[j]))
         childTriangles[j].push_back(triangleList[i]);
 
-  //for (int i=0; i<8; i++)
-  //  cout << "S" << i << ":" << childTriangles[i].size() << " ";
+  // for (int i=0; i<8; i++)
+  //   cout << "S" << i << ":" << childTriangles[i].size() << " ";
+  // cout << endl;
 
   // for any child with intersecting triangles, create and recursively build the subtree
   for(int i=0; i<8; i++)
@@ -183,7 +185,7 @@ void Octree<TriangleClass>::buildCollisionList(std::vector<TriangleClass*> & tri
 }
 
 template<class TriangleClass>
-void Octree<TriangleClass>::buildCollisionList(std::vector<TriangleClass*> & triangleList,  Vec3d segmentStartPoint, Vec3d segmentEndPoint)
+void Octree<TriangleClass>::buildCollisionList(std::vector<TriangleClass*> & triangleList,  const Vec3d & segmentStartPoint, const Vec3d & segmentEndPoint, vector<Vec3d> * intersectionList)
 {
   // if the bounding box does not intersect the line segment, there can be no collision
   Vec3d intersectionPoint;
@@ -198,15 +200,19 @@ void Octree<TriangleClass>::buildCollisionList(std::vector<TriangleClass*> & tri
     {
       Vec3d intersectionPoint;
       int collisionStatus = triangles[i].lineSegmentIntersection(segmentStartPoint, segmentEndPoint, &intersectionPoint);
-      if (collisionStatus == 1)
+      if (collisionStatus == 1) 
+      {
         triangleList.push_back(&(triangles[i]));
+        if(intersectionList) 
+          intersectionList->push_back(intersectionPoint);
+      }
     }
   }
   else
   {
     for(int i=0; i<8; i++)
       if(childrenNodes[i] != NULL)
-        childrenNodes[i]->buildCollisionList(triangleList, segmentStartPoint, segmentEndPoint);
+        childrenNodes[i]->buildCollisionList(triangleList, segmentStartPoint, segmentEndPoint, intersectionList);
   }
 }
 
@@ -345,7 +351,7 @@ template void Octree<TriangleBasic>::setBuildPrintInfo(int info);
 template void Octree<TriangleBasic>::getBuildInfo(int * numMaxDepthExceededCases, int * numMaxTriInDepthExceededCases);
 template int Octree<TriangleBasic>::getDepth();
 template void Octree<TriangleBasic>::buildCollisionList(std::vector<TriangleBasic*> &triangleList, const SimpleSphere &simpleSphere);
-template void Octree<TriangleBasic>::buildCollisionList(std::vector<TriangleBasic*> &triangleList, Vec3d segmentStartPoint, Vec3d segmentEndPoint);
+template void Octree<TriangleBasic>::buildCollisionList(std::vector<TriangleBasic*> &triangleList, const Vec3d & segmentStartPoint, const Vec3d & segmentEndPoint, vector<Vec3d> * intersectionList);
 template void Octree<TriangleBasic>::render();
 template void Octree<TriangleBasic>::render(int level);
 template void Octree<TriangleBasic>::render(int level, int boxIndex);
@@ -360,7 +366,7 @@ template bool Octree<TriangleWithCollisionInfo>::build(std::vector<TriangleWithC
 template void Octree<TriangleWithCollisionInfo>::setBuildPrintInfo(int info); 
 template void Octree<TriangleWithCollisionInfo>::getBuildInfo(int * numMaxDepthExceededCases, int * numMaxTriInDepthExceededCases);
 template void Octree<TriangleWithCollisionInfo>::buildCollisionList(std::vector<TriangleWithCollisionInfo*> &triangleList, const SimpleSphere &simpleSphere);
-template void Octree<TriangleWithCollisionInfo>::buildCollisionList(std::vector<TriangleWithCollisionInfo*> &triangleList, Vec3d segmentStartPoint, Vec3d segmentEndPoint);
+template void Octree<TriangleWithCollisionInfo>::buildCollisionList(std::vector<TriangleWithCollisionInfo*> &triangleList, const Vec3d & segmentStartPoint, const Vec3d & segmentEndPoint, std::vector<Vec3d> * intersectionList);
 template int Octree<TriangleWithCollisionInfo>::getDepth();
 template void Octree<TriangleWithCollisionInfo>::render();
 template void Octree<TriangleWithCollisionInfo>::render(int level);
@@ -375,7 +381,7 @@ template bool Octree<TriangleWithCollisionInfoAndPseudoNormals>::build(std::vect
 template void Octree<TriangleWithCollisionInfoAndPseudoNormals>::setBuildPrintInfo(int info); 
 template void Octree<TriangleWithCollisionInfoAndPseudoNormals>::getBuildInfo(int * numMaxDepthExceededCases, int * numMaxTriInDepthExceededCases);
 template void Octree<TriangleWithCollisionInfoAndPseudoNormals>::buildCollisionList(std::vector<TriangleWithCollisionInfoAndPseudoNormals*> &triangleList, const SimpleSphere &simpleSphere);
-template void Octree<TriangleWithCollisionInfoAndPseudoNormals>::buildCollisionList(std::vector<TriangleWithCollisionInfoAndPseudoNormals*> &triangleList, Vec3d segmentStartPoint, Vec3d segmentEndPoint);
+template void Octree<TriangleWithCollisionInfoAndPseudoNormals>::buildCollisionList(std::vector<TriangleWithCollisionInfoAndPseudoNormals*> &triangleList, const Vec3d & segmentStartPoint, const Vec3d & segmentEndPoint, vector<Vec3d> * intersectionList);
 template int Octree<TriangleWithCollisionInfoAndPseudoNormals>::getDepth();
 template void Octree<TriangleWithCollisionInfoAndPseudoNormals>::render();
 template void Octree<TriangleWithCollisionInfoAndPseudoNormals>::render(int level);

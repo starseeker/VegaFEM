@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "StVK" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC           *
+ * "StVK" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC           *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -57,7 +57,7 @@ StVKTetHighMemoryABCD::StVKTetHighMemoryABCD(TetMesh * tetMesh)
   {
     Vec3d vertices[4];
     for(int i=0; i<4; i++)
-      vertices[i] = *(tetMesh->getVertex(el, i));
+      vertices[i] = tetMesh->getVertex(el, i);
     StVKSingleTetABCD(vertices, A_[el], B_[el], C_[el], D_[el]);
   }
 
@@ -79,7 +79,7 @@ StVKTetHighMemoryABCD::~StVKTetHighMemoryABCD()
 
 void StVKTetHighMemoryABCD::StVKSingleTetABCD(Vec3d vtx[4], Mat3d A[4][4], double B[4][4], Vec3d C[4][4][4], double D[4][4][4][4])
 {
-  double det = TetMesh::getTetDeterminant(&vtx[0], &vtx[1], &vtx[2], &vtx[3]);
+  double det = TetMesh::getTetDeterminant(vtx[0], vtx[1], vtx[2], vtx[3]);
   double volume = fabs(det / 6);
 
   Vec3d Phig[4];

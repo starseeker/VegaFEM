@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "corotational linear FEM" library , Copyright (C) 2015 USC            *
+ * "corotational linear FEM" library , Copyright (C) 2016 USC            *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -48,6 +48,7 @@ CorotationalLinearFEMMT::~CorotationalLinearFEMMT()
 {
   free(startElement);
   free(endElement);
+  free(energyBuffer);
   free(internalForceBuffer);
   for(int i=0; i<numThreads; i++)
     delete(stiffnessMatrixBuffer[i]);
@@ -57,7 +58,8 @@ CorotationalLinearFEMMT::~CorotationalLinearFEMMT()
 struct CorotationalLinearFEMMT_threadArg
 {
   CorotationalLinearFEMMT * corotationalLinearFEMMT;
-  double * u;
+  const double * u;
+  double * energy;
   double * f;
   SparseMatrix * stiffnessMatrix;
   int warp;
@@ -68,7 +70,8 @@ void * CorotationalLinearFEMMT_WorkerThread(void * arg)
 {
   struct CorotationalLinearFEMMT_threadArg * threadArgp = (struct CorotationalLinearFEMMT_threadArg*) arg;
   CorotationalLinearFEMMT * corotationalLinearFEMMT = threadArgp->corotationalLinearFEMMT;
-  double * u = threadArgp->u;
+  const double * u = threadArgp->u;
+  double * energy = threadArgp->energy;
   double * f = threadArgp->f;
   SparseMatrix * stiffnessMatrix = threadArgp->stiffnessMatrix;
   int warp = threadArgp->warp;
@@ -77,7 +80,7 @@ void * CorotationalLinearFEMMT_WorkerThread(void * arg)
   int endElement = corotationalLinearFEMMT->GetEndElement(rank);
 
   //printf("%d %d\n", startElement, endElement);
-  corotationalLinearFEMMT->ComputeForceAndStiffnessMatrixOfSubmesh(u, f, stiffnessMatrix, warp, startElement, endElement);
+  corotationalLinearFEMMT->AddEnergyAndForceAndStiffnessMatrixOfSubmesh(u, energy, f, stiffnessMatrix, warp, startElement, endElement);
 
   return NULL;
 }
@@ -85,6 +88,7 @@ void * CorotationalLinearFEMMT_WorkerThread(void * arg)
 void CorotationalLinearFEMMT::Initialize()
 {
   internalForceBuffer = (double*) malloc (sizeof(double) * numThreads * 3 * tetMesh->getNumVertices());
+  energyBuffer = (double*) malloc (sizeof(double) * numThreads);
 
   // generate skeleton matrices
   stiffnessMatrixBuffer = (SparseMatrix**) malloc (sizeof(SparseMatrix*) * numThreads);
@@ -124,7 +128,7 @@ void CorotationalLinearFEMMT::Initialize()
   //printf("Num threads with job size augmented by one edge: %d \n", remainder);
 }
 
-void CorotationalLinearFEMMT::ComputeForceAndStiffnessMatrix(double * u, double * f, SparseMatrix * stiffnessMatrix, int warp)
+void CorotationalLinearFEMMT::ComputeEnergyAndForceAndStiffnessMatrix(const double * u, double * energy, double * f, SparseMatrix * stiffnessMatrix, int warp)
 {
   // launch threads
   struct CorotationalLinearFEMMT_threadArg * threadArgv = (struct CorotationalLinearFEMMT_threadArg*) malloc (sizeof(struct CorotationalLinearFEMMT_threadArg) * numThreads);
@@ -137,11 +141,19 @@ void CorotationalLinearFEMMT::ComputeForceAndStiffnessMatrix(double * u, double 
   {
     threadArgv[i].corotationalLinearFEMMT = this;
     threadArgv[i].u = u;
-    threadArgv[i].f = &internalForceBuffer[i * numVertices3];
-    threadArgv[i].stiffnessMatrix = stiffnessMatrixBuffer[i];
+    threadArgv[i].energy = (energy ? &energyBuffer[i] : NULL);
+    threadArgv[i].f = (f ? &internalForceBuffer[i * numVertices3] : NULL);
+    threadArgv[i].stiffnessMatrix = (stiffnessMatrix ? stiffnessMatrixBuffer[i] : NULL);
     threadArgv[i].warp = warp;
     threadArgv[i].rank = i;
   }
+  if (energy)
+    memset(energyBuffer, 0, sizeof(double) * numThreads);
+  if (f)
+    memset(internalForceBuffer, 0, sizeof(double) * numThreads * numVertices3);
+  if (stiffnessMatrix)
+    for(int i = 0; i < numThreads; i++)
+      stiffnessMatrixBuffer[i]->ResetToZero();
 
   for(int i=0; i<numThreads; i++)  
   {
@@ -164,13 +176,16 @@ void CorotationalLinearFEMMT::ComputeForceAndStiffnessMatrix(double * u, double 
   free(threadArgv);
   free(tid);
 
-  if (f != NULL) 
-    memset(f, 0, sizeof(double) * numVertices3);
-
-  if (stiffnessMatrix != NULL) 
+  if (energy != NULL)
   {
-    stiffnessMatrix->ResetToZero();
+    *energy = 0.0;
+    for(int i = 0; i < numThreads; i++)
+      *energy += energyBuffer[i];
+  }
 
+  if (f != NULL)
+  {
+    memset(f, 0, sizeof(double) * numVertices3);
     for(int i=0; i<numThreads; i++)
     {
        double * source = &internalForceBuffer[i * numVertices3];
@@ -179,9 +194,14 @@ void CorotationalLinearFEMMT::ComputeForceAndStiffnessMatrix(double * u, double 
          for(int j=0; j<numVertices3; j++)
            f[j] += source[j];
        }
-
-       *stiffnessMatrix += *(stiffnessMatrixBuffer[i]);
     }
+  }
+
+  if (stiffnessMatrix != NULL) 
+  {
+    stiffnessMatrix->ResetToZero();
+    for(int i=0; i<numThreads; i++)
+       *stiffnessMatrix += *(stiffnessMatrixBuffer[i]);
   }
 }
 

@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.2                               *
+ * Vega FEM Simulation Library Version 3.0                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2016 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Yijing Li                                *
@@ -120,7 +120,7 @@ bool FaceOrder::operator()(const TopologicalFaceI & x, const TopologicalFaceI & 
 }
 
 // the main routine
-ObjMesh * GenerateSurfaceMesh::ComputeMesh(VolumetricMesh * mesh, bool triangulateOutputMesh)
+ObjMesh * GenerateSurfaceMesh::ComputeMesh(const VolumetricMesh * mesh, bool triangulateOutputMesh)
 {
   // create an empty surface mesh
   ObjMesh * objMesh = new ObjMesh();
@@ -131,7 +131,7 @@ ObjMesh * GenerateSurfaceMesh::ComputeMesh(VolumetricMesh * mesh, bool triangula
   // add all vertices
   for(int i=0; i<mesh->getNumVertices(); i++)
   {
-    Vec3d pos = *(mesh->getVertex(i));
+    const Vec3d & pos = mesh->getVertex(i);
     objMesh->addVertexPosition(pos);
   }
 
@@ -165,7 +165,7 @@ ObjMesh * GenerateSurfaceMesh::ComputeMesh(VolumetricMesh * mesh, bool triangula
     for (int i=0; i<mesh->getNumElements(); i++)
     {
       // compute determinant to establish orientation
-      double det = dot(*(mesh->getVertex(i, 1)) - *(mesh->getVertex(i, 0)), cross(*(mesh->getVertex(i, 2)) - *(mesh->getVertex(i, 0)), *(mesh->getVertex(i, 3)) - *(mesh->getVertex(i, 0))));
+      double det = dot(mesh->getVertex(i, 1) - mesh->getVertex(i, 0), cross(mesh->getVertex(i, 2) - mesh->getVertex(i, 0), mesh->getVertex(i, 3) - mesh->getVertex(i, 0)));
 
         //surfaceFaces.erase(*face);
         //interiorFaces.insert(*face);
@@ -282,13 +282,13 @@ ObjMesh * GenerateSurfaceMesh::ComputeMesh(VolumetricMesh * mesh, bool triangula
 }
 
 // advanced routine, not used very often
-ObjMesh * GenerateSurfaceMesh::ComputeMesh(VolumetricMesh * mesh, ObjMesh * superMesh, bool triangulateOutputMesh)
+ObjMesh * GenerateSurfaceMesh::ComputeMesh(const VolumetricMesh * mesh, const ObjMesh * superMesh, bool triangulateOutputMesh)
 {
   // for each volumetric mesh vertex, find the nearest obj file vertex
   int * closestObjVertex = (int*) malloc (sizeof(int) * mesh->getNumVertices());
   for(int i=0; i<mesh->getNumVertices(); i++)
   {
-    Vec3d pos = *(mesh->getVertex(i));
+    const Vec3d & pos = mesh->getVertex(i);
     double dist;
     closestObjVertex[i] = superMesh->getClosestVertex(pos, &dist);
   }
@@ -321,7 +321,7 @@ ObjMesh * GenerateSurfaceMesh::ComputeMesh(VolumetricMesh * mesh, ObjMesh * supe
   // add all vertices
   for(int i=0; i<mesh->getNumVertices(); i++)
   {
-    Vec3d posm = *(mesh->getVertex(i));
+    const Vec3d & posm = mesh->getVertex(i);
     Vec3d pos;
     pos[0] = posm[0]; 
     pos[1] = posm[1]; 
@@ -362,7 +362,7 @@ ObjMesh * GenerateSurfaceMesh::ComputeMesh(VolumetricMesh * mesh, ObjMesh * supe
     for (int i=0; i<mesh->getNumElements(); i++)
     {
       // compute determinant to establish orientation
-      double det = dot(*(mesh->getVertex(i, 1)) - *(mesh->getVertex(i, 0)), cross(*(mesh->getVertex(i, 2)) - *(mesh->getVertex(i, 0)), *(mesh->getVertex(i, 3)) - *(mesh->getVertex(i, 0))));
+      double det = dot(mesh->getVertex(i, 1) - mesh->getVertex(i, 0), cross(mesh->getVertex(i, 2) - mesh->getVertex(i, 0), mesh->getVertex(i, 3) - mesh->getVertex(i, 0)));
 
         //surfaceFaces.erase(*face);
         //interiorFaces.insert(*face);
