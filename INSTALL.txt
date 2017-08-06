@@ -1,0 +1,13 @@
+Installation and compilation instructions are available in the PDF User's Manual, 
+located in the "documentation" subfolder.
+
+Quick start (Linux, Mac OS X):
+1. Go to the subfolder "Makefile-headers", and launch either "./selectLinux" or "./selectMacOSX".
+2. Go to the subfolder "utilities/interactiveDeformableSimulator" and type "make".
+3. Go to the subfolder "examples/turtle" and launch "./run_turtle". LMB = apply force on model, RMB = camera movement. You can also try "examples/asianDragon" and other examples of course.
+
+You can perform steps 1., 2., by running "./build".
+
+--------
+Jernej Barbic, USC, 2012
+

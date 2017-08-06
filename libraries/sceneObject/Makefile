@@ -9,13 +9,13 @@ include ../../Makefile-headers/Makefile-header
 R ?= ../..
 
 # the object files to be compiled for this library
-SCENEOBJECT_OBJECTS=sceneObjectDeformable.o sceneObject.o sceneObjectWithRestPosition.o
+SCENEOBJECT_OBJECTS=sceneObject.o sceneObjectWithRestPosition.o sceneObjectDeformable.o 
 
 # the libraries this library depends on
 SCENEOBJECT_LIBS=objMesh lighting minivector
 
 # the headers in this library
-SCENEOBJECT_HEADERS=sceneObjectDeformable.h sceneObject.h sceneObjects.h sceneObjectWithRestPosition.h
+SCENEOBJECT_HEADERS=sceneObject.h sceneObjectWithRestPosition.h sceneObjectDeformable.h sceneObjects.h 
 
 SCENEOBJECT_OBJECTS_FILENAMES=$(addprefix $(L)/sceneObject/, $(SCENEOBJECT_OBJECTS))
 SCENEOBJECT_HEADER_FILENAMES=$(addprefix $(L)/sceneObject/, $(SCENEOBJECT_HEADERS))

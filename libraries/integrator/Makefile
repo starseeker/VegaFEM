@@ -8,8 +8,7 @@ endif
 include ../../Makefile-headers/Makefile-header
 R ?= ../..
 
-# NOTE: unlike the other library makefiles, this adds
-# $(PARDISO_INCLUDE) to the compiler invocation
+# NOTE: unlike the other library makefiles, this makefile adds $(PARDISO_INCLUDE) to the compiler invocation
 
 # the object files to be compiled for this library
 INTEGRATOROBJECTS=centralDifferencesSparse.o eulerSparse.o implicitBackwardEulerSparse.o implicitNewmarkSparse.o integratorBase.o integratorBaseSparse.o getIntegratorSolver.o
