@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 1.1                               *
+ * Vega FEM Simulation Library Version 2.0                               *
  *                                                                       *
- * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2012 USC     *
+ * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -159,6 +159,8 @@ public:
   // tangential Rayleigh damping parameters
   inline void SetDampingMassCoef(double dampingMassCoef) { this->dampingMassCoef = dampingMassCoef; }
   inline void SetDampingStiffnessCoef(double dampingStiffnessCoef) { this->dampingStiffnessCoef = dampingStiffnessCoef;}
+  inline double GetDampingMassCoef() { return dampingMassCoef; }
+  inline double GetDampingStiffnessCoef() { return dampingStiffnessCoef; }
 
   // === perform one timestep of the simulation ===
   // (the choice of integrator depends on the derived class)

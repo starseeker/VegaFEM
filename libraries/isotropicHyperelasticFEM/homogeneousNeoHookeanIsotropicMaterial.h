@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 1.1                               *
+ * Vega FEM Simulation Library Version 2.0                               *
  *                                                                       *
- * "isotropic hyperelastic FEM" library , Copyright (C) 2012 USC         *
+ * "isotropic hyperelastic FEM" library , Copyright (C) 2013 USC         *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Fun Shing Sin                            *
@@ -29,7 +29,7 @@
 #ifndef _HOMOGENEOUSNEOHOOKEANISOTROPICMATERIAL_H_
 #define _HOMOGENEOUSNEOHOOKEANISOTROPICMATERIAL_H_
 
-#include "isotropicMaterial.h"
+#include "isotropicMaterialWithCompressionResistance.h"
 
 /*
    Homogeneous neo-Hookean material. Material properties are constant throughout the mesh.
@@ -40,10 +40,10 @@
    Press, 2008, page 162
 */
 
-class HomogeneousNeoHookeanIsotropicMaterial : public IsotropicMaterial
+class HomogeneousNeoHookeanIsotropicMaterial : public IsotropicMaterialWithCompressionResistance
 {
 public:
-  HomogeneousNeoHookeanIsotropicMaterial(double E, double nu);
+  HomogeneousNeoHookeanIsotropicMaterial(double E, double nu, int enableCompressionResistance=0, double compressionResistance=0.0);
   virtual ~HomogeneousNeoHookeanIsotropicMaterial();
 
   void SetYoungModulusAndPoissonRatio(double E, double nu);
@@ -56,6 +56,10 @@ public:
 protected:
   double E, nu;
   double lambdaLame, muLame; // Lam\'e coefficients, not "lame" :)
+
+  double compressionResistance;
+  double EdivNuFactor;
+  virtual double GetCompressionResistanceFactor(int elementIndex);
 };
 
 #endif

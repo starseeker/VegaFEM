@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 1.1                               *
+ * Vega FEM Simulation Library Version 2.0                               *
  *                                                                       *
- * "corotational linear FEM" library , Copyright (C) 2012 USC            *
+ * "corotational linear FEM" library , Copyright (C) 2013 USC            *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *

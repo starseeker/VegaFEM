@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 1.1                               *
+ * Vega FEM Simulation Library Version 2.0                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2012 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder      *
@@ -263,20 +263,24 @@ public:
   inline void setNormal(Vertex & vertex, const Vec3d & normal) { normals[vertex.getNormalIndex()] = normal; }
 
   Group getGroup(const std::string name) const; // retrieve a group by its name
+  unsigned int getGroupIndex(const std::string name) const; // obtain a group index by its name
   inline const Group * getGroupHandle(unsigned int groupIndex) const { return &(groups[groupIndex]); }
 
   inline Material getMaterial(unsigned int materialIndex) const { return materials[materialIndex]; }
   inline const Material * getMaterialHandle(unsigned int materialIndex) { return &materials[materialIndex]; }
   void setMaterialAlpha(double alpha);
   void setSingleMaterial(const Material & material); // erases all materials and sets a single material for the entire mesh
+  int usesTextureMapping(); // 0 = no group uses a material that references a texture image, 1 = otherwise
 
   // ======= member data adders =======
 
   inline void addMaterial(const Material & material) { materials.push_back(material); }
-  inline void addMaterial(const std::string name, const Vec3d & Ka, const Vec3d & Kd, const Vec3d & Ks, 
-    double shininess, const std::string textureFilename=std::string()) { materials.push_back(Material(name, Ka, Kd, Ks, shininess, textureFilename));}
+  inline void addMaterial(const std::string name, const Vec3d & Ka, const Vec3d & Kd, const Vec3d & Ks, double shininess, const std::string textureFilename=std::string()) { materials.push_back(Material(name, Ka, Kd, Ks, shininess, textureFilename));}
   inline void addGroup(const Group & group) { groups.push_back(group);}
   inline void addGroup(const std::string name) { groups.push_back(Group(name));}
+  void removeGroup(const int groupIndex);
+  void removeGroup(const std::string name);
+  void removeAllGroups();
   inline void addVertexPosition (const Vec3d & pos) { vertexPositions.push_back(pos); }
   inline void addVertexNormal (const Vec3d & normal) { normals.push_back(normal); }
   inline void addTextureCoordinate (const Vec3d & textCoord) { textureCoordinates.push_back(textCoord); }
@@ -341,6 +345,7 @@ public:
   void exportGeometry(int * numVertices, double ** vertices, int * numTriangles = NULL, int ** triangles = NULL, 
     int * numGroups = NULL, int ** triangleGroups = NULL) const; // all faces are triangulated before exporting 
   void exportFaceGeometry(int * numVertices, double ** vertices, int * numFaces = NULL, int ** faceCardinalities = NULL, int ** faces = NULL) const; // faces are not triangulated before exporting
+  void exportUVGeometry(int * numUVVertices, double ** UVVertices, int * numUVTriangles, int ** UVTriangles) const; // exports the geometry in the texture coordinate space
 
   Vec3d computeFaceCentroid(const Face & face) const;
   double computeFaceSurfaceArea(const Face & face) const; // of a single face
@@ -377,12 +382,14 @@ public:
 
   void triangulate();
 
-  // scales the model uniformly, with center being the center of the scaling
-  void scaleUniformly(const Vec3d & center, double factor);
-  void transformRigidly(const Mat3d & rotation, const Vec3d & translation);
+  void scaleUniformly(const Vec3d & center, double factor); // scales the model uniformly, with center being the center of the scaling
+  void transformRigidly(const Vec3d & translation, const Mat3d & rotation);
+  void deform(double * u);
 
   int removeDuplicatedMaterials();
-  int removeIsolatedVertices();
+  int removeIsolatedVertices(); // removes vertices that don't appear in any triangle
+  int removeIsolatedTextureCoordinates(); // removes texture coordinates that are not referenced
+  int removeIsolatedNormals(); // removes normals that are not referenced
   int removeZeroAreaFaces();
 
   // generates vertex normals by averaging normals for adjacent faces
@@ -409,14 +416,16 @@ public:
   ObjMesh * clone(const std::vector<std::pair<int, int> > & groupsAndFaces, int removeIsolatedVertices=1) const; 
 
   // splits the mesh into groups, one per each connected component
-  ObjMesh * splitIntoConnectedComponents() const;
+  // if withinGroupsOnly=0, splitting is global, which means that some groups may be fused into one bigger group
+  // if withinGroupsOnly=1, splitting is performed within each group only
+  ObjMesh * splitIntoConnectedComponents(int withinGroupsOnly=0, int verbose=1) const;
   // extracts a specified group
   ObjMesh * extractGroup(unsigned int group, int keepOnlyUsedNormals = 1, int keepOnlyUsedTextureCoordinates = 1) const;
 
   // ======= file output =======
 
   // saves to an obj file (including saving materials to filename.mtl if so requested)
-  void save(const std::string & filename, int outputMaterials=0) const;
+  void save(const std::string & filename, int outputMaterials=0, int verbose=1) const;
 
   // saves to a stl file (only saves geometry (not materials))
   void saveToStl(const std::string & filename) const;
@@ -433,6 +442,11 @@ public:
 
   inline static bool isNaN(double x) { return (x != x); }
 
+  // ======= advanced usage =======
+ 
+  // computes internal axis-aligned bounding box
+  void computeBoundingBox(); // sets diameter, bmin, bmax, center, cubeHalf
+
 protected:
   std::vector< Material > materials;
   std::vector< Group > groups;
@@ -441,8 +455,6 @@ protected:
   std::vector< Vec3d > normals;
   std::string filename;
 
-  // computes internal axis-aligned bounding box
-  void computeBoundingBox(); // sets the following:
   double diameter;
   Vec3d bmin, bmax;
   Vec3d center, cubeHalf;
@@ -480,7 +492,7 @@ protected:
   // inertia tensor around the origin, assuming the triangle has mass 1
   void computeSpecificInertiaTensor(Vec3d & v0, Vec3d & v1, Vec3d & v2, double t[6]) const;
 
-  void parseMaterials(const char * objMeshname, const char * materialFilename);
+  void parseMaterials(const char * objMeshname, const char * materialFilename, int verbose=1);
 
   std::vector<std::pair<double, const Face*> > surfaceSamplingAreas;
 

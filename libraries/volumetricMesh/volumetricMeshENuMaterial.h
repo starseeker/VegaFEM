@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 1.1                               *
+ * Vega FEM Simulation Library Version 2.0                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2012 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -36,9 +36,10 @@
 class VolumetricMesh::ENuMaterial : public VolumetricMesh::Material
 {
 public:
-  ENuMaterial(char * name, double density, double E, double nu);
+  ENuMaterial(std::string name, double density, double E, double nu);
   ENuMaterial(const ENuMaterial & eNuMaterial);
-  virtual VolumetricMesh::Material * clone();
+  virtual ~ENuMaterial() {}
+  virtual VolumetricMesh::Material * clone() const;
   virtual VolumetricMesh::Material::materialType getType();
 
   inline double getE() const; // Young's modulus
@@ -52,7 +53,7 @@ protected:
   double E_, nu_;
 };
 
-inline VolumetricMesh::ENuMaterial::ENuMaterial(char * name, double density, double E, double nu): VolumetricMesh::Material(name, density), E_(E), nu_(nu) {}
+inline VolumetricMesh::ENuMaterial::ENuMaterial(std::string name, double density, double E, double nu): VolumetricMesh::Material(name, density), E_(E), nu_(nu) {}
 inline VolumetricMesh::ENuMaterial::ENuMaterial(const ENuMaterial & eNuMaterial) : VolumetricMesh::Material(eNuMaterial.getName(), eNuMaterial.getDensity()),  E_(eNuMaterial.getE()), nu_(eNuMaterial.getNu()) {}
 inline double VolumetricMesh::ENuMaterial::getE() const { return E_; } 
 inline double VolumetricMesh::ENuMaterial::getNu() const { return nu_; }

@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 1.1                               *
+ * Vega FEM Simulation Library Version 2.0                               *
  *                                                                       *
- * "isotropic hyperelastic FEM" library , Copyright (C) 2012 USC         *
+ * "isotropic hyperelastic FEM" library , Copyright (C) 2013 USC         *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Fun Shing Sin                            *
@@ -29,7 +29,7 @@
 #ifndef _MOONEYRIVLINISOTROPICMATERIAL_H_
 #define _MOONEYRIVLINISOTROPICMATERIAL_H_
 
-#include "isotropicMaterial.h"
+#include "isotropicMaterialWithCompressionResistance.h"
 #include "tetMesh.h"
 
 /*
@@ -51,10 +51,10 @@
   A snapshot of the Wikipedia page is included in this folder.
 */
 
-class MooneyRivlinIsotropicMaterial : public IsotropicMaterial
+class MooneyRivlinIsotropicMaterial : public IsotropicMaterialWithCompressionResistance
 {
 public:
-  MooneyRivlinIsotropicMaterial(TetMesh * tetMesh);
+  MooneyRivlinIsotropicMaterial(TetMesh * tetMesh, int enableCompressionResistance=0, double compressionResistance=0.0);
   virtual ~MooneyRivlinIsotropicMaterial();
 
   virtual double ComputeEnergy(int elementIndex, double * invariants);
@@ -65,6 +65,10 @@ protected:
   double * mu01_;
   double * mu10_;
   double * v1_;
+
+  double compressionResistance;
+  double * EdivNuFactor;
+  virtual double GetCompressionResistanceFactor(int elementIndex);
 };
 
 #endif

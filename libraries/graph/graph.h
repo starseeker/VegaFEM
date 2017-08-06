@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 1.1                               *
+ * Vega FEM Simulation Library Version 2.0                               *
  *                                                                       *
- * "graph" library , Copyright (C) 2012 USC                              *
+ * "graph" library , Copyright (C) 2013 USC                              *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -43,11 +43,14 @@ class Graph
 public:
 
   Graph(); 
+  Graph(const char * filename, int sortEdgeVertices=1); // load graph from file
   // each edge is given by two integers; length of "edges" should be 2xnumEdges
-  Graph(int numVertices, int numEdges, int * edges);
+  Graph(int numVertices, int numEdges, int * edges, int sortEdgeVertices=1);
   Graph(const Graph & graph);
   Graph & operator=(const Graph & graph);
   ~Graph();
+
+  void Save(const char * filename); // save graph to file
 
   int GetNumVertices();
   int GetNumEdges();
@@ -76,6 +79,11 @@ public:
 
   // clusters given vertices into connected components
   void Cluster(std::set<int> & vertices, std::vector<std::set<int> > & clusters);
+
+  // computes the shortest distance from the given seed vertices (distance of zero) to all the graph vertices
+  // input: seed vertices
+  // output: distance to the set of seed vertices, for each mesh vertex
+  void ShortestPath(std::set<int> & seedVertices, std::vector<int> & distances);
 
 protected:
   int numVertices, numEdges; // num vertices, num edges

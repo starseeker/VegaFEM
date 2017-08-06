@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 1.1                               *
+ * Vega FEM Simulation Library Version 2.0                               *
  *                                                                       *
- * "isotropic hyperelastic FEM" library , Copyright (C) 2012 USC         *
+ * "isotropic hyperelastic FEM" library , Copyright (C) 2013 USC         *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Fun Shing Sin                            *
@@ -52,15 +52,21 @@ es (derivative of internal forces). It can also handle and restore from element 
   Quasistatic Finite Elements and Flesh Simulation. In 2005
   ACM SIGGRAPH / Eurographics Symp. on Computer Animation
   (July 2005), pp. 181–190.
+
 */
 
 class IsotropicHyperelasticFEM
 {
 public:
   // Before creating this class, you must first create the tet mesh, and create an instance of the "IsotropicMaterial" material (e.g., NeoHookeanMaterial).
-  // If the principal stretches are smaller than the principalStretchThreshold, they will be clamped to that.  This is important to ensure invertibility. For example, a typical principalStretchThreshold value (e.g., for invertible StVK) would be 0.6. By default, clamping is disabled.
-  // Note: material properties in the "tetMesh" variable are ignored (only geometry is used); the material properties are specified by "isotropicMaterial" (and may be non-homogeneous) 
-  IsotropicHyperelasticFEM(TetMesh * tetMesh, IsotropicMaterial * isotropicMaterial, double principalStretchThreshold=-DBL_MAX, bool addGravity=false, double g=9.81);
+  // 
+  // The inversionThreshold controls when the inversion prevention mechanism activates:
+  // If the principal stretches (the "lambdas") are smaller than the inversionThreshold, they will be clamped to that, which will generally prevent element inversion. For example, a typical inversionThreshold value would be 0.1. By default, inversion handling is disabled (inversionThreshold=-infinity). Values of 1.0 or higher should not be used.
+  //
+  // The material properties are determined as follows:
+  // If the "isotropicMaterial" is of the "Homogeneous" kind, then the material properties are homogeneous and are specified by "isotropicMaterial"; material properties in the "tetMesh" are ignored (only geometry is used)
+  // If the "isotropicMaterial" is not of the "Homogeneous" kind, then the material properties are such as specified in the "tetMesh" and "isotropicMaterial" class (and may be non-homogeneous)
+  IsotropicHyperelasticFEM(TetMesh * tetMesh, IsotropicMaterial * isotropicMaterial, double inversionThreshold=-DBL_MAX, bool addGravity=false, double g=9.81);
   virtual ~IsotropicHyperelasticFEM();
 
   double ComputeEnergy(double * u); // get the nonlinear elastic strain energy
@@ -88,6 +94,8 @@ public:
 
   inline TetMesh * GetTetMesh() { return tetMesh; }
 
+  void SetMaterial(IsotropicMaterial * isotropicMaterial_) { isotropicMaterial = isotropicMaterial_; }
+
   // === Advanced functions below; you normally do not need to use them: ===
   // Computes strain energy, internal forces, and/or tangent stiffness matrix, as requested by computationMode. It returns 0 on success, and non-zero on failure.
   // computationMode:
@@ -102,8 +110,8 @@ public:
   int GetEnergyAndForceAndTangentStiffnessMatrixHelperWorkhorse(int startEl, int endEl, double * u, double * energy, double * internalForces, SparseMatrix * tangentStiffnessMatrix, int computationMode);
 
 protected:
-  TetMesh * tetMesh;
-  IsotropicMaterial * isotropicMaterial; // the material mode
+  TetMesh * tetMesh; // the tet mesh
+  IsotropicMaterial * isotropicMaterial; // the material 
 
   // acceleration indices
   int ** row_;
@@ -112,10 +120,10 @@ protected:
   double * restVerticesPosition;    // length equals to the #vertices in the mesh times 3
   double * currentVerticesPosition; // it equals restVerticesPosition + u
 
-  // If a principal stretch (i.e., the F^hat in Irving 2004 paper) is smaller than the 
-  // principalStretchThreshold, it will be clamped to that.  This is important to ensure invertibility. 
+  // If a principal stretch (i.e., the F^hat in Irving 2004 paper) is smaller than 
+  // inversionThreshold, it will be clamped to that.  This is important to ensure invertibility. 
   // For example, a typical value for invertible StVK would be 0.5.
-  double principalStretchThreshold;
+  double inversionThreshold;
 
   bool addGravity;
   double g;
@@ -153,10 +161,10 @@ protected:
   // Compute the diagonalized first Piola-Kirchhoff stress P^hat
   virtual void ComputeDiagonalPFromStretches(int elementIndex, double * lambda, double * PDiag);
   // Compute the element stiffness matrix
-  virtual void ComputeTetK(int el, double K[144]);
+  virtual void ComputeTetK(int el, double K[144], int clamped);
   // Compute the derivative of the first Piola Kirchhoff stress P with respect to
   // the deformation gradient F. Since P and F both have 9 entries, dPdF has 81 entries
-  virtual void Compute_dPdF(int el, double dPdF[81]);
+  virtual void Compute_dPdF(int el, double dPdF[81], int clamped);
   // Compute the derivative of the deformation gradient F with respect 
   // to the displacement vector u
   void Compute_dFdU();

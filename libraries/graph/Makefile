@@ -13,11 +13,10 @@ R ?= ../..
 GRAPH_OBJECTS=graph.o
 
 # the libraries this library depends on
-GRAPH_LIBS=sparseMatrix
+GRAPH_LIBS=matrixIO sparseMatrix
 
 # the headers in this library
 GRAPH_HEADERS=graph.h
-
 
 GRAPH_OBJECTS_FILENAMES=$(addprefix $(L)/graph/, $(GRAPH_OBJECTS))
 GRAPH_HEADER_FILENAMES=$(addprefix $(L)/graph/, $(GRAPH_HEADERS))

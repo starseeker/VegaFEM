@@ -9,13 +9,13 @@ include ../../Makefile-headers/Makefile-header
 R ?= ../..
 
 # the object files to be compiled for this library
-VOLUMETRICMESH_OBJECTS=volumetricMeshParser.o generateInterpolationMatrix.o generateMassMatrix.o generateSurfaceMesh.o generateMeshGraph.o cubicMesh.o tetMesh.o volumetricMeshLoader.o volumetricMesh.o volumetricMeshENuMaterial.o volumetricMeshMooneyRivlinMaterial.o volumetricMeshExtensions.o
+VOLUMETRICMESH_OBJECTS=volumetricMeshParser.o generateInterpolationMatrix.o generateMassMatrix.o generateSurfaceMesh.o generateMeshGraph.o cubicMesh.o tetMesh.o volumetricMeshLoader.o volumetricMesh.o volumetricMeshENuMaterial.o volumetricMeshMooneyRivlinMaterial.o volumetricMeshExtensions.o computeStiffnessMatrixNullspace.o
 
 # the libraries this library depends on
-VOLUMETRICMESH_LIBS=sparseMatrix graph matrix objMesh minivector
+VOLUMETRICMESH_LIBS=sparseMatrix graph matrixIO objMesh minivector
 
 # the headers in this library
-VOLUMETRICMESH_HEADERS=volumetricMeshParser.h generateInterpolationMatrix.h generateMassMatrix.h generateSurfaceMesh.h generateMeshGraph.h cubicMesh.h tetMesh.h volumetricMesh.h volumetricMeshLoader.h volumetricMeshENuMaterial.h volumetricMeshMooneyRivlinMaterial.h volumetricMeshExtensions.h
+VOLUMETRICMESH_HEADERS=volumetricMeshParser.h generateInterpolationMatrix.h generateMassMatrix.h generateSurfaceMesh.h generateMeshGraph.h cubicMesh.h tetMesh.h volumetricMesh.h volumetricMeshLoader.h volumetricMeshENuMaterial.h volumetricMeshMooneyRivlinMaterial.h volumetricMeshExtensions.h computeStiffnessMatrixNullspace.h
 
 VOLUMETRICMESH_OBJECTS_FILENAMES=$(addprefix $(L)/volumetricMesh/, $(VOLUMETRICMESH_OBJECTS))
 VOLUMETRICMESH_HEADER_FILENAMES=$(addprefix $(L)/volumetricMesh/, $(VOLUMETRICMESH_HEADERS))

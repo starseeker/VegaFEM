@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 1.1                               *
+ * Vega FEM Simulation Library Version 2.0                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2012 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder      *
@@ -55,16 +55,23 @@
 #define OBJMESHRENDER_COLOR          (1 << 3)       /* render with color materials */
 #define OBJMESHRENDER_MATERIAL       (1 << 4)       /* render with materials */
 #define OBJMESHRENDER_SELECTION      (1 << 5)       /* render with OpenGL selection (only applies to vertices, otherwise ignored) */
-#define OBJMESHRENDER_CUSTOMCOLOR    (1 << 6)       /* render with custom color (only applies to faces)*/
+#define OBJMESHRENDER_CUSTOMCOLOR    (1 << 6)       /* render with custom color (only applies to faces) */
+#define OBJMESHRENDER_TRANSPARENCY   (1 << 7)       /* render in two passes, to handle transparencies */
 
-//texture mode
+//texture mode: replace vs modulate
 #define OBJMESHRENDER_LIGHTINGMODULATIONBIT 1
 #define OBJMESHRENDER_GL_REPLACE 0
 #define OBJMESHRENDER_GL_MODULATE 1
 
+//texture mode: mipmapping
 #define OBJMESHRENDER_MIPMAPBIT 2
 #define OBJMESHRENDER_GL_NOMIPMAP 0
 #define OBJMESHRENDER_GL_USEMIPMAP 2
+
+//texture mode: anisotropic filtering
+#define OBJMESHRENDER_ANISOTROPICFILTERINGBIT 4
+#define OBJMESHRENDER_GL_NOANISOTROPICFILTERING 0
+#define OBJMESHRENDER_GL_USEANISOTROPICFILTERING 4
 
 class ObjMeshRender
 {
@@ -73,25 +80,33 @@ public:
   class Texture
   {
   public:
-    Texture() : texture(std::make_pair(false, 0)), textureMode(OBJMESHRENDER_GL_NOMIPMAP | OBJMESHRENDER_GL_MODULATE) {}
-    virtual ~Texture() { if(texture.first) glDeleteTextures(1, &(texture.second)); }
+    Texture() : fullPath(std::string("__none")), texture(std::make_pair(false, 0)), textureMode(OBJMESHRENDER_GL_NOMIPMAP | OBJMESHRENDER_GL_MODULATE), bytesPerPixel(3) {}
+    virtual ~Texture() { if (texture.first) glDeleteTextures(1, &(texture.second)); }
 
-    void loadTexture(std::string fullPath, int textureMode);
+    static void loadTextureImage(std::string fullPath, int * width, int * height, int * bpp, unsigned char ** texData);
+
+    void loadTexture(std::string fullPath, int textureMode); // also sets up OpenGl
 
     bool hasTexture() { return texture.first; }
     unsigned int getTexture() { assert( texture.first ); return texture.second; }
 
+    std::string getFullPath() { return fullPath; }
     int getTextureMode() { return textureMode; }
+    int getBytesPerPixel() { return bytesPerPixel; }
 
   protected:
+    std::string fullPath;
     std::pair< bool, unsigned int > texture; // OpenGL texture ID
     int textureMode;
+    int bytesPerPixel;
+
+    static void flipImage(int width, int height, int bpp, unsigned char * image);
   };
 
   ObjMeshRender(ObjMesh * mesh);
   ~ObjMeshRender();
 
-  void render(int geometryMode, int renderMode);
+  void render(int geometryMode, int renderMode, int renderSingleGroup=-1);
   unsigned int createDisplayList(int geometryMode, int renderMode);
 
   // set custom colors, for OBJMESHRENDER_CUSTOMCOLOR mode
@@ -101,15 +116,15 @@ public:
   void renderSpecifiedVertices(int * specifiedVertices, int numSpecifiedVertices);
   void renderVertex(int index);
 
-  // the hackier, more specific ones for various specific SceneObject functions
+  // the more specific rendering versions for various SceneObject functions
+  void renderGroup(unsigned int groupIndex, int geometryMode, int renderMode);
+  void renderGroup(char * groupName, int geometryMode, int renderMode);
   void renderGroupEdges(char * groupName);
 
   int numTextures();
+  int maxBytesPerPixelInTextures();
   Texture * getTextureHandle(int textureIndex);
-  void loadTextures(int textureMode);
-
-  // loads an image from a PPM file; returns the pixels, in bottom-to-top order, and image width and height
-  static unsigned char * loadPPM(std::string filename, int * width, int * height); // must be P6 type
+  void loadTextures(int textureMode, std::vector<Texture*> * texturePool=NULL, int updatePool=0);
 
   void renderNormals(double normalLength);
 
@@ -119,7 +134,8 @@ public:
 protected:
   ObjMesh * mesh;
   std::vector<Vec3d> customColors;
-  std::vector< Texture > textures;
+  std::vector< Texture* > textures;
+  std::vector<int> ownTexture;
 };
 
 #endif

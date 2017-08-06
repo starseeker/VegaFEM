@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 1.1                               *
+ * Vega FEM Simulation Library Version 2.0                               *
  *                                                                       *
- * "sparseMatrix" library , Copyright (C) 2007 CMU, 2009 MIT, 2012 USC   *
+ * "sparseMatrix" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC   *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -128,6 +128,8 @@ public:
   void AddBlock3x3Entry(int i, int j, double * matrix3x3); // matrix3x3 should be given in row-major order
   // add a block (sparse) matrix (optionally multiplied with "scalarFactor"), starting at row i, and column j
   void AddBlockMatrix(int i, int j, const SparseMatrix * block, double scalarFactor=1.0);
+  void IncreaseNumRows(int numAddedRows); // increases the number of matrix rows (new rows are added at the bottom of the matrix, and are all empty)
+
   void MultiplyRow(int row, double scalar); // multiplies all elements in row 'row' with scalar 'scalar'
 
   inline int Getn() const { return numRows; } // get number of rows
@@ -263,7 +265,7 @@ public:
   void RemoveColumns(int numRemovedColumns, int * removedColumns, int oneIndexed=0); // columns must be sorted (ascending)
   void RemoveColumnsSlow(int numRemovedColumns, int * removedColumns, int oneIndexed=0); // columns need not be sorted 
 
-  void IncreaseNumRows(int newNumRows); // increases the number of matrix rows (new rows are added at the bottom of the matrix, and are all empty)
+  void IncreaseNumRows(int numAddedRows); // increases the number of matrix rows (new rows are added at the bottom of the matrix, and are all empty)
   void SetRows(SparseMatrix * source, int startRow, int startColumn=0); // starting with startRow, overwrites the rows with those of matrix "source"; data is written into columns starting at startColumn
   void AppendRowsColumns(SparseMatrix * source); // appends the matrix "source" at the bottom of matrix, and trans(source) to the right of the matrix
 

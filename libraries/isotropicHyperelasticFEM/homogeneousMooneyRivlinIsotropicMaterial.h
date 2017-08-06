@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 1.1                               *
+ * Vega FEM Simulation Library Version 2.0                               *
  *                                                                       *
- * "isotropic hyperelastic FEM" library , Copyright (C) 2012 USC         *
+ * "isotropic hyperelastic FEM" library , Copyright (C) 2013 USC         *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Fun Shing Sin                            *
@@ -29,7 +29,7 @@
 #ifndef _HOMOGENEOUSMOONEYRIVLINISOTROPICMATERIAL_H_
 #define _HOMOGENEOUSMOONEYRIVLINISOTROPICMATERIAL_H_
 
-#include "isotropicMaterial.h"
+#include "isotropicMaterialWithCompressionResistance.h"
 
 /*
   The implemented compressible Mooney-Rivlin material has the following energy function:
@@ -50,10 +50,10 @@
   A snapshot of the Wikipedia page is included in this folder.
 */
 
-class HomogeneousMooneyRivlinIsotropicMaterial : public IsotropicMaterial
+class HomogeneousMooneyRivlinIsotropicMaterial : public IsotropicMaterialWithCompressionResistance
 {
 public:
-  HomogeneousMooneyRivlinIsotropicMaterial(double mu01, double mu10, double v1);
+  HomogeneousMooneyRivlinIsotropicMaterial(double mu01, double mu10, double v1, int enableCompressionResistance=0, double compressionResistance=0.0);
   virtual ~HomogeneousMooneyRivlinIsotropicMaterial();
 
   virtual double ComputeEnergy(int elementIndex, double * invariants);
@@ -63,6 +63,10 @@ public:
 protected:
   double mu01, mu10;
   double v1;
+
+  double compressionResistance;
+  double EdivNuFactor;
+  virtual double GetCompressionResistanceFactor(int elementIndex);
 };
 
 #endif

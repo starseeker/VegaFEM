@@ -11,12 +11,18 @@ R ?= ../..
 
 # the object files to be compiled for this library
 SPARSESOLVER_OBJECTS=linearSolver.o PardisoSolver.o SPOOLESSolver.o SPOOLESSolverMT.o CGSolver.o
+ifneq ($(ARPACK_LIB),)
+SPARSESOLVER_OBJECTS+=ARPACKSolver.o invMKSolver.o
+endif
 
 # the libraries this library depends on
 SPARSESOLVER_LIBS=sparseMatrix
 
 # the headers in this library
-SPARSESOLVER_HEADERS=linearSolver.h PardisoSolver.h SPOOLESSolver.h SPOOLESSolverMT.h CGSolver.h sparseSolverAvailability.h sparseSolvers.h 
+SPARSESOLVER_HEADERS=linearSolver.h PardisoSolver.h SPOOLESSolver.h SPOOLESSolverMT.h CGSolver.h sparseSolverAvailability.h sparseSolvers.h
+ifneq ($(ARPACK_LIB),)
+SPARSESOLVER_HEADERS+=ARPACKSolver.h invMKSolver.h
+endif
 
 SPARSESOLVER_OBJECTS_FILENAMES=$(addprefix $(L)/sparseSolver/, $(SPARSESOLVER_OBJECTS))
 SPARSESOLVER_HEADER_FILENAMES=$(addprefix $(L)/sparseSolver/, $(SPARSESOLVER_HEADERS))

@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 1.1                               *
+ * Vega FEM Simulation Library Version 2.0                               *
  *                                                                       *
- * "isotropic hyperelastic FEM" library , Copyright (C) 2012 USC         *
+ * "isotropic hyperelastic FEM" library , Copyright (C) 2013 USC         *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Fun Shing Sin                            *
@@ -30,7 +30,7 @@
 #define _NEOHOOKEANISOTROPICMATERIAL_H_
 
 #include "tetMesh.h"
-#include "isotropicMaterial.h"
+#include "isotropicMaterialWithCompressionResistance.h"
 
 /*
    Neo-Hookean material. Material properties are read from the tet mesh, and can be heterogeneous.
@@ -41,10 +41,10 @@
    Press, 2008, page 162
 */
 
-class NeoHookeanIsotropicMaterial : public IsotropicMaterial
+class NeoHookeanIsotropicMaterial : public IsotropicMaterialWithCompressionResistance
 {
 public:
-  NeoHookeanIsotropicMaterial(TetMesh * tetMesh);
+  NeoHookeanIsotropicMaterial(TetMesh * tetMesh, int enableCompressionResistance=0, double compressionResistance=0.0);
   virtual ~NeoHookeanIsotropicMaterial();
 
   virtual double ComputeEnergy(int elementIndex, double * invariants);
@@ -54,6 +54,10 @@ public:
 protected:
   double * lambdaLame; 
   double * muLame; 
+
+  double compressionResistance;
+  double * EdivNuFactor;
+  virtual double GetCompressionResistanceFactor(int elementIndex);
 };
 
 #endif

@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 1.1                               *
+ * Vega FEM Simulation Library Version 2.0                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2012 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -44,7 +44,7 @@ class TetMesh : public VolumetricMesh
 public:
   // loads the mesh from a text file 
   // (.veg input formut, see documentation and the provided examples)
-  TetMesh(char * filename);
+  TetMesh(char * filename, int verbose=1);
 
   // constructs a tet mesh from the given vertices and elements, 
   // with a single region and material ("E, nu" material)
@@ -54,13 +54,25 @@ public:
          int numElements, int * elements,
          double E=1E6, double nu=0.45, double density=1000);
 
+  // constructs a tet mesh from the given vertices and elements, 
+  // with an arbitrary number of sets, regions and materials
+  // "vertices" is double-precision array of length 3 x numVertices 
+  // "elements" is an integer array of length 4 x numElements
+  // "materials", "sets" and "regions" will be copied internally (deep copy), so you
+  // can release them after calling this constructor
+  TetMesh(int numVertices, double * vertices,
+         int numElements, int * elements,
+         int numMaterials, Material ** materials,
+         int numSets, Set ** sets,
+         int numRegions, Region ** regions);
+
   // loads a file of a "special" (not .veg) type
   // currently one such special format is supported:
   // specialFileType=0: 
   //   the ".ele" and ".node" format, used by TetGen, 
   //   "filename" is the basename, e.g., passing "mesh" will load the mesh from "mesh.ele" and "mesh.node" 
   // default material parameters will be used
-  TetMesh(char * filename, int specialFileType); 
+  TetMesh(char * filename, int specialFileType, int verbose); 
 
   // creates a mesh consisting of the specified element subset of the given TetMesh
   TetMesh(const TetMesh & mesh, int numElements, int * elements, std::map<int,int> * vertexMap = NULL);
@@ -91,8 +103,12 @@ public:
  // === interpolation ===
 
   virtual void computeBarycentricWeights(int el, Vec3d pos, double * weights) const;
-  void computeGradient(int element, const double * U, int numFields, double * grad) const; // for tet meshes, gradient is constant inside each element, hence no need to specify position
+  void computeGradient(int element, const double * U, int numFields, double * grad) const; // for tet meshes, gradient is constant inside each tet, hence no need to specify position
   virtual void interpolateGradient(int element, const double * U, int numFields, Vec3d pos, double * grad) const; // conforms to the virtual function in the base class, "pos" does not affect the computation
+
+  // === misc ===
+
+  void orient(); // orients the tets (re-orders vertices within each tet), so that each tet has positive orientation: ((v1 - v0) x (v2 - v0)) dot (v3 - v0) >= 0
 
 protected:
   void computeElementMassMatrixHelper(Vec3d a, Vec3d b, Vec3d c, Vec3d d, double * buffer);

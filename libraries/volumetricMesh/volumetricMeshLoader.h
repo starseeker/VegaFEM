@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 1.1                               *
+ * Vega FEM Simulation Library Version 2.0                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2012 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -39,7 +39,7 @@
 class VolumetricMeshLoader
 {
 public:
-  static VolumetricMesh * load(char * filename);
+  static VolumetricMesh * load(char * filename, int verbose=1);
 };
 
 #endif

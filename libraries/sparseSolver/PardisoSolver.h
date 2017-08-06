@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 1.1                               *
+ * Vega FEM Simulation Library Version 2.0                               *
  *                                                                       *
- * "sparseSolver" library , Copyright (C) 2007 CMU, 2009 MIT, 2012 USC   *
+ * "sparseSolver" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC   *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -65,6 +65,15 @@ public:
 
   // solve: A * x = rhs, using the direct-iterative solver
   MKL_INT SolveLinearSystemDirectIterative(const SparseMatrix * A, double * x, const double * rhs);
+
+  /*
+    For positiveDefinite=0, SolveLinearSystem is equivalent to: ForwardSubstitution + DiagonalSubstitution + BackwardSubstitution
+    For positiveDefinite=1, SolveLinearSystem is equivalent to: ForwardSubstitution + BackwardSubstitution (DiagonalSubstitution is not used)
+  */
+
+  MKL_INT ForwardSubstitution(double * y, const double * rhs); // L y = rhs
+  MKL_INT DiagonalSubstitution(double * v, const double * y);  // D v = y
+  MKL_INT BackwardSubstitution(double * x, const double * v);  // L^T x = v
 
 protected:
   int n;

@@ -9,13 +9,13 @@ include ../../Makefile-headers/Makefile-header
 R ?= ../..
 
 # the object files to be compiled for this library
-IHFEM_OBJECTS=isotropicMaterial.o MooneyRivlinIsotropicMaterial.o neoHookeanIsotropicMaterial.o StVKIsotropicMaterial.o homogeneousMooneyRivlinIsotropicMaterial.o homogeneousStVKIsotropicMaterial.o homogeneousNeoHookeanIsotropicMaterial.o isotropicHyperelasticFEM.o isotropicHyperelasticFEMMT.o
+IHFEM_OBJECTS=isotropicMaterial.o isotropicMaterialWithCompressionResistance.o MooneyRivlinIsotropicMaterial.o neoHookeanIsotropicMaterial.o StVKIsotropicMaterial.o homogeneousMooneyRivlinIsotropicMaterial.o homogeneousStVKIsotropicMaterial.o homogeneousNeoHookeanIsotropicMaterial.o isotropicHyperelasticFEM.o isotropicHyperelasticFEMMT.o
 
 # the libraries this library depends on
 IHFEM_LIBS=minivector volumetricMesh sparseMatrix
 
 # the headers in this library
-IHFEM_HEADERS=isotropicMaterial.h MooneyRivlinIsotropicMaterial.h neoHookeanIsotropicMaterial.h StVKIsotropicMaterial.h homogeneousMooneyRivlinIsotropicMaterial.h homogeneousStVKIsotropicMaterial.h homogeneousNeoHookeanIsotropicMaterial.h isotropicHyperelasticFEM.h isotropicHyperelasticFEMMT.h
+IHFEM_HEADERS=isotropicMaterial.h isotropicMaterialWithCompressionResistance.h MooneyRivlinIsotropicMaterial.h neoHookeanIsotropicMaterial.h StVKIsotropicMaterial.h homogeneousMooneyRivlinIsotropicMaterial.h homogeneousStVKIsotropicMaterial.h homogeneousNeoHookeanIsotropicMaterial.h isotropicHyperelasticFEM.h isotropicHyperelasticFEMMT.h
 
 IHFEM_OBJECTS_FILENAMES=$(addprefix $(L)/isotropicHyperelasticFEM/, $(IHFEM_OBJECTS))
 IHFEM_HEADER_FILENAMES=$(addprefix $(L)/isotropicHyperelasticFEM/, $(IHFEM_HEADERS))

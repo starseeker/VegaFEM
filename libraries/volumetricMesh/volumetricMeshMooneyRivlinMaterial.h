@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 1.1                               *
+ * Vega FEM Simulation Library Version 2.0                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2012 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -46,9 +46,10 @@
 class VolumetricMesh::MooneyRivlinMaterial : public VolumetricMesh::Material
 {
 public:
-  MooneyRivlinMaterial(char * name, double density, double mu01, double mu10, double v1);
+  MooneyRivlinMaterial(std::string name, double density, double mu01, double mu10, double v1);
   MooneyRivlinMaterial(const MooneyRivlinMaterial & mooneyRivlinMaterial);
-  virtual VolumetricMesh::Material * clone();
+  virtual ~MooneyRivlinMaterial() {}
+  virtual VolumetricMesh::Material * clone() const;
   virtual VolumetricMesh::Material::materialType getType();
 
   inline double getmu01() const; 
@@ -62,7 +63,7 @@ protected:
   double mu01_, mu10_, v1_;
 };
 
-inline VolumetricMesh::MooneyRivlinMaterial::MooneyRivlinMaterial(char * name, double density, double mu01, double mu10, double v1): VolumetricMesh::Material(name, density), mu01_(mu01), mu10_(mu10), v1_(v1) {}
+inline VolumetricMesh::MooneyRivlinMaterial::MooneyRivlinMaterial(std::string name, double density, double mu01, double mu10, double v1): VolumetricMesh::Material(name, density), mu01_(mu01), mu10_(mu10), v1_(v1) {}
 inline VolumetricMesh::MooneyRivlinMaterial::MooneyRivlinMaterial(const MooneyRivlinMaterial & mooneyRivlinMaterial) : VolumetricMesh::Material(mooneyRivlinMaterial.getName(), mooneyRivlinMaterial.getDensity()),  mu01_(mooneyRivlinMaterial.getmu01()), mu10_(mooneyRivlinMaterial.getmu10()), v1_(mooneyRivlinMaterial.getv1()) {}
 inline double VolumetricMesh::MooneyRivlinMaterial::getmu01() const { return mu01_; } 
 inline double VolumetricMesh::MooneyRivlinMaterial::getmu10() const { return mu10_; } 

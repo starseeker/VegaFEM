@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 1.1                               *
+ * Vega FEM Simulation Library Version 1.9.8                             *
  *                                                                       *
- * "sparseSolver" library , Copyright (C) 2007 CMU, 2009 MIT, 2012 USC   *
+ * "sparseSolver" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC   *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -30,6 +30,7 @@
 #define _SPARSESOLVERS_H_
 
 #include "PardisoSolver.h"
+#include "CGSolver.h"
 #include "SPOOLESSolver.h"
 #include "SPOOLESSolverMT.h"
 

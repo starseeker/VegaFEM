@@ -8,16 +8,16 @@ endif
 include ../../Makefile-headers/Makefile-header
 R ?= ../..
 
-# the object files to be compiled for this library
+# the object files to be compiled for this utility
 SIMULATOR_OBJECTS=interactiveDeformableSimulator.o initGraphics.o
 
-# the libraries this library depends on
-SIMULATOR_LIBS=sceneObject integrator elasticForceModel forceModel matrix sparseMatrix loadList insertRows lighting configFile volumetricMesh getopts camera graph isotropicHyperelasticFEM minivector stvk corotationalLinearFEM polarDecomposition massSpringSystem objMesh sparseSolver
+# the libraries this utility depends on
+SIMULATOR_LIBS=sceneObject integratorSparse integrator elasticForceModel forceModel sparseMatrix loadList insertRows lighting configFile volumetricMesh getopts camera graph isotropicHyperelasticFEM minivector stvk corotationalLinearFEM polarDecomposition matrixIO massSpringSystem objMesh imageIO sparseSolver
 
 # the headers in this library
 SIMULATOR_HEADERS=initGraphics.h
 
-SIMULATOR_LINK=$(addprefix -l, $(SIMULATOR_LIBS)) $(SPOOLES_LIB) $(PARDISO_LIB) $(GLUI_LIB) $(STANDARD_LIBS)
+SIMULATOR_LINK=$(addprefix -l, $(SIMULATOR_LIBS)) $(SPOOLES_LIB) $(PARDISO_LIB) $(GLUI_LIB) $(IMAGE_LIBS) $(STANDARD_LIBS)
 
 SIMULATOR_OBJECTS_FILENAMES=$(addprefix $(R)/utilities/interactiveDeformableSimulator/, $(SIMULATOR_OBJECTS))
 SIMULATOR_HEADER_FILENAMES=$(addprefix $(R)/utilities/interactiveDeformableSimulator/, $(SIMULATOR_HEADERS))

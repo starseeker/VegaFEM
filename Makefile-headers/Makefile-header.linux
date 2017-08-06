@@ -1,9 +1,12 @@
 # Vega Makefile header for Linux
 
+OPTIMIZATIONFLAG=-O2
+#OPTIMIZATIONFLAG=-g
+
 CXX=g++
-CXXFLAGS=-Wall -Wno-write-strings -O2
+CXXFLAGS=-Wall -Wno-write-strings $(OPTIMIZATIONFLAG)
 CXXLD=$(CXX)
-LDFLAGS=-O2
+LDFLAGS=$(OPTIMIZATIONFLAG)
 
 RM=rm -f
 DYLIB_FLAG=-shared
@@ -55,4 +58,84 @@ SPOOLES_LIB=
 #SPOOLES_DIR=/home/barbic/software/SPOOLES
 #SPOOLES_INCLUDE=-I$(SPOOLES_DIR)
 #SPOOLES_LIB=$(SPOOLES_DIR)/LinSol/srcST/Bridge.a $(SPOOLES_DIR)/LinSol/srcMT/BridgeMT.a $(SPOOLES_DIR)/MT/src/spoolesMT.a $(SPOOLES_DIR)/spooles.a 
+
+# === image libraries ===
+
+TIFF_DIR=
+TIFF_INCLUDE=
+TIFF_LIB=
+# set PATH to LibTIFF here:
+#TIFF_DIR=/home/barbic/software/imageLibraries/tiff-4.0.3
+#TIFF_INCLUDE=-I$(TIFF_DIR)/libtiff
+#TIFF_LIB=$(TIFF_DIR)/libtiff/.libs/libtiff.a
+
+JPEG_DIR=
+JPEG_INCLUDE=
+JPEG_LIB=
+# set PATH to jpeglib here:
+# we are now using jpeglib-9 not jpeglib-6b which will give you hard time !!
+# jpeglib-9 can be found at ~/code/software/imageLibraries/jpeg-9
+#JPEG_DIR=/home/barbic/software/imageLibraries/jpeg-9
+#JPEG_INCLUDE=-I$(JPEG_DIR)
+#JPEG_LIB=-L$(JPEG_DIR)/.libs -ljpeg
+
+PNG_DIR=
+PNG_INCLUDE=
+PNG_LIB=
+# set PATH to libpng here:
+#PNG_DIR=/home/barbic/software/imageLibraries/libpng-1.6.3
+#PNG_INCLUDE=-I$(PNG_DIR)
+#PNG_LIB=-L$(PNG_DIR)/.libs -lpng16 -lz
+
+IMAGE_INCLUDE=$(TIFF_INCLUDE) $(JPEG_INCLUDE) $(PNG_INCLUDE)
+IMAGE_LIBS=$(TIFF_LIB) $(JPEG_LIB) $(PNG_LIB)
+
+# === GLEW (only needed for displayObj) ===
+
+GLEW_LIB=-lGLEW
+
+# === needed for model reduction ===
+
+# the following assumes that Intel MKL is used both for Pardiso and BLAS/LAPACK
+BLASLAPACK_DIR=$(PARDISO_DIR)
+BLASLAPACK_INCLUDE=$(PARDISO_INCLUDE)
+BLASLAPACK_LIB=$(PARDISO_LIB)
+
+# === needed for reducedDynamicSolver-rt and the LargeModalDeformationFactory ===
+
+# the folder where the Cg libraries are located
+CG_LIBS_DIR=
+CG_LIBS=
+#CG_LIBS_DIR=/usr/lib
+#CG_LIBS=-lCg -lCgGL -L$(CG_LIBS_DIR)
+
+# === needed only for the LargeModalDeformationFactory ===
+
+# fortran compiler
+FXX=
+FXXFLAGS=
+FORTRAN_LIB=
+#FXX=gfortran
+#FXXFLAGS=-O3 -m64
+#FORTRAN_LIB=/usr/local/gfortran/lib/x86_64/libgfortran.a
+
+# ARPACK
+ARPACK_DIR=
+ARPACK_INCLUDE=
+ARPACK_LIB=
+#ARPACK_DIR=/home/barbic/software/ARPACK
+#ARPACK_INCLUDE=-I$(ARPACK_DIR)/arpack++/include
+#ARPACK_LIB=$(ARPACK_DIR)/libarpack_SUN4.a
+
+# wxWidgets
+WX_DIR=
+WX_CONFIG=
+WX_RELEASE=
+WX_VERSION=
+EXEEXT=
+#WX_DIR=/home/barbic/software/wxMac/wxWidgets-2.9.4
+#WX_CONFIG=$(WX_DIR)/osx-build/wx-config
+#WX_RELEASE=2.9
+#WX_VERSION=$(WX_RELEASE).4
+#EXEEXT=
 

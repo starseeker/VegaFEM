@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 1.1                               *
+ * Vega FEM Simulation Library Version 2.0                               *
  *                                                                       *
- * "isotropic hyperelastic FEM" library , Copyright (C) 2012 USC         *
+ * "isotropic hyperelastic FEM" library , Copyright (C) 2013 USC         *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Fun Shing Sin                            *
@@ -29,7 +29,7 @@
 #ifndef _STVKISOTROPICMATERIAL_H_
 #define _STVKISOTROPICMATERIAL_H_
 
-#include "isotropicMaterial.h"
+#include "isotropicMaterialWithCompressionResistance.h"
 #include "tetMesh.h"
 
 /*
@@ -41,10 +41,10 @@
    Press, 2008, page 158
 */
 
-class StVKIsotropicMaterial : public IsotropicMaterial
+class StVKIsotropicMaterial : public IsotropicMaterialWithCompressionResistance
 {
 public:
-  StVKIsotropicMaterial(TetMesh * tetMesh);
+  StVKIsotropicMaterial(TetMesh * tetMesh, int enableCompressionResistance=0, double compressionResistance=0.0);
 
   virtual ~StVKIsotropicMaterial();
 
@@ -55,6 +55,10 @@ public:
 protected:
   double * lambdaLame;
   double * muLame;
+
+  double compressionResistance;
+  double * EdivNuFactor;
+  virtual double GetCompressionResistanceFactor(int elementIndex);
 };
 
 #endif

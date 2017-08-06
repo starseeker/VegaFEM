@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 1.1                               *
+ * Vega FEM Simulation Library Version 2.0                               *
  *                                                                       *
- * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2012 USC    *
+ * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -49,6 +49,8 @@ public:
 
   enum LightingModulationType {MODULATE, REPLACE};
   enum MipmapType {USEMIPMAP, NOMIPMAP};
+  enum AnisotropicFilteringType {USEANISOTROPICFILTERING, NOANISOTROPICFILTERING};
+  enum TextureTransparencyType {USETEXTURETRANSPARENCY, NOTEXTURETRANSPARENCY}; // enables 2-pass rendering for textures with transparencies
 
   // create a static scene object, by loading it from an Alias Wavefront OBJ file
   SceneObject(char * filename);
@@ -80,6 +82,8 @@ public:
   inline int GetNumVertices() { return n; }
   inline int GetNumFaces() { return mesh->getNumFaces(); }
   inline ObjMesh * GetMesh() { return mesh; }
+  inline ObjMeshRender * GetMeshRender() { return meshRender; }
+  inline int GetRenderMode() { return renderMode; }
 
   // smallest ball radius that encloses the model, with the ball centered at the given centroid
   void ComputeMeshRadius(Vec3d & centroid, double * radius);
@@ -97,10 +101,12 @@ public:
 
   // lightingModulation determines whether to multiply or replace the object color with the texture color
   // mipmap determines whether to use mipmapping for texture rendering
-  int SetUpTextures(LightingModulationType lightingModulation=MODULATE, MipmapType mipmap=USEMIPMAP); // you must call this **after** OpenGL has been initialized!!!
+  // texturePool and updatePool should normally be set to NULL and 0. These options exist so that you can share the same texture across multiple meshes. If "texturePool" is not NULL, the loader will search for the texture in the pool of textures, Only if not found, it will load the texture, otherwise, it will soft-link it. If "updatePool" is 1, the loader will add a soft-link to any unique textures discovered in this object to the texturePool.
+  int SetUpTextures(LightingModulationType lightingModulation=MODULATE, MipmapType mipmap=USEMIPMAP, AnisotropicFilteringType anisotropicFiltering=USEANISOTROPICFILTERING, TextureTransparencyType=NOTEXTURETRANSPARENCY, std::vector<ObjMeshRender::Texture*> * texturePool=NULL, int updatePool=0); // you must call this **after** OpenGL has been initialized!!!
   void EnableTextures();
   void DisableTextures();
-  inline bool hasTextures() { return hasTextures_; }
+  bool AreTexturesEnabled();
+  inline bool HasTextures() { return hasTextures_; }
 
   void SetMaterialAlpha(double alpha); // sets the material alpha value for all the materials
 
@@ -116,7 +122,7 @@ public:
 
   void SetNormalsToFaceNormals();
 
-  // ==== vertex labelling ====
+  // ==== vertex labeling ====
 
   // shows all point labels
   void ShowPointLabels();
@@ -127,10 +133,13 @@ public:
   // model matrix for the shadow
   static void SetShadowingModelviewMatrix(double ground[4], double light[4]);
 
-protected:
+  // ==== transformation ====
+  virtual void TransformRigidly(double * centerOfMass, double * R);
 
+protected:
   int n;
   unsigned int renderMode;
+  TextureTransparencyType textureTransparency;
 
   ObjMesh * mesh;
   ObjMeshRender * meshRender;

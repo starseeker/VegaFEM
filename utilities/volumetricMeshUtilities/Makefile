@@ -9,13 +9,13 @@ include ../../Makefile-headers/Makefile-header
 R ?= ../..
 
 
-# the object files to be compiled for this library
+# the object files to be compiled for this utility
 VOLUTILS_OBJECTS=
 
-# the libraries this library depends on
-VOLUTILS_LIBS=volumetricMesh objMesh matrix getopts loadList sparseMatrix
+# the libraries this utility depends on
+VOLUTILS_LIBS=volumetricMesh objMesh imageIO matrixIO getopts loadList sparseMatrix graph minivector
 
-# the headers in this library
+# the headers in this utility
 VOLUTILS_HEADERS=
 
 VOLUTILS_LINK=$(addprefix -l, $(VOLUTILS_LIBS)) $(SPOOLES_LIB) $(PARDISO_LIB) $(STANDARD_LIBS)

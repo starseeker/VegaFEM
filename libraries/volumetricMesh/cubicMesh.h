@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 1.1                               *
+ * Vega FEM Simulation Library Version 2.0                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2012 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -52,12 +52,26 @@ class CubicMesh : public VolumetricMesh
 public:
   
   // loads the mesh from a text file (.veg format; see documentation and examples)
-  CubicMesh(char * filename); 
+  CubicMesh(char * filename, int verbose=1); 
 
   // constructs a mesh from the given vertices and elements, with a single region and material
+  // "vertices" is double-precision array of length 3 x numVertices 
+  // "elements" is an integer array of length 8 x numElements 
   CubicMesh(int numVertices, double * vertices,
-         int numElements, int * elements,
-         double E=1E6, double nu=0.45, double density=1000);
+            int numElements, int * elements,
+            double E=1E6, double nu=0.45, double density=1000);
+
+  // constructs a mesh from the given vertices and elements, 
+  // with an arbitrary number of sets, regions and materials
+  // "vertices" is double-precision array of length 3 x numVertices 
+  // "elements" is an integer array of length 8 x numElements
+  // "materials", "sets" and "regions" will be copied internally (deep copy), so they
+  // can be released after calling this constructor
+  CubicMesh(int numVertices, double * vertices,
+            int numElements, int * elements,
+            int numMaterials, Material ** materials,
+            int numSets, Set ** sets,
+            int numRegions, Region ** regions);
 
   // constructs a voxel mesh with the given voxels, as a subset of a regular 3D grid
   // 'voxels' gives the grid indices (3 per voxel) of the voxels that are to be included in the mesh
