@@ -1,0 +1,19 @@
+
+set(VOL_SRCS
+volumetricMeshParser.cpp
+generateInterpolationMatrix.cpp
+generateMassMatrix.cpp
+generateSurfaceMesh.cpp
+generateMeshGraph.cpp
+computeStiffnessMatrixNullspace.cpp
+cubicMesh.cpp
+tetMesh.cpp
+volumetricMeshLoader.cpp
+volumetricMesh.cpp
+volumetricMeshENuMaterial.cpp
+volumetricMeshMooneyRivlinMaterial.cpp
+volumetricMeshExtensions.cpp
+)
+
+add_library(volumetricMesh ${VOL_SRCS})
+target_link_libraries(volumetricMesh sparseMatrix graph objMesh minivector)
