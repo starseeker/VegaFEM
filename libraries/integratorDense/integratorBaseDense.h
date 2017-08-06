@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC     *
+ * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -77,7 +77,14 @@ public:
   inline virtual double GetForceAssemblyTime() { return forceAssemblyTime; }
   inline virtual double GetSystemSolveTime() { return systemSolveTime; }
 
+  // plastic deformations
+  void UsePlasticDeformations(int usePlasticDeformations);
+  void SetPlasticThreshold(double plasticThreshold2);
+  void ClearPlasticDeformations();
+
 protected:
+  
+  IntegratorBaseDense(int r, double timestep, double dampingMassCoef=0.0, double dampingStiffnessCoef=0.0);
 
   double * massMatrix; // pointer to the reduced mass matrix
   double * dampingMatrix; 
@@ -99,6 +106,14 @@ protected:
 
   bool useStaticSolver;
   double * tangentStiffnessMatrixOffset;
+
+  // plastic deformations
+  int usePlasticDeformations;
+  double plasticThreshold2;
+  double * plasticfq;
+  double * totalfq;
+  void SetTotalForces(double * fq);
+  void ProcessPlasticDeformations();
 };
 
 #endif

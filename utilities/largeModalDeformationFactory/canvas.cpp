@@ -1,12 +1,12 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "Large Modal Deformation Factory",                                    *
  * a pre-processing utility for model reduction of                       *
  * deformable objects undergoing large deformations.                     *
  *                                                                       *
- *  Copyright (C) 2007 CMU, 2009 MIT, 2013 USC                           *
+ *  Copyright (C) 2007 CMU, 2009 MIT, 2014 USC                           *
  *                                                                       *
  * All rights reserved.                                                  *
  *                                                                       *
@@ -54,8 +54,9 @@ BEGIN_EVENT_TABLE(MyGLCanvas, wxGLCanvas)
 END_EVENT_TABLE()
 
 MyGLCanvas::MyGLCanvas(PrecomputationState * precomputationState, UIState * uiState, MyFrame * parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style, const wxString& name, int* attribList, const wxPalette& palette) :
-  wxGLCanvas(parent, id, pos, size, style | wxFULL_REPAINT_ON_RESIZE, name, attribList, palette) 
+  wxGLCanvas(parent, id, attribList, pos, size, style | wxFULL_REPAINT_ON_RESIZE, name, palette) 
 {
+  m_context = new wxGLContext(this);
   this->parent = parent;
   this->precomputationState = precomputationState;
   this->uiState = uiState;
@@ -111,6 +112,7 @@ MyGLCanvas::~MyGLCanvas()
     // remove display list
     glDeleteLists(renderingMeshDisplayList, 1);
   }
+  delete(m_context);
 }
 
 void MyGLCanvas::SetZBufferParams()
@@ -124,10 +126,12 @@ void MyGLCanvas::Reshape()
   int windowWidth, windowHeight;
   GetClientSize(&windowWidth, &windowHeight);
   SetZBufferParams();
-  
+
+/*
 #ifndef __WXMOTIF__
   if ( GetContext() )
 #endif
+*/
   {
     glViewport(0, 0, windowWidth, windowHeight);
 
@@ -145,14 +149,17 @@ void MyGLCanvas::Reshape()
 void MyGLCanvas::OnPaint(wxPaintEvent& event)
 {
   // must always be here
-  SetCurrent();
+  //SetCurrent();
+  wxGLCanvas::SetCurrent(*m_context);
   //wxPaintDC dc(this);
   wxPaintDC(this);
 
+/*
   #ifndef __WXMOTIF__
     if (!GetContext()) 
       return;
   #endif
+*/
 
   glClearColor(256.0 / 256, 256.0 / 256, 256.0 / 256, 0.0);
 
@@ -308,9 +315,9 @@ void MyGLCanvas::OnPaint(wxPaintEvent& event)
 void MyGLCanvas::OnSize(wxSizeEvent& event)
 {
   // this is necessary to update the context on some platforms
-  wxGLCanvas::OnSize(event);
+  //wxGLCanvas::OnSize(event);
   
-  // Reset the OpenGL view aspect
+  // Reset the OpenGL view aspect ratio
   Reshape();
 }
 
@@ -322,7 +329,7 @@ void MyGLCanvas::OnEraseBackground(wxEraseEvent& event)
 
 void MyGLCanvas::OnMouse( wxMouseEvent& event )
 {
-  wxSize sz(GetClientSize());
+  //wxSize sz(GetClientSize());
   if( event.ButtonDown() )
   {
     if (event.LeftDown())

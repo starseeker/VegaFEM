@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC    *
+ * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -33,9 +33,21 @@
 #include <float.h>
 #include "sceneObjectReducedGPU.h"
 
-SceneObjectReducedGPU::SceneObjectReducedGPU(char * filenameOBJ, 
+SceneObjectReducedGPU::SceneObjectReducedGPU(const char * filenameOBJ, 
       ModalMatrix * modalMatrix, int GPUMethod):
       SceneObjectWithRestPosition(filenameOBJ), SceneObjectReduced(filenameOBJ, modalMatrix)
+{
+  Construct(GPUMethod);
+}
+
+SceneObjectReducedGPU::SceneObjectReducedGPU(ObjMesh * objMesh, 
+      ModalMatrix * modalMatrix, int GPUMethod, bool deepCopy):
+      SceneObjectWithRestPosition(objMesh, deepCopy), SceneObjectReduced(objMesh, modalMatrix, deepCopy)
+{
+  Construct(GPUMethod);
+}
+
+void SceneObjectReducedGPU::Construct(int GPUMethod)
 {
   try
   {
@@ -49,7 +61,7 @@ SceneObjectReducedGPU::SceneObjectReducedGPU(char * filenameOBJ,
     {
       #ifdef WIN32
         render_uUq = new ObjMeshGPUDeformer_uUq_pbuffer();
-        render_uUq->Init(mesh, meshRender, r, modalMatrix->GetMatrix(), renderMode);
+        render_uUq->Construct(mesh, meshRender, r, modalMatrix->GetMatrix(), renderMode);
       #else
         throw 10;
       #endif
@@ -69,9 +81,7 @@ SceneObjectReducedGPU::SceneObjectReducedGPU(char * filenameOBJ,
   }
 }
 
-SceneObjectReducedGPU::SceneObjectReducedGPU(char * filenameOBJ, 
-      ModalMatrix * modalMatrix, SceneObjectReducedGPU * cloningSource, int GPUMethod):
-      SceneObjectWithRestPosition(filenameOBJ), SceneObjectReduced(filenameOBJ, modalMatrix)
+void SceneObjectReducedGPU::Construct(SceneObjectReducedGPU * cloningSource, int GPUMethod)
 {
   try
   {
@@ -102,6 +112,20 @@ SceneObjectReducedGPU::SceneObjectReducedGPU(char * filenameOBJ,
            "obj file vertices (%d).\n", modalMatrix->Getn(), n);
     throw 2;
   }
+}
+
+SceneObjectReducedGPU::SceneObjectReducedGPU(const char * filenameOBJ, 
+      ModalMatrix * modalMatrix, SceneObjectReducedGPU * cloningSource, int GPUMethod):
+      SceneObjectWithRestPosition(filenameOBJ), SceneObjectReduced(filenameOBJ, modalMatrix)
+{
+  Construct(cloningSource, GPUMethod);
+}
+
+SceneObjectReducedGPU::SceneObjectReducedGPU(ObjMesh * objMesh, 
+      ModalMatrix * modalMatrix, SceneObjectReducedGPU * cloningSource, int GPUMethod, bool deepCopy):
+      SceneObjectWithRestPosition(objMesh, deepCopy), SceneObjectReduced(objMesh, modalMatrix, deepCopy)
+{
+  Construct(cloningSource, GPUMethod);
 }
 
 SceneObjectReducedGPU::~SceneObjectReducedGPU()

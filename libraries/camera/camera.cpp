@@ -351,7 +351,7 @@ void SphericalCamera::WorldVector2CameraVector_OrientationOnly2D(double w0, doub
   c[2] = w0 * yAxis2D[0] + w2 * yAxis2D[1];
 }
 
-void SphericalCamera::SavePosition(char * filename)
+void SphericalCamera::SavePosition(const char * filename)
 {
   FILE * fout;
   fout = fopen(filename, "w");
@@ -360,7 +360,7 @@ void SphericalCamera::SavePosition(char * filename)
   fclose(fout);
 }
 
-void SphericalCamera::LoadPosition(char * filename)
+void SphericalCamera::LoadPosition(const char * filename)
 {
   FILE * fin;
   fin = fopen(filename,"r");

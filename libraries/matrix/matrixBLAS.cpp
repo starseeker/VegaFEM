@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "matrix" library , Copyright (C) 2007 CMU, 2009 MIT                   *
  * All rights reserved.                                                  *
@@ -32,6 +32,8 @@
   #include "matrixBLASVanilla.cpp"
 #endif
 
+#include "vegalong.h"
+
 // transposes the matrix (without making a separate copy)
 template <class real>
 void InPlaceTransposeMatrix(int m, int n, real * mtx)
@@ -42,18 +44,18 @@ void InPlaceTransposeMatrix(int m, int n, real * mtx)
     mtx[i] = mtx[j];\
     mtx[j] = buffer;
 
-  long M = m;
-  long N = n;
-  long MN = M*N;
+  vegalong M = m;
+  vegalong N = n;
+  vegalong MN = M*N;
   
-  for(long i=0; i< MN; i++)
+  for(vegalong i=0; i< MN; i++)
   {
-    long current = i;
+    vegalong current = i;
     do
     {
       // evaluate permutation on 'current'
-      long k = current / N;
-      long l = current % N;
+      vegalong k = current / N;
+      vegalong l = current % N;
   
       current = M * l + k;
     } 

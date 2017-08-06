@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder      *
@@ -62,32 +62,31 @@ ObjMeshOrientable::~ObjMeshOrientable()
     delete(objMesh);
 }
 
-ObjMeshOrientable::ObjMeshOrientable( const std::string& filename, 
-  int generateHalfEdges, int * numOrientationFlips_ ) 
+ObjMeshOrientable::ObjMeshOrientable(const std::string & filename, int generateHalfEdges, int * numOrientationFlips_, int verbose) 
 {
   internalAllocation = 1;
-  objMesh = new ObjMesh(filename);
-
-  Init(generateHalfEdges, numOrientationFlips_);
+  objMesh = new ObjMesh(filename, ObjMesh::ASCII, verbose);
+  Init(generateHalfEdges, numOrientationFlips_, verbose);
 }
 
-ObjMeshOrientable::ObjMeshOrientable( ObjMesh * objMesh, 
-  int generateHalfEdges, int * numOrientationFlips_ ) 
+ObjMeshOrientable::ObjMeshOrientable(ObjMesh * objMesh, int generateHalfEdges, int * numOrientationFlips_, int verbose) 
 {
   internalAllocation = 0;
   this->objMesh = objMesh;
-  
-  Init(generateHalfEdges, numOrientationFlips_);
+  Init(generateHalfEdges, numOrientationFlips_, verbose);
 }
 
-void ObjMeshOrientable::Init(int generateHalfEdges, int * numOrientationFlips_ )
+void ObjMeshOrientable::Init(int generateHalfEdges, int * numOrientationFlips_, int verbose)
 {
   if (generateHalfEdges)
   {
-    int numOrientationFlips = GenerateHalfEdgeDataStructure();
+    int numOrientationFlips = GenerateHalfEdgeDataStructure(verbose);
 
     if (numOrientationFlips_ != NULL)
       *numOrientationFlips_ = numOrientationFlips;
+
+    if (numOrientationFlips < 0)
+      throw 1;
   }
 }
 
@@ -109,16 +108,18 @@ void ObjMeshOrientable::PrintHalfEdges()
 }
 
 // returns the number of edges flipped
-int ObjMeshOrientable::GenerateHalfEdgeDataStructure()
+int ObjMeshOrientable::GenerateHalfEdgeDataStructure(int verbose)
 {
-  std::cout << "Building the half edge data structure..." << std::endl;
+  if (verbose)
+    std::cout << "Building the half edge data structure..." << std::endl;
 
   // Step 1: iterate over all faces
   // for each face, add all the edges onto the list of half-edges
 
-  std::cout << "Step 1: Generating the list of half edges..." << std::endl;
+  if (verbose)
+    std::cout << "Step 1: Generating the list of half edges..." << std::endl;
 
-  typedef std::vector<ObjMesh::Group> SGroup;
+  //typedef std::vector<ObjMesh::Group> SGroup;
 
   int coutCounter = 0;
 
@@ -126,8 +127,11 @@ int ObjMeshOrientable::GenerateHalfEdgeDataStructure()
   {
     const ObjMesh::Group * currentGroup = objMesh->getGroupHandle(i);
 
-    std::cout << "  Processing obj group '" << currentGroup->getName() << std::endl;
-    std::cout << "  Iterating through group faces..." << std::endl;
+    if (verbose)
+    {
+      std::cout << "  Processing obj group '" << currentGroup->getName() << std::endl;
+      std::cout << "  Iterating through group faces..." << std::endl;
+    }
 
     for( unsigned int iFace = 0; iFace < currentGroup->getNumFaces(); ++iFace )
     {
@@ -135,12 +139,14 @@ int ObjMeshOrientable::GenerateHalfEdgeDataStructure()
 
       if (coutCounter < 100)
       {
-        std::cout << face.getNumVertices() ;
+        if (verbose)
+          std::cout << face.getNumVertices() ;
         coutCounter++;
       }
       if (coutCounter == 100)
       {
-        cout << "...[and more]";
+        if (verbose)
+          cout << "...[and more]";
         coutCounter++;
       }
 
@@ -151,13 +157,13 @@ int ObjMeshOrientable::GenerateHalfEdgeDataStructure()
         // create a half edge for each edge, store -1 for half-edge adjacent edge for now
         // index vertices starting from 0
         int nextEdge = edgesSoFar + ((iVertex + 1) % face.getNumVertices());
-        HalfEdge halfEdge(edgesSoFar + iVertex, face.getVertex(iVertex).getPositionIndex(), face.getVertex((iVertex + 1) % face.getNumVertices()).getPositionIndex(),
-		 	  iVertex, (iVertex + 1) % face.getNumVertices(), i, iFace, -1, nextEdge); 
+        HalfEdge halfEdge(edgesSoFar + iVertex, face.getVertex(iVertex).getPositionIndex(), face.getVertex((iVertex + 1) % face.getNumVertices()).getPositionIndex(), iVertex, (iVertex + 1) % face.getNumVertices(), i, iFace, -1, nextEdge); 
 
         halfEdges_.push_back(halfEdge);
       }
     }
-    std::cout << std::endl;
+    if (verbose)
+      std::cout << std::endl;
   }
 
 /*  
@@ -179,8 +185,11 @@ int ObjMeshOrientable::GenerateHalfEdgeDataStructure()
   // Step 2: build correspondence among half-dges
   // for each half-edge, search for the opposite half-edge, if it exists
 
-  std::cout << "Step 2: Building correspondence among half-edges..." << std::endl;
-  std::cout << "Boundary edges: ";
+  if (verbose)
+  {
+    std::cout << "Step 2: Building correspondence among half-edges..." << std::endl;
+    std::cout << "Boundary edges: ";
+  }
 
   // insert all edges into a binary tree
 
@@ -194,9 +203,12 @@ int ObjMeshOrientable::GenerateHalfEdgeDataStructure()
    
     if (vertex1 == vertex2)
     {
-      std::cout << "Error: encountered a degenerated edge with equal starting and ending vertex." << std::endl;
-      std::cout << "  Group:" << halfEdges_[i].groupID() << "  Face #: " << halfEdges_[i].face() << "Vertex ID: " << vertex1 << std::endl;
-      exit(1);
+      if (verbose)
+      {
+        std::cout << "Error: encountered a degenerated edge with equal starting and ending vertex." << std::endl;
+        std::cout << "  Group:" << halfEdges_[i].groupID() << "  Face #: " << halfEdges_[i].face() << "Vertex ID: " << vertex1 << std::endl;
+      }
+      return -1;
     }
 
     if (vertex1 > vertex2) // swap
@@ -230,14 +242,13 @@ int ObjMeshOrientable::GenerateHalfEdgeDataStructure()
     int hits = 0;
     int candidates = 0;
     BinaryTree::iterator pos;
-    for (pos = edges.lower_bound(vertices); 
-         pos != edges.upper_bound(vertices);
-         ++pos)
+    for (pos = edges.lower_bound(vertices); pos != edges.upper_bound(vertices); ++pos)
     {
       candidates++;
       // check if we found ourselves
       if (pos->second != i) 
-      { // not ourselves
+      { 
+        // not ourselves
         halfEdges_[i].setOpposite(pos->second);
         hits++;
       }
@@ -245,23 +256,30 @@ int ObjMeshOrientable::GenerateHalfEdgeDataStructure()
 
     if (candidates >= 3) 
     {
-      std::cout << "Error: encountered an edge that appears in more than two triangles. Geometry is non-manifold. Exiting." << std::endl;
+      if (verbose)
+        std::cout << "Error: encountered an edge that appears in more than two triangles. Geometry is non-manifold. Exiting." << std::endl;
       int faceNum = halfEdges_[i].face();
-      std::cout << "  Group:" << halfEdges_[i].groupID() << std::endl << "  Face #: " << faceNum << std::endl;
-      std::cout << "  Edge: " << vertex1 << " " << vertex2 << std::endl;
-      std::cout << "  Vertices: " << objMesh->getPosition(vertex1) << " " << objMesh->getPosition(vertex2) << std::endl;
-      exit(1);
+      if (verbose)
+      {
+        std::cout << "  Group:" << halfEdges_[i].groupID() << std::endl << "  Face #: " << faceNum << std::endl;
+        std::cout << "  Edge: " << vertex1 << " " << vertex2 << std::endl;
+        std::cout << "  Vertices: " << objMesh->getPosition(vertex1) << " " << objMesh->getPosition(vertex2) << std::endl;
+      }
+      return -1;
     }
 
     if (hits == 0) // boundary edge
     {  
       //std::cout << "B"; 
-      std::cout << "B(" << vertex1 << "," << vertex2 << ") "; 
+      if (verbose)
+        std::cout << "B(" << vertex1 << "," << vertex2 << ") "; 
       boundaryEdges_.push_back(i);
     }
   }  
 
-  std::cout << " total: " << boundaryEdges_.size() << std::endl;
+  if (verbose)
+    std::cout << " total: " << boundaryEdges_.size() << std::endl;
+
 /*  
   for (unsigned int i=0; i<halfEdges_.size(); i++)
   {
@@ -280,7 +298,8 @@ int ObjMeshOrientable::GenerateHalfEdgeDataStructure()
   // now, each half-edge knows its mirror edge, but orientations of faces might be inconsistent
 
   // orient all half-edges consistently
-  std::cout << "Step 3: Attempting to orient the faces coherently..." << std::endl;
+  if (verbose)
+    std::cout << "Step 3: Attempting to orient the faces coherently..." << std::endl;
 
   // generate marks for all the edges
   std::vector<int> marks(halfEdges_.size(), 0);
@@ -307,7 +326,8 @@ int ObjMeshOrientable::GenerateHalfEdgeDataStructure()
     }
     else
     {
-      cout << "Found a new connected component. Seed half-edge is: " << unmarkedEdge << endl;
+      if (verbose)
+        cout << "Found a new connected component. Seed half-edge is: " << unmarkedEdge << endl;
       connectedComponents++;
       queue.insert(unmarkedEdge);
 
@@ -348,7 +368,8 @@ int ObjMeshOrientable::GenerateHalfEdgeDataStructure()
 
         if (exitFlag == 1) // all edges are boundary; this is an isolated face
         {
-          cout << "Encountered an isolated face." << endl;
+          if (verbose)
+            cout << "Encountered an isolated face." << endl;
           //cout << "none found." << endl;
           continue; // no need to queue anything or flip anything, this was an isolated face
           // also, this case can only happen during the first iteration of the while loop, which will also be the last one
@@ -417,8 +438,9 @@ int ObjMeshOrientable::GenerateHalfEdgeDataStructure()
 
               if (!orientationConsistent)
               {
-                std::cout << "Error: surface is non-orientable. Offending edge: [" << halfEdges_[loop].startVertex() << "," << halfEdges_[loop].endVertex() << "]" << std::endl;
-                exit(1);
+                if (verbose)
+                  std::cout << "Error: surface is non-orientable. Offending edge: [" << halfEdges_[loop].startVertex() << "," << halfEdges_[loop].endVertex() << "]" << std::endl;
+                return -1;
               }
             }
           }
@@ -430,13 +452,17 @@ int ObjMeshOrientable::GenerateHalfEdgeDataStructure()
     }
   } // end of while  
 
-  printf("Consistent orientation generated. Performed %d orientation flips.\n", numOrientationFlips);
+  if (verbose)
+    printf("Consistent orientation generated. Performed %d orientation flips.\n", numOrientationFlips);
 
   //PrintHalfEdges();
 
   // step 4: for every vertex, find a half-edge emanating out of it
-  std::cout << "Step 4: For every vertex, caching a half-edge emanating out of it..." << std::endl;
-  std::cout << "        For every face, caching a half-edge on it..." << std::endl;
+  if (verbose)
+  {
+    std::cout << "Step 4: For every vertex, caching a half-edge emanating out of it..." << std::endl;
+    std::cout << "        For every face, caching a half-edge on it..." << std::endl;
+  }
 
   for (unsigned int i=0; i< objMesh->getNumVertices(); i++)
     edgesAtVertices_.push_back(-1); // value of -1 corresponds to no edge (i.e. isolated vertex)
@@ -474,7 +500,8 @@ int ObjMeshOrientable::GenerateHalfEdgeDataStructure()
   } 
 
   if (numIsolatedVertices > 0)
-    printf("Warning: mesh has %d isolated vertices.\n", numIsolatedVertices);
+    if (verbose)
+      printf("Warning: mesh has %d isolated vertices.\n", numIsolatedVertices);
 
   // build the cache for faces, first reset to -1
   for (unsigned int i=0; i < objMesh->getNumGroups(); i++)
@@ -497,7 +524,10 @@ int ObjMeshOrientable::GenerateHalfEdgeDataStructure()
     const ObjMesh::Group * currentGroup = objMesh->getGroupHandle(i);
     for (unsigned int j=0; j < currentGroup->getNumFaces(); j++)
       if (edgesAtFaces_[i][j] == -1)
-        cout << "Warning: face on group " << i << "(" << currentGroup->getName() << "), position " << j << " has no edges." << endl;
+      {
+        if (verbose)
+          cout << "Warning: face on group " << i << "(" << currentGroup->getName() << "), position " << j << " has no edges." << endl;
+      }
   }
 
   determineIfSurfaceHasBoundary();
@@ -547,12 +577,14 @@ int ObjMeshOrientable::GenerateHalfEdgeDataStructure()
   }
   */
 
-  std::cout << "Half-edge datastructure constructed successfully." << std::endl;
-
-  std::cout << "Statistics: " << std::endl;
-  std::cout << "  Half-edges: " << halfEdges_.size() << std::endl;
-  std::cout << "  Boundary half-edges: " << boundaryEdges_.size() << std::endl;
-  std::cout << "  Connected components: " << connectedComponents << std::endl;
+  if (verbose)
+  {
+    std::cout << "Half-edge datastructure constructed successfully." << std::endl;
+    std::cout << "Statistics: " << std::endl;
+    std::cout << "  Half-edges: " << halfEdges_.size() << std::endl;
+    std::cout << "  Boundary half-edges: " << boundaryEdges_.size() << std::endl;
+    std::cout << "  Connected components: " << connectedComponents << std::endl;
+  }
   
   return numOrientationFlips;
 } 

@@ -2,7 +2,7 @@
 #
 # select the OS, and compile all model reduction libraries + drivers
 
-if [ `uname -s` = "Darwin" ];
+if [ `uname -s` = "Darwin" ]
 then
   # Mac OS X
   cd Makefile-headers
@@ -22,11 +22,18 @@ cd utilities/reducedDynamicSolver-rt
 make
 cd ..
 
-echo "Compiling LargeModalDeformationFactory..."
-cd largeModalDeformationFactory
-make
-cd ..
+if [ "$1" != "--no-factory" ]
+then
+  echo "Compiling LargeModalDeformationFactory..."
+  cd largeModalDeformationFactory
+  make
+  cd ..
+fi
 
 echo '      Model reduction examples are in "utilities/reducedDynamicSolver-rt".'
-echo '      LargeModalDeformationFactory is in "utilities/largeModalDeformationFactory".'
+
+if [ "$1" != "--no-factory" ]
+then
+  echo '      LargeModalDeformationFactory is in "utilities/largeModalDeformationFactory".'
+fi
 

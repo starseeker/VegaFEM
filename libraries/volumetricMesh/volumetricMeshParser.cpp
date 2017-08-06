@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -29,7 +29,7 @@
 #include <string.h>
 #include "volumetricMeshParser.h"
 
-VolumetricMeshParser::VolumetricMeshParser(char * includeToken_)
+VolumetricMeshParser::VolumetricMeshParser(const char * includeToken_)
 {
   fin = NULL;
   fileStackDepth = -1;
@@ -46,15 +46,15 @@ VolumetricMeshParser::VolumetricMeshParser(char * includeToken_)
   }
 }
 
-int VolumetricMeshParser::open(char * filename)
+int VolumetricMeshParser::open(const char * filename)
 {
   // extract directory name and filename
   // seek for last '/' in filename
   // if no '/', then directory name is "."
   // else, everything before '/' is directory name, and everything after is filename
 
-  char * iter = filename;
-  char * lastPos = NULL;
+  const char * iter = filename;
+  const char * lastPos = NULL;
 
   while (*iter != '\0')
   {

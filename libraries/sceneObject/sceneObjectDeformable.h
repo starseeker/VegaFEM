@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC    *
+ * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -40,7 +40,8 @@
 class SceneObjectDeformable : public virtual SceneObjectWithRestPosition
 {
 public:
-  SceneObjectDeformable(char * filenameOBJ);
+  SceneObjectDeformable(const char * filenameOBJ);
+  SceneObjectDeformable(ObjMesh * objMesh, bool deepCopy = true);
   virtual ~SceneObjectDeformable();
 
   // sets the current dynamic vertex positions to the rest position + specified deformation

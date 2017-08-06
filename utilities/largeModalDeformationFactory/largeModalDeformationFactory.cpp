@@ -1,12 +1,12 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "Large Modal Deformation Factory",                                    *
  * a pre-processing utility for model reduction of                       *
  * deformable objects undergoing large deformations.                     *
  *                                                                       *
- *  Copyright (C) 2007 CMU, 2009 MIT, 2013 USC                           *
+ *  Copyright (C) 2007 CMU, 2009 MIT, 2014 USC                           *
  *                                                                       *
  * All rights reserved.                                                  *
  *                                                                       *
@@ -36,6 +36,7 @@
 #include "largeModalDeformationFactory.h"
 #include "icon.cpp"
 #include <wx/filename.h>
+using namespace std;
 
 BEGIN_EVENT_TABLE(MyFrame, wxFrame)
   EVT_MENU_OPEN(MyFrame::OnMenuOpen)
@@ -132,9 +133,9 @@ bool MyApp::OnInit()
 {
   //#ifndef __WXMSW__
   #ifdef __APPLE__
-    if (std::freopen("stdout.txt", "w", stdout) == NULL)
+    if (freopen("stdout.txt", "w", stdout) == NULL)
       printf("Warning: failed to redirect output to stdout.txt\n");
-    if (std::freopen("stderr.txt", "w", stderr) == NULL)
+    if (freopen("stderr.txt", "w", stderr) == NULL)
       printf("Warning: failed to redirect output to stderr.txt\n");
   #endif
 
@@ -148,9 +149,9 @@ bool MyApp::OnInit()
 MyFrame::MyFrame(const wxString& title, const wxPoint& pos, const wxSize& size)
 : wxFrame((wxFrame *)NULL, -1, title, pos, size)
 {
-  versionString = _T("3.3");
+  versionString = _T("3.4");
   printf("Large modal deformation factory. Version %s .\n", (const char*)versionString.mb_str());
-  printf("By Jernej Barbic, CMU, MIT, USC, 2007-2013.\n");
+  printf("By Jernej Barbic, CMU, MIT, USC, 2007-2014.\n");
 
   printf("Initializing application...");
   precomputationState.renderingMeshAvailable = false;
@@ -553,7 +554,7 @@ void MyFrame::CreateOpenGLWindow()
 void MyFrame::InitOpenGL()
 {
   myGLCanvas->Show();
-  myGLCanvas->SetCurrent();
+  //myGLCanvas->SetCurrent();
   myGLCanvas->InitOpenGL();
   wxSafeYield();
 }

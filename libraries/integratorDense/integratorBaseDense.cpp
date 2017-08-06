@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC     *
+ * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -35,13 +35,13 @@
 #include <float.h>
 #include "IPIVC.h"
 
-IntegratorBaseDense::IntegratorBaseDense(int r, double timestep, double * massMatrix, ReducedForceModel * reducedForceModel, double dampingMassCoef, double dampingStiffnessCoef) : IntegratorBase(r, timestep, dampingMassCoef, dampingStiffnessCoef), useStaticSolver(0)
+IntegratorBaseDense::IntegratorBaseDense(int r, double timestep, double * massMatrix, ReducedForceModel * reducedForceModel, double dampingMassCoef, double dampingStiffnessCoef) : IntegratorBase(r, timestep, dampingMassCoef, dampingStiffnessCoef), useStaticSolver(0), usePlasticDeformations(0), plasticThreshold2(DBL_MAX), plasticfq(NULL), totalfq(NULL)
 {
   r2 = r * r;
   this->massMatrix = (double*) malloc (sizeof(double) * r2);
   dampingMatrix = (double*) malloc (sizeof(double) * r2);
   tangentStiffnessMatrix = (double*) malloc (sizeof(double) * r2);
-  memcpy(this->massMatrix,massMatrix,sizeof(double) * r2);
+  memcpy(this->massMatrix, massMatrix,sizeof(double) * r2);
 
   forceAssemblyTime = systemSolveTime = 0.0;
 
@@ -56,6 +56,23 @@ IntegratorBaseDense::IntegratorBaseDense(int r, double timestep, double * massMa
   memset(internalForces,0,sizeof(double) * r);
 }
 
+IntegratorBaseDense::IntegratorBaseDense(int r, double timestep, double dampingMassCoef, double dampingStiffnessCoef): IntegratorBase(r, timestep, dampingMassCoef, dampingStiffnessCoef), useStaticSolver(0), usePlasticDeformations(0), plasticThreshold2(DBL_MAX), plasticfq(NULL), totalfq(NULL)
+{
+  this->massMatrix = NULL;
+  dampingMatrix = NULL;
+  tangentStiffnessMatrix = NULL;
+
+  forceAssemblyTime = systemSolveTime = 0.0;
+
+  this->reducedForceModel = NULL;
+
+  tangentStiffnessMatrixOffset = NULL;
+  IPIV = NULL;
+
+  memset(externalForces,0,sizeof(double) * r);
+  memset(internalForces,0,sizeof(double) * r);
+}
+
 IntegratorBaseDense::~IntegratorBaseDense()
 {
   free(massMatrix);
@@ -63,6 +80,8 @@ IntegratorBaseDense::~IntegratorBaseDense()
   free(tangentStiffnessMatrix);
   delete(IPIV);
   free(tangentStiffnessMatrixOffset);
+  free(plasticfq);
+  free(totalfq);
 }
 
 void IntegratorBaseDense::SetMassMatrix(double * massMatrix)
@@ -76,7 +95,6 @@ void IntegratorBaseDense::SetTangentStiffnessMatrixOffset(double * tangentStiffn
 }
 
 void IntegratorBaseDense::ClearTangentStiffnessMatrixOffset()
-
 {
   memset(this->tangentStiffnessMatrixOffset, 0, sizeof(double) * r * r);
 }
@@ -108,6 +126,8 @@ void IntegratorBaseDense::ResetToRest()
 
   if (reducedForceModel != NULL)
     reducedForceModel->ResetToZero();
+
+  ClearPlasticDeformations();
 }
 
 int IntegratorBaseDense::SetState(double * q_, double * qvel_)
@@ -120,7 +140,7 @@ int IntegratorBaseDense::SetState(double * q_, double * qvel_)
     memset(qvel, 0, sizeof(double)*r);
 
   // M * qaccel + C * qvel + R(q) = P_0 
-  // R(q) = P_0 = 0
+  // assume P_0 = 0
   // i.e. M * qaccel = - C * qvel - R(q)
 
   reducedForceModel->GetForceAndMatrix(q, internalForces, tangentStiffnessMatrix);
@@ -173,5 +193,60 @@ void IntegratorBaseDense::UseStaticSolver(bool useStaticSolver_)
     memset(qaccel_1,0,sizeof(double)*r);
     memcpy(q_1, q, sizeof(double)*r);
   }
+}
+
+void IntegratorBaseDense::UsePlasticDeformations(int usePlasticDeformations_)
+{
+  usePlasticDeformations = usePlasticDeformations_;
+  if (usePlasticDeformations)
+  {
+    if (plasticfq == NULL)
+     plasticfq = (double*) calloc (r, sizeof(double));
+
+    if (totalfq == NULL)
+      totalfq = (double*) calloc (r, sizeof(double));
+  }
+}
+
+void IntegratorBaseDense::SetPlasticThreshold(double plasticThreshold2_)
+{
+  plasticThreshold2 = plasticThreshold2_;
+}
+
+void IntegratorBaseDense::ClearPlasticDeformations()
+{
+  if (!usePlasticDeformations)
+    return;
+
+  for(int i=0; i<r; i++)
+  {
+    plasticfq[i] = 0.0;
+    totalfq[i] = 0.0;
+  }
+}
+
+void IntegratorBaseDense::ProcessPlasticDeformations()
+{
+  if (!usePlasticDeformations)
+    return;
+
+  double norm2 = 0.0;
+  for(int i=0; i<r; i++)
+    norm2 += (totalfq[i] - plasticfq[i]) * (totalfq[i] - plasticfq[i]);
+
+  if (norm2 > plasticThreshold2)
+  {
+    // plastic threshold has been exceeded
+    //printf("Plastic threshold exceeded!\n");
+    double norm = sqrt(norm2);
+    double offset = norm - sqrt(plasticThreshold2);
+    for(int i=0; i<r; i++)
+      plasticfq[i] += offset / norm * (totalfq[i] - plasticfq[i]);
+  }
+}
+
+void IntegratorBaseDense::SetTotalForces(double * totalfq_)
+{
+  memcpy(totalfq, totalfq_, sizeof(double) * r);
 }
 

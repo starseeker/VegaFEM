@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "elasticForceModel" library , Copyright (C) 2007 CMU, 2009 MIT,       *
- *                                                       2013 USC        *
+ *                                                       2014 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *

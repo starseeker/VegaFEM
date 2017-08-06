@@ -76,24 +76,29 @@ public:
 
   // routines to specify mandatory option entries
   // if "parseOptions" does not find a mandatory option in a particular configuration file, it will exit with a non-zero code
-  int addOption(char * optionName, int * destLocation);
-  int addOption(char * optionName, bool * destLocation);
-  int addOption(char * optionName, float * destLocation);
-  int addOption(char * optionName, double * destLocation);
-  int addOption(char * optionName, char * destLocation); // for strings, you must pass a pointer to a pre-allocated string buffer (and not a pointer to a (char*) pointer)
+  int addOption(const char * optionName, int * destLocation);
+  int addOption(const char * optionName, bool * destLocation);
+  int addOption(const char * optionName, float * destLocation);
+  int addOption(const char * optionName, double * destLocation);
+  int addOption(const char * optionName, char * destLocation); // for strings, you must pass a pointer to a pre-allocated string buffer (and not a pointer to a (char*) pointer)
 
   // routines to specify option entries that are optional
   // if not specified in a particular config file, the value will default to the given default value
   template<class T>
-  int addOptionOptional(char * optionName, T * destLocation, T defaultValue);
-  int addOptionOptional(char * optionName, char * destLocation, char * defaultValue);
+  int addOptionOptional(const char * optionName, T * destLocation, T defaultValue);
+  int addOptionOptional(const char * optionName, char * destLocation, const char * defaultValue);
 
   // === after you have specified your option entries with addOption and/or addOptionOptional, call "parseOptions" to open a particular configuration file and load the option values to their destination locations.
 
-  int parseOptions(char * filename); // returns 0 on success, and a non-zero value on failure
+  int parseOptions(const char * filename, int verbose=1); // returns 0 on success, and a non-zero value on failure
+  int parseOptions(FILE * fin, int verbose=1); // makes it possible to parse from a file stream
 
   // after calling "parseOptions", you can print out the values of all options, to see the values that were read from the configuration file
   void printOptions();
+
+  // (optional) set a stopping string (when it is encountered in a file, parsing will stop); default: **EOF
+  // if the stopping string does not appear in a file, it will be parsed to the end
+  void setStoppingString(const char * stoppingString);
 
   // you can disable printing out warnings (default: enabled)
   void suppressWarnings(int suppressWarnings_) { this->suppressWarnings_ = suppressWarnings_; }
@@ -105,16 +110,18 @@ protected:
 
   std::vector<bool> optionSet;
   
-  int seekOption(char * optionName); // returns -1 if not found
+  int seekOption(const char * optionName); // returns -1 if not found
 
   template<class T>
-  int addOptionHelper(char * optionName, T * destLocation);
+  int addOptionHelper(const char * optionName, T * destLocation);
 
   int getTypeSize(int type);
   void getTypeFormatSpecifier(int type, char * fsp);
 
   void upperCase(char * s); // converts a string to upper case
   void removeTrailingCharacters(char * s, char ch); // removes (one or more) characters 'ch' from the end of the string
+
+  char stoppingString[32];
 
   int suppressWarnings_;
 };

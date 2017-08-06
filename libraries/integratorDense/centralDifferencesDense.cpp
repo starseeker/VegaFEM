@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC     *
+ * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -104,6 +104,13 @@ int CentralDifferencesDense::DoTimestep()
   counterForceAssemblyTime.StopCounter();
   forceAssemblyTime = counterForceAssemblyTime.GetElapsedTime();
 
+  if (plasticfq != NULL)
+  {
+    SetTotalForces(internalForces);
+    for(int i=0; i<r; i++)
+      internalForces[i] -= plasticfq[i];
+  }
+
   PerformanceCounter counterSystemSolveTime;
 
   for (int i=0; i<r; i++)
@@ -171,6 +178,8 @@ int CentralDifferencesDense::DoTimestep()
     q_1[i] = q[i];
     q[i] = rhs[i];
   }
+
+  ProcessPlasticDeformations();
 
   counterSystemSolveTime.StopCounter();
   systemSolveTime = counterSystemSolveTime.GetElapsedTime();

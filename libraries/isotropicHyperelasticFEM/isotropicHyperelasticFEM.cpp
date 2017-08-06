@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "isotropic hyperelastic FEM" library , Copyright (C) 2013 USC         *
+ * "isotropic hyperelastic FEM" library , Copyright (C) 2014 USC         *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Fun Shing Sin                            *
@@ -28,6 +28,9 @@
 
 #include "isotropicHyperelasticFEM.h"
 #include "matrixIO.h"
+#include "mat3d.h"
+
+#define SVD_singularValue_eps 1e-8
 
 IsotropicHyperelasticFEM::IsotropicHyperelasticFEM(TetMesh * tetMesh_, IsotropicMaterial * isotropicMaterial_, double inversionThreshold_, bool addGravity_, double g_) :
   tetMesh(tetMesh_),
@@ -369,7 +372,7 @@ void IsotropicHyperelasticFEM::GetEnergyAndForceAndTangentStiffnessMatrixHelperP
       for (int i=0; i<numVertices; i++)
       {
         internalForces[3*i+0] = 0.0;
-        internalForces[3*i+1] = -g;
+        internalForces[3*i+1] = g; // gravity acts in negative-y direction; internal forces are opposite of external forces
         internalForces[3*i+2] = 0.0;
       }
     }
@@ -445,7 +448,8 @@ int IsotropicHyperelasticFEM::GetEnergyAndForceAndTangentStiffnessMatrixHelperWo
     Mat3d & U = Us[el];
     Mat3d & V = Vs[el];
     Vec3d & Fhat = Fhats[el];
-    if (ModifiedSVD(F, U, Fhat, V) != 0)
+    int modifiedSVD = 1;
+    if (SVD(F, U, Fhat, V, SVD_singularValue_eps, modifiedSVD) != 0)
     {
       printf("error in diagonalization, el=%d\n", el);
       exitCode = 1;
@@ -1137,242 +1141,5 @@ void IsotropicHyperelasticFEM::ComputeDampingForces(double dampingPsi, double da
   }
 }
 
-/*
-  Given a deformation gradient F, decompose it using SVD so
-  that F = U F^hat V^T where U and V are rotational matrices
-  and F^hat is a diagonal matrix.
-
-  The SVD we are using is a special one such that it gives the 
-  following properties:
-
-  1) The determinant of both U and V are 1 (i.e., they are 
-     truly rotation, not reflection). This is required for
-     the method to work.
-
-     Note that standard SVD may generate U (or V) with 
-     determinant equals to -1 (i.e., reflection).
-
-  2) The diagonal values (a.k.a. singular values, or principal 
-     stretches) of F^hat are in descending order and the values 
-     can be negative.
-
-     Note that the singular values resulting from standard SVD 
-     are non-negative.
-
-  This implementation follows section 5 of [Irving 04].
-  It computes F^T F, and computes its eigenvectors, F^T F = V Fhat^2 V^T . 
-  Fhat is then recovered using sqrt from Fhat^2.
-  To recover U, compute U = F * V * diag(Fhat^{-1}).
-  Care must be taken when singular values of Fhat are small (handled in the code below).
-*/
-
-#define modifiedSVD_singularValue_eps 1e-8
-
-int IsotropicHyperelasticFEM::ModifiedSVD(Mat3d & F, Mat3d & U, Vec3d & Fhat, Mat3d & V)
-{
-  // The code handles the following special situations:
-
-  //---------------------------------------------------------
-  // 1. det(V) == -1
-  //    - multiply the first column of V by -1
-  //---------------------------------------------------------
-  // 2. An entry of Fhat is near zero
-  //---------------------------------------------------------
-  // 3. Tet is inverted.
-  //    - check if det(U) == -1
-  //    - If yes, then negate the minimal element of Fhat
-  //      and the corresponding column of U
-  //---------------------------------------------------------
-
-  // form F^T F and do eigendecomposition
-  Mat3d normalEq = trans(F) * F;
-  Vec3d eigenValues;
-  Vec3d eigenVectors[3];
-
-  eigen_sym(normalEq, eigenValues, eigenVectors);
-
-  V.set(eigenVectors[0][0], eigenVectors[1][0], eigenVectors[2][0],
-    eigenVectors[0][1], eigenVectors[1][1], eigenVectors[2][1],
-    eigenVectors[0][2], eigenVectors[1][2], eigenVectors[2][2]);
-  /*
-    printf("--- original V ---\n");
-    V.print();
-    printf("--- eigenValues ---\n");
-    printf("%G %G %G\n", eigenValues[0], eigenValues[1], eigenValues[2]);
-  */
-
-  // Handle situation:
-  // 1. det(V) == -1
-  //    - multiply the first column of V by -1
-  if (det(V) < 0.0)
-  {
-    // convert V into a rotation (multiply column 1 by -1)
-    V[0][0] *= -1.0;
-    V[1][0] *= -1.0;
-    V[2][0] *= -1.0;
-  }
-
-  Fhat[0] = (eigenValues[0] > 0.0) ? sqrt(eigenValues[0]) : 0.0;
-  Fhat[1] = (eigenValues[1] > 0.0) ? sqrt(eigenValues[1]) : 0.0;
-  Fhat[2] = (eigenValues[2] > 0.0) ? sqrt(eigenValues[2]) : 0.0;
-
-  //printf("--- Fhat ---\n");
-  //printf("%G %G %G\n", Fhat[0][0], Fhat[1][1], Fhat[2][2]);
-
-  // compute inverse of singular values
-  // also check if singular values are close to zero
-  Vec3d FhatInverse;
-  FhatInverse[0] = (Fhat[0] > modifiedSVD_singularValue_eps) ? (1.0 / Fhat[0]) : 0.0;
-  FhatInverse[1] = (Fhat[1] > modifiedSVD_singularValue_eps) ? (1.0 / Fhat[1]) : 0.0;
-  FhatInverse[2] = (Fhat[2] > modifiedSVD_singularValue_eps) ? (1.0 / Fhat[2]) : 0.0;
-  
-  // compute U using the formula:
-  // U = F * V * diag(FhatInverse)
-  U = F * V;
-  U.multiplyDiagRight(FhatInverse);
-
-  // In theory, U is now orthonormal, U^T U = U U^T = I .. it may be a rotation or a reflection, depending on F.
-  // But in practice, if singular values are small or zero, it may not be orthonormal, so we need to fix it.
-  // Handle situation:
-  // 2. An entry of Fhat is near zero
-  // ---------------------------------------------------------
-
-  /*
-    printf("--- FhatInverse ---\n");
-    FhatInverse.print();
-    printf(" --- U ---\n");
-    U.print();
-  */
-  
-  if ((Fhat[0] < modifiedSVD_singularValue_eps) && (Fhat[1] < modifiedSVD_singularValue_eps) && (Fhat[2] < modifiedSVD_singularValue_eps))
-  {
-    // extreme case, all singular values are small, material has collapsed almost to a point
-    // see [Irving 04], p. 4
-    U.set(1.0, 0.0, 0.0,
-          0.0, 1.0, 0.0,
-          0.0, 0.0, 1.0);
-  }
-  else 
-  {
-    // handle the case where two singular values are small, but the third one is not
-    // handle it by computing two (arbitrary) vectors orthogonal to the eigenvector for the large singular value
-    int done = 0;
-    for(int dim=0; dim<3; dim++)
-    {
-      int dimA = dim;
-      int dimB = (dim + 1) % 3;
-      int dimC = (dim + 2) % 3;
-      if ((Fhat[dimB] < modifiedSVD_singularValue_eps) && (Fhat[dimC] < modifiedSVD_singularValue_eps))
-      {
-        // only the column dimA can be trusted, columns dimB and dimC correspond to tiny singular values
-        Vec3d tmpVec1(U[0][dimA], U[1][dimA], U[2][dimA]); // column dimA
-        Vec3d tmpVec2;
-        FindOrthonormalVector(tmpVec1, tmpVec2);
-        Vec3d tmpVec3 = norm(cross(tmpVec1, tmpVec2));
-        U[0][dimB] = tmpVec2[0];
-        U[1][dimB] = tmpVec2[1];
-        U[2][dimB] = tmpVec2[2];
-        U[0][dimC] = tmpVec3[0];
-        U[1][dimC] = tmpVec3[1];
-        U[2][dimC] = tmpVec3[2];
-        if (det(U) < 0.0)
-        {
-          U[0][dimB] *= -1.0;
-          U[1][dimB] *= -1.0;
-          U[2][dimB] *= -1.0;
-        }
-        done = 1;
-        break; // out of for
-      }
-    }
-
-    // handle the case where one singular value is small, but the other two are not
-    // handle it by computing the cross product of the two eigenvectors for the two large singular values
-    if (!done) 
-    {
-      for(int dim=0; dim<3; dim++)
-      {
-        int dimA = dim;
-        int dimB = (dim + 1) % 3;
-        int dimC = (dim + 2) % 3;
-
-        if (Fhat[dimA] < modifiedSVD_singularValue_eps)
-        {
-          // columns dimB and dimC are both good, but column dimA corresponds to a tiny singular value
-          Vec3d tmpVec1(U[0][dimB], U[1][dimB], U[2][dimB]); // column dimB
-          Vec3d tmpVec2(U[0][dimC], U[1][dimC], U[2][dimC]); // column dimC
-          Vec3d tmpVec3 = norm(cross(tmpVec1, tmpVec2));
-          U[0][dimA] = tmpVec3[0];
-          U[1][dimA] = tmpVec3[1];
-          U[2][dimA] = tmpVec3[2];
-          if (det(U) < 0.0)
-          {
-            U[0][dimA] *= -1.0;
-            U[1][dimA] *= -1.0;
-            U[2][dimA] *= -1.0;
-          }
-          done = 1;
-          break; // out of for
-        }
-      }
-    }
-
-    if (!done)
-    {
-      // Handle situation:
-      // 3. Tet is inverted.
-      //    - check if det(U) == -1
-      //    - If yes, then negate the minimal element of Fhat
-      //      and the corresponding column of U
-
-      double detU = det(U);
-      if (detU < 0.0)
-      {
-        // tet is inverted
-        // find the smallest singular value (they are all non-negative)
-        int smallestSingularValueIndex = 0;
-        for(int dim=1; dim<3; dim++)
-          if (Fhat[dim] < Fhat[smallestSingularValueIndex])
-            smallestSingularValueIndex = dim;
-
-        // negate the smallest singular value
-        Fhat[smallestSingularValueIndex] *= -1.0;
-        U[0][smallestSingularValueIndex] *= -1.0;
-        U[1][smallestSingularValueIndex] *= -1.0;
-        U[2][smallestSingularValueIndex] *= -1.0;
-      }
-    }
-  }
-
-  /*
-    printf("U = \n");
-    U.print();
-    printf("Fhat = \n");
-    Fhat.print();
-    printf("V = \n");
-    V.print();
-  */
-
-  return 0;
-}
-
 #undef modifiedSVD_singularValue_eps
-
-/*
-  Given an input vector v, find a unit vector that is orthogonal to it 
-*/
-void IsotropicHyperelasticFEM::FindOrthonormalVector(Vec3d & v, Vec3d & result)
-{
-  // find smallest abs component of v
-  int smallestIndex = 0;
-  for(int dim=1; dim<3; dim++)
-    if (fabs(v[dim]) < fabs(v[smallestIndex]))
-      smallestIndex = dim;
-
-  Vec3d axis(0.0, 0.0, 0.0);
-  axis[smallestIndex] = 1.0;
-
-  // this cross-product will be non-zero (as long as v is not zero)
-  result = norm(cross(v, axis));
-}
 

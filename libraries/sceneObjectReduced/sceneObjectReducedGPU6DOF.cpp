@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC    *
+ * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -28,15 +28,24 @@
 
 #include "sceneObjectReducedGPU6DOF.h"
 
-SceneObjectReducedGPU6DOF::SceneObjectReducedGPU6DOF(char * filenameOBJ, ModalMatrix * modalMatrix, int GPUMethod): SceneObjectWithRestPosition(filenameOBJ), SceneObjectReduced(filenameOBJ, modalMatrix), SceneObjectReducedGPU(filenameOBJ, modalMatrix, GPUMethod), SceneObjectReduced6DOF(filenameOBJ, modalMatrix) 
+SceneObjectReducedGPU6DOF::SceneObjectReducedGPU6DOF(const char * filenameOBJ, ModalMatrix * modalMatrix, int GPUMethod): SceneObjectWithRestPosition(filenameOBJ), SceneObjectReduced(filenameOBJ, modalMatrix), SceneObjectReducedGPU(filenameOBJ, modalMatrix, GPUMethod), SceneObjectReduced6DOF(filenameOBJ, modalMatrix) 
 {
 }
 
-SceneObjectReducedGPU6DOF::SceneObjectReducedGPU6DOF(char * filenameOBJ, ModalMatrix * modalMatrix, SceneObjectReducedGPU * cloningSource, int GPUMethod): SceneObjectWithRestPosition(filenameOBJ), SceneObjectReduced(filenameOBJ, modalMatrix), SceneObjectReducedGPU(filenameOBJ, modalMatrix, cloningSource, GPUMethod), SceneObjectReduced6DOF(filenameOBJ, modalMatrix) 
+SceneObjectReducedGPU6DOF::SceneObjectReducedGPU6DOF(const char * filenameOBJ, ModalMatrix * modalMatrix, SceneObjectReducedGPU * cloningSource, int GPUMethod): SceneObjectWithRestPosition(filenameOBJ), SceneObjectReduced(filenameOBJ, modalMatrix), SceneObjectReducedGPU(filenameOBJ, modalMatrix, cloningSource, GPUMethod), SceneObjectReduced6DOF(filenameOBJ, modalMatrix) 
 {
 }
 
-SceneObjectReducedGPU6DOF::~SceneObjectReducedGPU6DOF() {}
+SceneObjectReducedGPU6DOF::SceneObjectReducedGPU6DOF(ObjMesh * objMesh, ModalMatrix * modalMatrix, int GPUMethod, bool deepCopy): SceneObjectWithRestPosition(objMesh, deepCopy), SceneObjectReduced(objMesh, modalMatrix, deepCopy), SceneObjectReducedGPU(objMesh, modalMatrix, GPUMethod, deepCopy), SceneObjectReduced6DOF(objMesh, modalMatrix, deepCopy){
+}
+
+SceneObjectReducedGPU6DOF::SceneObjectReducedGPU6DOF(ObjMesh * objMesh, ModalMatrix * modalMatrix, SceneObjectReducedGPU * cloningSource, int GPUMethod, bool deepCopy): SceneObjectWithRestPosition(objMesh, deepCopy), SceneObjectReduced(objMesh, modalMatrix, deepCopy), SceneObjectReducedGPU(objMesh, modalMatrix, cloningSource, GPUMethod, deepCopy), SceneObjectReduced6DOF(objMesh, modalMatrix, deepCopy) 
+{
+}
+
+SceneObjectReducedGPU6DOF::~SceneObjectReducedGPU6DOF() 
+{
+}
 
 void SceneObjectReducedGPU6DOF::Render()
 {

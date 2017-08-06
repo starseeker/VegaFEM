@@ -32,8 +32,12 @@
 #include <float.h>
 #include "configFile.h"
 #include "lighting.h"
+#ifdef WIN32
+  #include <windows.h>
+#endif
+#include "openGL-headers.h"
 
-Lighting::Lighting(char * configFilename)
+Lighting::Lighting(const char * configFilename)
 {
   if (glGetError() != GL_NO_ERROR)
     printf("Warning: error in the OpenGL state at the beginning of lighting constructor.\n");

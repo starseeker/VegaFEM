@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder      *
@@ -32,19 +32,20 @@
 #include "objMesh.h"
 
 /*
-  Generates a half edge datastructure, assuming tha the given obj mesh is orientable.
+  Generates a half-edge datastructure, assuming tha the given obj mesh is orientable.
   Author: Jernej Barbic, 2004
 */
 
 class ObjMeshOrientable
 {
 public:
-  // calls ObjMesh
-  // if generateHalfEdges flag is on, it also generates the half edges (otherwise class not fully initialized)
+  // generates the half-edge datastructure
+  // if generateHalfEdges flag is 1 (default), it also generates the half edges (otherwise class is not fully initialized)
   // if numOrientationFlips is not NULL, returns the number of edges that were flipped to orient the surface coherently
-  ObjMeshOrientable( const std::string& filename, int generateHalfEdges=1, int * numOrientationFlips = NULL);
+  // if the mesh is non-orientable, throws an exception
+  ObjMeshOrientable(const std::string & filename, int generateHalfEdges=1, int * numOrientationFlips = NULL, int verbose=1);
 
-  ObjMeshOrientable( ObjMesh * objMesh, int generateHalfEdges=1, int * numOrientationFlips = NULL);
+  ObjMeshOrientable(ObjMesh * objMesh, int generateHalfEdges=1, int * numOrientationFlips = NULL, int verbose=1);
 
   ~ObjMeshOrientable();
 
@@ -54,7 +55,7 @@ public:
   class HalfEdge
   {
     public:
-      explicit HalfEdge( const unsigned int & position_g, const unsigned int& startVertex_g, const unsigned int& endVertex_g, const unsigned int& startV_g, const unsigned int& endV_g, const unsigned int groupID_g, const unsigned int& face_g, const int opposite_g, const unsigned int next_g // value of -1 denotes boundary edge const unsigned int next_g
+      explicit HalfEdge(const unsigned int & position_g, const unsigned int& startVertex_g, const unsigned int& endVertex_g, const unsigned int& startV_g, const unsigned int& endV_g, const unsigned int groupID_g, const unsigned int& face_g, const int opposite_g, const unsigned int next_g // value of -1 denotes boundary edge const unsigned int next_g
 )
       :	position_(position_g), startVertex_(startVertex_g), endVertex_(endVertex_g), 
         startV_(startV_g), endV_(endV_g),
@@ -105,7 +106,7 @@ public:
         
 protected:
   ObjMesh * objMesh;
-  void Init(int generateHalfEdges, int * numOrientationFlips);
+  void Init(int generateHalfEdges, int * numOrientationFlips, int verbose);
 
   std::vector< HalfEdge > halfEdges_;
   std::vector< int > boundaryEdges_;
@@ -123,9 +124,10 @@ public:
   HalfEdge & halfEdge(unsigned int i) { return halfEdges_[i]; }
 
   // this function is mostly called internally, but can sometimes also be called from the outside
-  int GenerateHalfEdgeDataStructure(); // generates the whole datastructure, assuming the base objMesh class has been initialized
   // returns the number of edges that were flipped to orient the surface coherently
   // (which will be zero if the input mesh already is oriented coherently)
+  // if the data structure cannot be generated (non-manifold geometry), returns -1
+  int GenerateHalfEdgeDataStructure(int verbose=1); // generates the whole datastructure, assuming the base objMesh class has been initialized
 
   void CopyHalfEdgeTopologyFrom(ObjMeshOrientable * source); // makes the half-edge topological info equal to that of source
 
@@ -182,7 +184,7 @@ public:
   // returns some halfedge on the given face (returns always the same edge)
   HalfEdge & edgeAtFace( unsigned int groupID, unsigned int faceID ) { return halfEdges_[edgesAtFaces_[groupID][faceID]]; }
 
-  // returns true if surface has boundary and false if it closed
+  // returns true if surface has boundary and false if it is closed
   bool hasBoundary() { return hasBoundary_;}
 
   size_t numBoundaryEdges() { return boundaryEdges_.size(); }

@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "matrix" library , Copyright (C) 2007 CMU, 2009 MIT                   *
  * All rights reserved.                                                  *
@@ -98,7 +98,7 @@ void Abort_(const char * reason, int exitCode);
 
 // === stream routines (they operate on a file that is already open, in binary mode) ===
 
-int OpenFile_(const char * filename, FILE ** fin, char * mode);
+int OpenFile_(const char * filename, FILE ** fin, const char * mode);
 
 template <class real>
 int WriteMatrixToStream(FILE * file, int m, int n, real * matrix);

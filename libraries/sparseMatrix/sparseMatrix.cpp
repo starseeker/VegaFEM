@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "sparseMatrix" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC   *
+ * "sparseMatrix" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC   *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -72,7 +72,7 @@ SparseMatrixOutline::SparseMatrixOutline(int numRows_, double * diagonal): numRo
   }
 }
 
-SparseMatrixOutline::SparseMatrixOutline(char * filename, int expand)
+SparseMatrixOutline::SparseMatrixOutline(const char * filename, int expand)
 {
   if (expand <= 0)
   {
@@ -192,7 +192,7 @@ int SparseMatrixOutline::GetNumColumns() const
   return numColumns + 1;
 }
 
-int SparseMatrixOutline::Save(char * filename, int oneIndexed) const
+int SparseMatrixOutline::Save(const char * filename, int oneIndexed) const
 {
   FILE * fout = fopen(filename, "w");
   if (!fout)
@@ -230,7 +230,7 @@ int SparseMatrixOutline::GetNumEntries() const
   return num;
 }
 
-SparseMatrix::SparseMatrix(char * filename)
+SparseMatrix::SparseMatrix(const char * filename)
 {
   SparseMatrixOutline sparseMatrixOutline(filename);
   InitFromOutline(&sparseMatrixOutline);
@@ -1029,7 +1029,7 @@ void SparseMatrix::AssignSuperMatrix(SparseMatrix * superMatrix)
   }
 }
 
-void SparseMatrix::BuildSubMatrixIndices(SparseMatrix & mat2, int subMatrixID)
+void SparseMatrix::BuildSubMatrixIndices(SparseMatrix & submatrix, int subMatrixID)
 {
   if (subMatrixID >= numSubMatrixIDs)
   {
@@ -1057,17 +1057,17 @@ void SparseMatrix::BuildSubMatrixIndices(SparseMatrix & mat2, int subMatrixID)
 
   for(int i=0; i<numRows; i++)
   {
-    subMatrixIndices[subMatrixID][i] = (int*) malloc (sizeof(int) * mat2.rowLength[i]);
-    subMatrixIndexLengths[subMatrixID][i] = mat2.rowLength[i];
-    int * indices = mat2.columnIndices[i];
-    for(int j=0; j < mat2.rowLength[i]; j++)
+    subMatrixIndices[subMatrixID][i] = (int*) malloc (sizeof(int) * submatrix.rowLength[i]);
+    subMatrixIndexLengths[subMatrixID][i] = submatrix.rowLength[i];
+    int * indices = submatrix.columnIndices[i];
+    for(int j=0; j < submatrix.rowLength[i]; j++)
     {
       // finds the position in row i of element with column index jDense
       // int inverseIndex(int i, int jDense);
-      subMatrixIndices[subMatrixID][i][j] = GetInverseIndex(i,indices[j]);
+      subMatrixIndices[subMatrixID][i][j] = GetInverseIndex(i, indices[j]);
       if (subMatrixIndices[subMatrixID][i][j] == -1)
       {
-        printf("Error (BuildSubMatrixIndices): given matrix is not a submatrix of this matrix.\n");
+        printf("Error (BuildSubMatrixIndices): given matrix is not a submatrix of this matrix. The following index does not exist in this matrix: (%d,%d)\n", i, indices[j]);
         exit(1);
       }
     }
@@ -1084,6 +1084,8 @@ void SparseMatrix::FreeSubMatrixIndices(int subMatrixID)
 
   if (subMatrixIndices[subMatrixID] != NULL)
   {
+    for(int i=0; i<numRows; i++)
+      free(subMatrixIndices[subMatrixID][i]); 
     free(subMatrixIndices[subMatrixID]);
     free(subMatrixIndexLengths[subMatrixID]);
     subMatrixIndices[subMatrixID] = NULL;
@@ -1113,13 +1115,13 @@ void SparseMatrix::FreeSubMatrixIndices(int subMatrixID)
   }
 }
 
-SparseMatrix & SparseMatrix::AddSubMatrix(double factor, SparseMatrix & mat2, int subMatrixID)
+SparseMatrix & SparseMatrix::AddSubMatrix(double factor, SparseMatrix & submatrix, int subMatrixID)
 {
   for(int i=0; i<numRows; i++)
   {
     int * indices = subMatrixIndices[subMatrixID][i];
-    for(int j=0; j < mat2.rowLength[i]; j++)
-      columnEntries[i][indices[j]] += factor * mat2.columnEntries[i][j];
+    for(int j=0; j < submatrix.rowLength[i]; j++)
+      columnEntries[i][indices[j]] += factor * submatrix.columnEntries[i][j];
   }
 
   return *this;
@@ -1228,7 +1230,7 @@ void SparseMatrix::GenerateCompressedRowMajorFormat_four_array(double * values, 
   }
 }
 
-int SparseMatrix::Save(char * filename, int oneIndexed) const
+int SparseMatrix::Save(const char * filename, int oneIndexed) const
 {
   FILE * fout = fopen(filename,"w");
   if (!fout)
@@ -1249,7 +1251,7 @@ int SparseMatrix::Save(char * filename, int oneIndexed) const
   return 0;
 }
 
-int SparseMatrix::SaveToMatlabFormat(char * filename) const
+int SparseMatrix::SaveToMatlabFormat(const char * filename) const
 {
   FILE * fout = fopen(filename,"w");
   if (!fout)
@@ -1380,7 +1382,7 @@ void SparseMatrix::RemoveRowsColumns(int numRemovedRowsColumns, int * removedRow
 
   numRows -= numRemovedRowsColumns;
   columnEntries = (double**) realloc(columnEntries, sizeof(double*) * numRows);
-  columnIndices = (int**) realloc(columnIndices, sizeof(double*) * numRows);
+  columnIndices = (int**) realloc(columnIndices, sizeof(int*) * numRows);
   rowLength = (int*) realloc(rowLength, sizeof(int) * numRows);
 }
 

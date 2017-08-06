@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC    *
+ * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -36,9 +36,13 @@ class SceneObjectReducedGPU6DOF : public SceneObjectReducedGPU, public SceneObje
 {
 public:
 
-  SceneObjectReducedGPU6DOF(char * filenameOBJ, ModalMatrix * modalMatrix, int GPUMethod = 0); 
-  SceneObjectReducedGPU6DOF(char * filenameOBJ, ModalMatrix * modalMatrix,
-    SceneObjectReducedGPU * cloningSource, int GPUMethod = 0);
+  SceneObjectReducedGPU6DOF(const char * filenameOBJ, ModalMatrix * modalMatrix, int GPUMethod = 0); 
+  SceneObjectReducedGPU6DOF(const char * filenameOBJ, ModalMatrix * modalMatrix, SceneObjectReducedGPU * cloningSource, int GPUMethod = 0);
+  
+  SceneObjectReducedGPU6DOF(ObjMesh * objMesh, ModalMatrix * modalMatrix, int GPUMethod = 0, bool deepCopy = true); 
+  SceneObjectReducedGPU6DOF(ObjMesh * objMesh, ModalMatrix * modalMatrix,
+    SceneObjectReducedGPU * cloningSource, int GPUMethod = 0, bool deepCopy = true);
+
   virtual ~SceneObjectReducedGPU6DOF();
 
   virtual void Render();

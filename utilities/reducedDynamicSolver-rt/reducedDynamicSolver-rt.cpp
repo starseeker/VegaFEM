@@ -1,12 +1,12 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "Reduced deformable dynamics" real-time driver application.           *
  * Uses model reduction to rapidly simulate deformable objects           *
  * undergoing large deformations.                                        *
  *                                                                       *
- * Copyright (C) 2007 CMU, 2009 MIT, 2013 USC                            *
+ * Copyright (C) 2007 CMU, 2009 MIT, 2014 USC                            *
  *                                                                       *
  * All rights reserved.                                                  *
  *                                                                       *
@@ -133,6 +133,9 @@ ReducedStVKForceModel * reducedStVKForceModel;
 ReducedLinearStVKForceModel * reducedLinearStVKForceModel;
 double lowestFrequency;
 
+int plasticDeformationsEnabled = 0;
+float plasticThreshold = 1E9;
+
 void stopDeformations_buttonCallBack(int code);
 
 PerformanceCounter cpuLoadCounter;
@@ -157,7 +160,7 @@ GLUI * glui;
 GLUI_Spinner * timeStep_spinner;
 GLUI_Checkbox * renderOnGPU_checkbox;
 float deformableObjectCompliance = 1.0;
-float baseFrequency = 1.0;
+float frequencyScaling = 1.0;
 int sceneID=0;
 
 void callAllUICallBacks();
@@ -763,8 +766,10 @@ void initConfigurations()
   configFile.addOption("dampingMassCoef",&dampingMassCoef);
   configFile.addOption("dampingStiffnessCoef",&dampingStiffnessCoef);
 
+  configFile.addOptionOptional("plasticThreshold", &plasticThreshold, plasticThreshold);
+
   configFile.addOption("deformableObjectCompliance",&deformableObjectCompliance);
-  configFile.addOption("baseFrequency",&baseFrequency);
+  configFile.addOption("frequencyScaling",&frequencyScaling);
 
   configFile.addOptionOptional("cameraRadius",&cameraRadius,17.5);
   configFile.addOptionOptional("focusPositionX",&focusPositionX,0.0);
@@ -844,14 +849,14 @@ void syncTimeStepWithGraphics_checkboxCallBack(int code)
     timeStep_spinner->enable();
 }
 
-void baseFrequency_spinnerCallBack(int code)
+void frequencyScaling_spinnerCallBack(int code)
 {
-  if (baseFrequency < 0)
-    baseFrequency = 0;
+  if (frequencyScaling < 0)
+    frequencyScaling = 0;
 
   glui->sync_live();
 
-  implicitNewmarkDense->SetInternalForceScalingFactor(baseFrequency * baseFrequency);
+  implicitNewmarkDense->SetInternalForceScalingFactor(frequencyScaling * frequencyScaling);
 }
 
 void newmarkBeta_spinnerCallBack(int code)
@@ -936,6 +941,14 @@ void timeStepSubdivisions_spinnerCallBack(int code)
   glui->sync_live();
 }
 
+void plasticDeformationsEnabled_checkboxCallBack(int code)
+{
+  implicitNewmarkDense->SetPlasticThreshold(plasticThreshold);
+  implicitNewmarkDense->UsePlasticDeformations(plasticDeformationsEnabled);
+
+  glui->sync_live();
+}
+
 void renderOnGPU_checkBoxCallBack(int code)
 {
   if (renderOnGPU && (deformableObjectRenderingMeshGPU != NULL))
@@ -960,6 +973,7 @@ void forceModel_checkBoxCallBack(int code)
 void stopDeformations_buttonCallBack(int code)
 {
   implicitNewmarkDense->ResetToRest();
+  plasticDeformationsEnabled_checkboxCallBack(0);
 }
 
 void staticSolver_checkboxCallBack(int code)
@@ -976,7 +990,7 @@ void exit_buttonCallBack(int code)
 void callAllUICallBacks()
 {
   deformableObjectCompliance_spinnerCallBack(0);
-  baseFrequency_spinnerCallBack(0);
+  frequencyScaling_spinnerCallBack(0);
   timeStep_spinnerCallBack(0);
   syncTimeStepWithGraphics_checkboxCallBack(0);
   rayleighMass_spinnerCallBack(0);
@@ -996,7 +1010,7 @@ void initGLUI()
 
   glui->add_spinner("Deformable object compliance:", GLUI_SPINNER_FLOAT, &deformableObjectCompliance, 0, deformableObjectCompliance_spinnerCallBack );
 
-  glui->add_spinner("Frequency scaling:", GLUI_SPINNER_FLOAT, &baseFrequency, 0, baseFrequency_spinnerCallBack);
+  glui->add_spinner("Frequency scaling:", GLUI_SPINNER_FLOAT, &frequencyScaling, 0, frequencyScaling_spinnerCallBack);
 
   // ******** newmark beta, gamma ********
   
@@ -1054,8 +1068,17 @@ void initGLUI()
 
   glui->add_spinner_to_panel(timeStep_panel,"Substeps per timestep", GLUI_SPINNER_INT, &substepsPerTimeStep, 0, timeStepSubdivisions_spinnerCallBack);
 
-  renderOnGPU_checkbox = 
-    glui->add_checkbox("Compute u=Uq on GPU", &renderOnGPU, 0, renderOnGPU_checkBoxCallBack);
+  // ******* plastic deformations ********
+
+  GLUI_Panel * plasticDeformationsPanel = glui->add_panel("Plastic deformations", GLUI_PANEL_EMBOSSED);
+  plasticDeformationsPanel->set_alignment(GLUI_ALIGN_LEFT);
+  glui->add_checkbox_to_panel(plasticDeformationsPanel, "Enable", &plasticDeformationsEnabled, 0, plasticDeformationsEnabled_checkboxCallBack);
+  glui->add_column_to_panel(plasticDeformationsPanel, 0);
+  glui->add_spinner_to_panel(plasticDeformationsPanel, "Threshold:", GLUI_SPINNER_FLOAT, &plasticThreshold, 0, plasticDeformationsEnabled_checkboxCallBack);
+
+  // *** u = Uq ***
+
+  renderOnGPU_checkbox = glui->add_checkbox("Compute u=Uq on GPU", &renderOnGPU, 0, renderOnGPU_checkBoxCallBack);
 
   glui->add_separator();
 

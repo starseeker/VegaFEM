@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC    *
+ * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -49,7 +49,8 @@ class SceneObjectReduced : public SceneObjectDeformable
 {
 public:
 
-  SceneObjectReduced(char * filenameOBJ, ModalMatrix * modalMatrix);
+  SceneObjectReduced(const char * filenameOBJ, ModalMatrix * modalMatrix);
+  SceneObjectReduced(ObjMesh * objMesh, ModalMatrix * modalMatrix, bool deepCopy = true);
   virtual ~SceneObjectReduced();
 
   inline int Getr() { return r; }
@@ -71,6 +72,7 @@ public:
   virtual void Compute_uUq() = 0;
 
 protected:
+  void Construct(ModalMatrix * modalMatrix);
 
   double * q;
   int r;

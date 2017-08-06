@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "isotropic hyperelastic FEM" library , Copyright (C) 2013 USC         *
+ * "isotropic hyperelastic FEM" library , Copyright (C) 2014 USC         *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Fun Shing Sin                            *
@@ -44,9 +44,8 @@ void IsotropicMaterialWithCompressionResistance::AddCompressionResistanceEnergy(
 
     if (J < 1)
     {
-      double fac = (J - 1.0) * (J - 1.0) * (J - 1.0) / 216.0;
       double compressionResistanceFactor = GetCompressionResistanceFactor(elementIndex);
-      *energy += -compressionResistanceFactor * fac / 12.0;
+      *energy += -compressionResistanceFactor * (J - 1.0) * (J - 1.0) * (J - 1.0) / 2592.0;
     }
   }
 }
@@ -60,9 +59,8 @@ void IsotropicMaterialWithCompressionResistance::AddCompressionResistanceGradien
 
     if (J < 1)
     {
-      double fac = (J - 1.0) * (J - 1.0) / 36.0;
       double compressionResistanceFactor = GetCompressionResistanceFactor(elementIndex);
-      gradient[2] += -compressionResistanceFactor * fac / (8.0 * J);
+      gradient[2] += -compressionResistanceFactor * (J - 1.0) * (J - 1.0) / (1728.0 * J);
     }
   }
 }
@@ -77,13 +75,13 @@ void IsotropicMaterialWithCompressionResistance::AddCompressionResistanceHessian
     if (J < 1.0)
     {
       double compressionResistanceFactor = GetCompressionResistanceFactor(elementIndex);
-      hessian[5] += compressionResistanceFactor * (1.0 - J) * (1.0 + 11.0 * J) / (576.0 * J * J * J);
+      hessian[5] += compressionResistanceFactor * (1.0 - J) * (1.0 + J) / (3456.0 * J * J * J);
     }
   }
 }
 
 double IsotropicMaterialWithCompressionResistance::GetCompressionResistanceFactor(int elementIndex)
 {
-  return 1.0;
+  return 1.0; // generic
 }
 

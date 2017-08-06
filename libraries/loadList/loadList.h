@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "loadList" library , Copyright (C) 2007 CMU, 2009 MIT                 *
  * All rights reserved.                                                  *
@@ -28,17 +28,27 @@
   A class to load an integer list from a text file into memory. 
 */
 
+#include <stdio.h>
+
 class LoadList
 {
 public:
 
   // returns 0 on success and non-zero otherwise
-  static int load(char * filename, int * numListEntries, int ** listEntries, int offset=0);
-  static int save(char * filename, int numListEntries, int * listEntries, int offset=0);
+  static int load(const char * filename, int * numListEntries, int ** listEntries, int offset=0);
+  static int save(const char * filename, int numListEntries, int * listEntries, int offset=0);
+
+  static int loadBinary(const char * filename, int * numListEntries, int ** listEntries, int offset=0);
+  static int loadBinary(FILE * fin, int * numListEntries, int ** listEntries, int offset=0);
+  static int saveBinary(const char * filename, int numListEntries, int * listEntries, int offset=0);
+  static int saveBinary(FILE * fout, int numListEntries, int * listEntries, int offset=0);
+
+  // loads/saves multiple lists to one binary file
+  static int loadBinaryMulti(const char * filename, int * numLists, int ** numListEntries, int *** listEntries, int offset=0);
+  static int saveBinaryMulti(const char * filename, int numLists, int * numListEntries, int ** listEntries, int offset=0);
+
   static void sort(int numListEntries, int * listEntries);
-
   static void print(int numListEntries, int * listEntries);
-
   static void stripBlanks(char * s);
 
 protected:

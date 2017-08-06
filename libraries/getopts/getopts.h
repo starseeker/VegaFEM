@@ -1,8 +1,8 @@
 /* getopts.h */
 
-#if !defined(__GETOPTS__)
+#ifndef _GETOPTS_H_
+#define _GETOPTS_H_
 
-#define GETOPTS
 #define OPTINT 1
 #define OPTSTR 2
 #define OPTBOOL 3

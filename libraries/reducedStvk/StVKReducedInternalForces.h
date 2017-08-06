@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "reducedStvk" library , Copyright (C) 2007 CMU, 2009 MIT              *
  * All rights reserved.                                                  *
@@ -63,13 +63,15 @@ public:
   // load the previously computed coefficients from a file 
   // if r>=0 is specified, only up to first r modes will be used; if r=-1 (default), all modes will be used
   // bigEndianMachine allows you to load little endian data (e.g. PC, Mac Intel) on a big endian machine (e.g. Mac PowerPC); default: 0 (no conversion)
-  StVKReducedInternalForces(char * filename, int r=-1, int bigEndianMachine=0, int verbose=1);
+  StVKReducedInternalForces(const char * filename, int r=-1, int bigEndianMachine=0, int verbose=1);
+  StVKReducedInternalForces(FILE * fin, int r=-1, int bigEndianMachine=0, int verbose=1); // read from binary stream
 
   ~StVKReducedInternalForces();
 
   // saves coefficients to a disk file (in binary format, the convention is to use the .cub file extension)
-  int Save(char * filename);
-
+  int Save(const char * filename);
+  int Save(FILE * fout); // saves to stream
+  
   // evaluates the reduced internal forces for the given configuration q, result is written into fq (which must be a pre-allocated vector of length r)
   // see also the f_int(x) comment in StVKInternalForces.h on the sign of fq; the comment applies here too
   void Evaluate(double * q, double * fq);
@@ -81,7 +83,7 @@ public:
 
   inline int Getr() { return r; }
   // report r from the given polynomial binary file 
-  static int GetrFromFile(char * filename);
+  static int GetrFromFile(const char * filename);
 
   void Scale(double scalingFactor); // scales all coefficients with the given scaling factor; i.e., linearly and uniformly scale the stiffness of the model; frequency spectrum will scale linearly by sqrt(scalingFactor)
 
@@ -101,7 +103,7 @@ public:
 
   // compares the value of the polynomial with evaluation via U^T f(Uq)
   // prints out the two values (they should be equal)
-  void TestPolynomial(double * q, StVKInternalForces * stVKInternalForces, char * modalMatrixFilename);
+  void TestPolynomial(double * q, StVKInternalForces * stVKInternalForces, const char * modalMatrixFilename);
 
   // sorts three integers in ascending order
   static void tripleSort(int & a, int & b, int & c);
@@ -119,10 +121,10 @@ public:
   double MaxAbsCubicCoefficient();
   double AverageAbsCubicCoefficient();
 
-  static inline int GetLinearSize(int r) { return r; }
-  static inline int GetQuadraticSize(int r) { return r*(r+1)/2; }
-  static inline int GetCubicSize(int r) { return r * (r+1) * (r+2) / 6; }
-  static inline int GetTotalFileSize(int r) { return r * (GetLinearSize(r) + GetQuadraticSize(r) + GetCubicSize(r)) + 4; }
+  static inline int GetLinearSize(int r) { return r; } // number of double-precision entries
+  static inline int GetQuadraticSize(int r) { return r*(r+1)/2; } // number of double-precision entries
+  static inline int GetCubicSize(int r) { return r * (r+1) * (r+2) / 6; } // number of double-precision entries
+  static inline int GetTotalFileSize(int r) { return r * (GetLinearSize(r) + GetQuadraticSize(r) + GetCubicSize(r)) * sizeof(double) + 4 * sizeof(int); } // in bytes
 
   inline int GetLinearSize() { return GetLinearSize(r); }
   inline int GetQuadraticSize() { return GetQuadraticSize(r); }
@@ -142,6 +144,10 @@ public:
   // use this if you want to Evaluate two or more identical models (i.e., two copies of an object) in parallel (to ensure thread safety)
   // you do not need to use this if you are Evaluating a single model in parallel (e.g., using the MT derived class)
   StVKReducedInternalForces * ShallowClone();
+
+  // saves a model with r=0
+  static int SaveEmptyCub(const char * filename);
+  static int SaveEmptyCub(FILE * fout);
 
 protected:
 
@@ -236,6 +242,8 @@ protected:
   int shallowCopy;
 
   int verbose;
+
+  int LoadFromStream(FILE * fin, int rTarget, int bigEndianMachine);
 };
 
 inline int StVKReducedInternalForces::cubicCoefPos(int index, int i, int j, int k)

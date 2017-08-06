@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder      *
@@ -41,11 +41,12 @@
 #include "matrixMacros.h"
 #include <fstream>
 #include <iomanip>
+#include <string.h>
 using namespace std;
 
-ObjMeshOffsetVoxels::ObjMeshOffsetVoxels( ObjMesh * objMesh, int resolution_[3], int depth_, Vec3d bmin_, Vec3d bmax_ )
+ObjMeshOffsetVoxels::ObjMeshOffsetVoxels( ObjMesh * objMesh_, int resolution_[3], int depth_, Vec3d bmin_, Vec3d bmax_ )
 {
-  objMesh = new ObjMesh(*objMesh);
+  objMesh = new ObjMesh(*objMesh_);
   init(resolution_, depth_, bmin_, bmax_);
 }
 
@@ -250,8 +251,7 @@ void ObjMeshOffsetVoxels::emptyComponents(vector<Vec3d> & componentSeeds, vector
 
 void ObjMeshOffsetVoxels::floodFill(Vec3d seed)
 {
-  cout << "Flood-filling from seed: " << seed << endl;
-
+  //cout << "Flood-filling from seed: " << seed << endl;
   floodFillFromSet(seed, voxels);
   buildUniqueListOfFaces();
 }
@@ -260,7 +260,7 @@ void ObjMeshOffsetVoxels::floodFill(vector<Vec3d> & seeds)
 {
   for(unsigned int i=0; i<seeds.size(); i++)
   {
-    cout << "Flood-filling from seed: " << seeds[i] << endl;
+    //cout << "Flood-filling from seed: " << seeds[i] << endl;
     floodFillFromSet(seeds[i], voxels);
   }
 
@@ -474,9 +474,7 @@ ObjMesh * ObjMeshOffsetVoxels::surfaceOffsetMesh()
     objMesh->addFaceToGroup(newFace,0);
   }
 
-
   return objMesh;
-
 }
 
 bool ObjMeshOffsetVoxels::FaceOrder::operator()(const TopologicalFace & x, const TopologicalFace & y) const
@@ -729,16 +727,16 @@ void ObjMeshOffsetVoxels::generateCubicMesh(const string & filenameVeg, const st
     objMesh->addFaceToGroup(newFace,0);
   }
 
+  // search if there already is "default" material; if there is not, add it
+  objMesh->addDefaultMaterial();
+  objMesh->computeBoundingBox();
+
   objMesh->save(filenameObj);
 
   delete(objMesh);
 }
 
-void ObjMeshOffsetVoxels::generateCubicMesh(
-  int * numCubeVertices, double ** cubeVertices, 
-  int * numCubes, int ** cubes,
-  int ** interpolationVertices, double ** interpolationWeights,
-  ObjMesh ** surfaceMesh)
+void ObjMeshOffsetVoxels::generateCubicMesh(int * numCubeVertices, double ** cubeVertices, int * numCubes, int ** cubes, int ** interpolationVertices, double ** interpolationWeights, ObjMesh ** surfaceMesh)
 {
   //cout << "Generating cubic mesh..." << endl;
 
@@ -763,7 +761,7 @@ void ObjMeshOffsetVoxels::generateCubicMesh(
     vertices.insert(gridPoint(i1+1,j1+1,k1+1));
     vertices.insert(gridPoint(i1,j1+1,k1+1));
   } 
-  
+
   // now, "vertices" contains all voxel vertices with no duplications
   //cout << "Num voxels: " << voxels.size() << " Num voxel vertices: " << vertices.size() << endl; 
 
@@ -772,7 +770,7 @@ void ObjMeshOffsetVoxels::generateCubicMesh(
 
   // create default group
   (*surfaceMesh)->addGroup("Default");
-  
+
   // add all voxel vertices into a map, together with their corresponding index (i.e. serial number of a voxel vertex in the set order)
   map<gridPoint,int> vertices2;
   set<gridPoint>:: iterator v; // will run over all voxel vertices
@@ -825,7 +823,7 @@ void ObjMeshOffsetVoxels::generateCubicMesh(
   // for every vertex of the mesh, find what voxel it is in
   // then, find indices of the vertices of that voxel
   // and compute the barycentric coordinates
-  
+
   *interpolationVertices = (int*) malloc (sizeof(int) * 8 * objMesh->getNumVertices());
   *interpolationWeights = (double*) malloc (sizeof(double) * 8 * objMesh->getNumVertices());
 
@@ -833,7 +831,7 @@ void ObjMeshOffsetVoxels::generateCubicMesh(
   {
     Vec3d pos = objMesh->getPosition(i);
     unsigned int i1,j1,k1;
-    
+
     Vec3d relPos = pos-bmin;
 
     // find voxel containing 'pos'
@@ -906,11 +904,11 @@ void ObjMeshOffsetVoxels::generateCubicMesh(
     int index[4];
     for (int i=0; i<4; i++)
       index[i] = (vertices2.find(face->vertex(i)))->second;
- 
+
     std::pair< bool, unsigned int > texPos(false,0); // no textures 
     std::pair< bool, unsigned int > normal(false,0); // no normals
 
-/*
+    /*
     // triangulate the face into two triangles
 
     Face newFace1;
@@ -925,7 +923,7 @@ void ObjMeshOffsetVoxels::generateCubicMesh(
 
     objMesh->addFaceToGroup(newFace1,0);
     objMesh->addFaceToGroup(newFace2,0);
-*/
+     */
 
     // make one quad face
 
@@ -937,6 +935,9 @@ void ObjMeshOffsetVoxels::generateCubicMesh(
 
     (*surfaceMesh)->addFaceToGroup(newFace,0);
   }
+
+  // search if there already is "default" material; if there is not, add it
+  (*surfaceMesh)->addDefaultMaterial();
 
   (*surfaceMesh)->computeBoundingBox();
 }

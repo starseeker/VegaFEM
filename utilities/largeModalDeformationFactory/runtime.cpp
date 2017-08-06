@@ -1,12 +1,12 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "Large Modal Deformation Factory",                                    *
  * a pre-processing utility for model reduction of                       *
  * deformable objects undergoing large deformations.                     *
  *                                                                       *
- *  Copyright (C) 2007 CMU, 2009 MIT, 2013 USC                           *
+ *  Copyright (C) 2007 CMU, 2009 MIT, 2014 USC                           *
  *                                                                       *
  * All rights reserved.                                                  *
  *                                                                       *
@@ -328,7 +328,7 @@ int MyFrame::PreprocessSingleSimulation(wxString & projectName, int numLinearMod
       3 * precomputationState.nonLinearModalMatrix->Getn(),
       precomputationState.nonLinearModalMatrix->Getr(),
       precomputationState.nonLinearModalMatrix->GetMatrix());
-    code = code;
+    code = code + 1;
 
     // save cubic polynomials
     wxString cubicPolynomialsFilename = projectName + _T(".cub");
@@ -750,7 +750,9 @@ void MyFrame::OnBatchPreprocessManySimulations(wxCommandEvent & event)
     if (fscanf(fin, "%s %s %d %d\n", meshFiles[i], bouFiles[i], &numLinearModes[i], &numNonLinearModes[i]) != 4)
     {
       wxString errM = _T("Incorrect line in the script file, model #");
-      errM += i + _T(" .");
+      char numStr[128] = "";
+      sprintf(numStr,"%i .",i);
+      errM += wxString(numStr, wxConvUTF8);
       this->errMsg(errM, errM);
       fclose(fin);
       PreprocessManySimulationsDeallocateHelper(numModels, meshFiles, bouFiles, numLinearModes, numNonLinearModes);
@@ -769,7 +771,9 @@ void MyFrame::OnBatchPreprocessManySimulations(wxCommandEvent & event)
     if ((numLinearModes[i] <= 0) || (numLinearModes[i] > 16384))
     {
       wxString errM = _T("Incorrect number of linear modes for model #");
-      errM += i + _T(" .");
+      char numStr[128] = "";
+      sprintf(numStr,"%i .",i);
+      errM += wxString(numStr, wxConvUTF8);
       this->errMsg(errM, errM);
       PreprocessManySimulationsDeallocateHelper(numModels, meshFiles, bouFiles, numLinearModes, numNonLinearModes);
       return;
@@ -778,7 +782,9 @@ void MyFrame::OnBatchPreprocessManySimulations(wxCommandEvent & event)
     if ((numNonLinearModes[i] <= 0) || (numNonLinearModes[i] > 16384))
     {
       wxString errM = _T("Incorrect number of nonlinear modes for model #");
-      errM += i + _T(" .");
+      char numStr[128] = "";
+      sprintf(numStr,"%i .",i);
+      errM += wxString(numStr, wxConvUTF8);
       this->errMsg(errM, errM);
       PreprocessManySimulationsDeallocateHelper(numModels, meshFiles, bouFiles, numLinearModes, numNonLinearModes);
       return;
@@ -1049,7 +1055,7 @@ void MyFrame::OnPrepareRuntimeSimulation(wxCommandEvent& event)
   free(K);
   delete(massMatrix);
 
-  fprintf(fout, "*baseFrequency\n");
+  fprintf(fout, "*frequencyScaling\n");
   if (uiState.scaleRealTimeTo1HzCheckBox)
     fprintf(fout, "%G\n\n", 1.0 / (precomputationState.frequencies)[precomputationState.numRigidModes]);
   else

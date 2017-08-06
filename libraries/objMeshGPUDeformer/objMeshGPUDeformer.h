@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "objMeshGPUDeformer" library , Copyright (C) 2007 CMU, 2009 MIT,      *
- *                                                        2013 USC       *
+ *                                                        2014 USC       *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -37,7 +37,12 @@
 #endif
 
 #include "openGL-headers.h"
-#include <GL/glext.h>
+
+#if defined(WIN32) || defined(linux)
+  #include <GL/glext.h>
+#elif defined(__APPLE__)
+  #include <OpenGL/glext.h>
+#endif
 
 #include <Cg/cg.h>
 #include <Cg/cgGL.h>
@@ -110,7 +115,7 @@ protected:
 
   static int glh_extension_supported(const char * extension);
   static void cgErrorCallback(void);
-  void PrintGLerror(char * msg);
+  void PrintGLerror(const char * msg);
 
   virtual void EnableRTT() = 0;
   virtual void DisableRTT() = 0;

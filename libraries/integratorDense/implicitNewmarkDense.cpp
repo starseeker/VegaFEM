@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC     *
+ * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -49,6 +49,15 @@ ImplicitNewmarkDense::ImplicitNewmarkDense(int r, double timestep, double * mass
   UpdateAlphas();
 }
 
+ImplicitNewmarkDense::ImplicitNewmarkDense(int r, double timestep, double dampingMassCoef, double dampingStiffnessCoef, double NewmarkBeta, double NewmarkGamma): IntegratorBaseDense(r, timestep, massMatrix, reducedForceModel, dampingMassCoef, dampingStiffnessCoef)
+{
+  this->NewmarkBeta = NewmarkBeta;
+  this->NewmarkGamma = NewmarkGamma;
+
+  UpdateAlphas();
+}
+
+
 ImplicitNewmarkDense::~ImplicitNewmarkDense()
 {
   free(symmetricSolver_work);
@@ -87,11 +96,17 @@ int ImplicitNewmarkDense::DoTimestep()
   {
     int i;
 
-
     PerformanceCounter counterForceAssemblyTime;
     reducedForceModel->GetForceAndMatrix(q, internalForces, tangentStiffnessMatrix);
     counterForceAssemblyTime.StopCounter();
     forceAssemblyTime = counterForceAssemblyTime.GetElapsedTime();
+
+    if (plasticfq != NULL)
+    {
+      SetTotalForces(internalForces);
+      for(int i=0; i<r; i++)
+        internalForces[i] -= plasticfq[i];
+    }
 
     // scale internal forces
     for(i=0; i<r; i++)
@@ -342,6 +357,8 @@ int ImplicitNewmarkDense::DoTimestep()
     numIter++;
   }
   while (numIter < maxIterations);
+
+  ProcessPlasticDeformations();
 
 /*
   printf("Num iterations performed: %d (maxIterations=%d)\n", numIter, maxIterations);

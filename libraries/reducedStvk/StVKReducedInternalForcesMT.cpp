@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "reducedStvk" library , Copyright (C) 2007 CMU, 2009 MIT              *
  * All rights reserved.                                                  *

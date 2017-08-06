@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "sparseMatrix" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC   *
+ * "sparseMatrix" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC   *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -118,10 +118,10 @@ public:
   // loads the sparse matrix from a text file
   // if expand is greater than 1, the routine also expands each element into a diagonal block of size expand x expand... 
   //   (expand option is useful for loading the mass matrix in structural mechanics (with expand=3 in 3D))
-  SparseMatrixOutline(char * filename, int expand=1); 
+  SparseMatrixOutline(const char * filename, int expand=1); 
 
   // save matrix to a text file
-  int Save(char * filename, int oneIndexed=0) const;
+  int Save(const char * filename, int oneIndexed=0) const;
 
   // add entry at location (i,j) in the matrix
   void AddEntry(int i, int j, double value=0.0);
@@ -153,14 +153,14 @@ class SparseMatrix
 {
 public:
 
-  SparseMatrix(char * filename); // load from text file (same text file format as SparseMatrixOutline)
+  SparseMatrix(const char * filename); // load from text file (same text file format as SparseMatrixOutline)
   SparseMatrix(SparseMatrixOutline * sparseMatrixOutline); // create it from the outline
   SparseMatrix(const SparseMatrix & source); // copy constructor
   ~SparseMatrix();
 
-  int Save(char * filename, int oneIndexed=0) const; // save matrix to a disk text file 
+  int Save(const char * filename, int oneIndexed=0) const; // save matrix to a disk text file 
 
-  int SaveToMatlabFormat(char * filename) const; // save matrix to a text file that can be imported into Matlab
+  int SaveToMatlabFormat(const char * filename) const; // save matrix to a text file that can be imported into Matlab
 
   // set/add value to the j-th sparse entry in the given row (NOT to matrix element at (row,j))
   inline void SetEntry(int row, int j, double value) { columnEntries[row][j] = value; }
@@ -297,25 +297,23 @@ public:
   void AddDiagonalMatrix(double * diagonalMatrix);
   void AddDiagonalMatrix(double constDiagonalElement);
 
-  //
-  // Build sub matrix indices is used for pair of matrices where the sparsity of one matrix is a subset of another matrix (i.e. mass matrix and 
-  // stiffness matrix). Also, the two matrics have to have the same dimension (i.e. number of rows and columns).
-  // Build super matrix indices is used for pair of matrices with rows/columns removed
-  //
-  // add a matrix to the current matrix, whose elements are a subset of the elements of the current matrix
-  // call this once to establish the correspondence
-  void BuildSubMatrixIndices(SparseMatrix & mat2, int subMatrixID=0);
+  // Build submatrix indices is used for pair of matrices where the sparsity of one matrix is a subset of another matrix (for example, mass matrix and 
+  // stiffness matrix). Also, the two matrics have to have the same dimensions (i.e., number of rows and columns).
+  // Call this once to establish the correspondence:
+  void BuildSubMatrixIndices(SparseMatrix & submatrix, int subMatrixID=0);
   void FreeSubMatrixIndices(int subMatrixID=0);
+  // add a matrix to the current matrix, whose elements are a subset of the elements of the current matrix
   // += factor * mat2
   // returns *this
-  SparseMatrix & AddSubMatrix(double factor, SparseMatrix & mat2, int subMatrixID=0);
+  SparseMatrix & AddSubMatrix(double factor, SparseMatrix & submatrix, int subMatrixID=0);
 
-  // copy data from a matrix into a submatrix obtained by a previous call to RemoveRowColumns
+  // Build supermatrix indices is used for pair of matrices with rows/columns removed.
   // oneIndexed: tells whether the fixed rows and columns are specified 1-indexed or 0-indexed
   // First, call BuildSuperMatrixIndices once to inialize (all fixed rows and columns are indexed with respect the superMatrix):
   void BuildSuperMatrixIndices(int numFixedRowColumns, int * fixedRowColumns, SparseMatrix * superMatrix, int oneIndexed=0); // use this version if the indices of removed rows and columns are the same
   void BuildSuperMatrixIndices(int numFixedRows, int * fixedRows, int numFixedColumns, int * fixedColumns, SparseMatrix * superMatrix, int oneIndexed=0); // allows arbitrary row and column indices
-  // Then, call this (potentially many times) to quickly assign the values at the appropriate places in the submatrix:
+  // Then, call this (potentially many times) to quickly assign the values at the appropriate places in the submatrix.
+  // For example, you can use this to copy data from a matrix into a submatrix obtained by a previous call to RemoveRowColumns.
   void AssignSuperMatrix(SparseMatrix * superMatrix);
 
   // returns the total number of non-zero entries in the lower triangle (including diagonal)

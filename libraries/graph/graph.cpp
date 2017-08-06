@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "graph" library , Copyright (C) 2013 USC                              *
+ * "graph" library , Copyright (C) 2014 USC                              *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -30,9 +30,9 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-using namespace std;
 #include "matrixIO.h"
 #include "graph.h"
+using namespace std;
 
 Graph::Graph() 
 { 

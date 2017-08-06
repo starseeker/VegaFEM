@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "corotational linear FEM" library , Copyright (C) 2013 USC            *
+ * "corotational linear FEM" library , Copyright (C) 2014 USC            *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -34,6 +34,7 @@
 #include "matrixMultiplyMacros.h"
 #include "mat3d.h"
 #include "volumetricMeshENuMaterial.h"
+#include "volumetricMeshOrthotropicMaterial.h"
 
 CorotationalLinearFEM::CorotationalLinearFEM(TetMesh * tetMesh_) : tetMesh(tetMesh_) 
 {
@@ -49,23 +50,6 @@ CorotationalLinearFEM::CorotationalLinearFEM(TetMesh * tetMesh_) : tetMesh(tetMe
   }
 
   int numElements = tetMesh->getNumElements();
-
-  // set Lame's coefficients
-  lambdaLame = (double*) malloc (sizeof(double) * numElements);
-  muLame = (double*) malloc (sizeof(double) * numElements);
-  for(int el=0; el<numElements; el++)
-  {
-    VolumetricMesh::Material * material = tetMesh->getElementMaterial(el);
-    VolumetricMesh::ENuMaterial * eNuMaterial = downcastENuMaterial(material);
-    if (eNuMaterial == NULL)
-    {
-      printf("Error: CorotationalLinearFEM: mesh does not consist of E, nu materials.\n");
-      throw 1;
-    }
-
-    lambdaLame[el] = eNuMaterial->getLambda();
-    muLame[el] = eNuMaterial->getMu();
-  }
 
   MInverse = (double**) malloc (sizeof(double*) * numElements);
   for(int el = 0; el < numElements; el++)
@@ -115,14 +99,109 @@ CorotationalLinearFEM::CorotationalLinearFEM(TetMesh * tetMesh_) : tetMesh(tetMe
         0, MInv[10], MInv[9], 0, MInv[14], MInv[13], MInv[2], 0, MInv[0], 
         MInv[6], 0, MInv[4], MInv[10], 0, MInv[8], MInv[14], 0, MInv[12] };
 
-    double lambda = lambdaLame[el];
-    double mu = muLame[el];
-    double E[36] = { lambda + 2 * mu, lambda, lambda, 0, 0, 0,
-                     lambda, lambda + 2 * mu, lambda, 0, 0, 0,
-                     lambda, lambda, lambda + 2 * mu, 0, 0, 0,
-                     0, 0, 0, mu, 0, 0,
-                     0, 0, 0, 0, mu, 0,
-                     0, 0, 0, 0, 0, mu };
+    // compute elasticity stiffness tensor
+    double E[36]; // 6 x 6 matrix, stored row-major (symmetric, so row vs column-major storage makes no difference anyway)
+    VolumetricMesh::Material * material = tetMesh->getElementMaterial(el);
+
+    // check if material is ENuMaterial (i.e., isotropic)
+    VolumetricMesh::ENuMaterial * eNuMaterial = downcastENuMaterial(material);
+    if (eNuMaterial != NULL)
+    {
+      // material is isotropic, specified by E, nu
+      // compute Lame coefficients
+      double lambda = eNuMaterial->getLambda();
+      double mu = eNuMaterial->getMu();
+
+      double Et[36] = { lambda + 2 * mu, lambda, lambda, 0, 0, 0,
+                        lambda, lambda + 2 * mu, lambda, 0, 0, 0,
+                        lambda, lambda, lambda + 2 * mu, 0, 0, 0,
+                        0, 0, 0, mu, 0, 0,
+                        0, 0, 0, 0, mu, 0,
+                        0, 0, 0, 0, 0, mu };
+
+      memcpy(E, Et, sizeof(double) * 36);
+    }
+    else
+    {
+      // orthotropic material
+      // we follow the following references:
+      // Yijing Li and Jernej Barbic: Stable Orthotropic Materials, Symposium on Computer Animation 2014
+      // http://en.wikipedia.org/wiki/Orthotropic_material
+      // http://www.solidmechanics.org/text/Chapter3_2/Chapter3_2.htm
+
+      // test if material is OrthotropicMaterial (i.e., orthotropic)
+      VolumetricMesh::OrthotropicMaterial * orthotropicMaterial = downcastOrthotropicMaterial(material);
+      if (orthotropicMaterial != NULL)
+      {
+        double E1 = orthotropicMaterial->getE1();
+        double E2 = orthotropicMaterial->getE2();
+        double E3 = orthotropicMaterial->getE3();
+        double nu12 = orthotropicMaterial->getNu12();
+        double nu23 = orthotropicMaterial->getNu23();
+        double nu31 = orthotropicMaterial->getNu31();
+        double G12 = orthotropicMaterial->getG12();
+        double G23 = orthotropicMaterial->getG23();
+        double G31 = orthotropicMaterial->getG31();
+
+        double nu21 = nu12 * E2 / E1;
+        double nu32 = nu23 * E3 / E2;
+        double nu13 = nu31 * E1 / E3;
+        
+        double Y = 1.0 / (1.0 - nu12 * nu21 - nu23 * nu32 - nu31 * nu13 - 2.0 * nu21 * nu32 * nu13);
+
+        double ELocal[36] = { E1 * (1.0 - nu23 * nu32) * Y, E1 * (nu21 + nu31 * nu23) * Y, E1 * (nu31 + nu21 * nu32) * Y, 0.0, 0.0, 0.0,
+                              E1 * (nu21 + nu31 * nu23) * Y, E2 * (1.0 - nu13 * nu31) * Y, E2 * (nu32 + nu12 * nu31) * Y, 0.0, 0.0, 0.0,
+                              E1 * (nu31 + nu21 * nu32) * Y, E2 * (nu32 + nu12 * nu31) * Y, E3 * (1.0 - nu12 * nu21) * Y, 0.0, 0.0, 0.0,
+                              0, 0, 0, G12, 0, 0,
+                              0, 0, 0, 0, G23, 0,
+                              0, 0, 0, 0, 0, G31 };
+
+        //memcpy(E, ELocal, sizeof(double) * 36); // debug
+
+        double R[9]; // row-major
+        orthotropicMaterial->getR(R);
+
+        // rotate Elocal into the basis given by the columns of R
+        #define Relt(i,j) (R[3*(i)+(j)])
+        double rotator[36];
+        for(int i=0; i<3; i++)
+          for(int j=0; j<3; j++)
+          {
+            rotator[6 * i + j] = Relt(i,j) * Relt(i,j);
+            rotator[6 * i + 3 + j] = 2.0 * Relt(i, j) * Relt(i, (j+1) % 3);
+            rotator[6 * (i + 3) + j] = Relt(i, j) * Relt((i+1) % 3, j);
+            rotator[6 * (i + 3) + 3 + j] = Relt(i, j) * Relt((i+1) % 3, (j+1) % 3) + Relt(i, (j+1) % 3) * Relt((i+1) % 3, j);
+          }
+        #undef Relt
+
+        // debug
+        //memset(rotator, 0, sizeof(double) * 36);
+        //for(int i=0; i<6; i++)
+          //rotator[6*i+i] = 1.0;
+
+        // E = rotator * ELocal * rotator^T
+        double buffer[36]; 
+        memset(buffer, 0, sizeof(double) * 36);
+        // buffer = ELocal * rotator^T
+        for(int i=0; i<6; i++)
+          for(int j=0; j<6; j++)
+            for(int k=0; k<6; k++)
+              buffer[6 * i + j] += ELocal[6 * i + k] * rotator[6 * j + k];
+
+        // E = rotator * buffer
+        memset(E, 0, sizeof(double) * 36);
+        for(int i=0; i<6; i++)
+          for(int j=0; j<6; j++)
+            for(int k=0; k<6; k++)
+              E[6 * i + j] += rotator[6 * i + k] * buffer[6 * k + j];
+
+      }
+      else
+      {
+        printf("Error: CorotationalLinearFEM: unknown material encounted in the mesh.\n");
+        throw 1;
+      }
+    }
 
     // EB = E * B
     double EB[72];
@@ -158,9 +237,6 @@ CorotationalLinearFEM::~CorotationalLinearFEM()
   free(MInverse);
 
   ClearRowColumnIndices();
-
-  free(lambdaLame);
-  free(muLame);
 }
 
 void CorotationalLinearFEM::GetStiffnessMatrixTopology(SparseMatrix ** stiffnessMatrixTopology)
@@ -262,13 +338,9 @@ void CorotationalLinearFEM::ComputeForceAndStiffnessMatrixOfSubmesh(double * u, 
 
       double R[9]; // rotation (row-major)
       double S[9]; // symmetric (row-major)
-      double det = PolarDecomposition::Compute(F, R, S, 1E-6);
-      if (det < 0)
-      {
-        // flip R so that it becomes orthogonal
-        for(int i=0; i<9; i++)
-          R[i] *= -1.0;
-      }
+      double tolerance = 1E-6;
+      int forceRotation = 1;
+      PolarDecomposition::Compute(F, R, S, tolerance, forceRotation);
 
       // RK = R * K
       // KElement = R * K * R^T
@@ -533,7 +605,7 @@ void CorotationalLinearFEM::inverse3x3(double * A, double * AInv)
   AInv[7] = A[1] * A[6] - A[0] * A[7];
   AInv[8] = -A[1] * A[3] + A[0] * A[4];
 
-  double invDet = 1.0 / (-A[2] * A[4] * A[6] + A[1] * A[5] * A[6] + A[2] * A[3] * A[7] - A[0] * A[5] * A[7] - A[1] * A[3] * A[8] + A[0] * A[4] * A[8]);
+  double invDet = 1.0 / (A[0] * AInv[0] + A[1] * AInv[3] + A[2] * AInv[6]);
 
   for(int i=0; i<9; i++)
     AInv[i] *= invDet;

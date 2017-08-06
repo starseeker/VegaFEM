@@ -82,8 +82,8 @@ public:
   void Reset(); // reset camera position to the default position
   
   // save/load current camera position to/from a file
-  void SavePosition(char * filename);
-  void LoadPosition(char * filename);
+  void SavePosition(const char * filename);
+  void LoadPosition(const char * filename);
 
   // push/pop camera position onto an internal stack
   void PushPosition();

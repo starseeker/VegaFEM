@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC    *
+ * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -36,11 +36,12 @@ class SceneObjectReduced6DOF : public virtual SceneObjectReduced, public SceneOb
 {
 public:
 
-  SceneObjectReduced6DOF(char * filenameOBJ, ModalMatrix * modalMatrix); 
+  SceneObjectReduced6DOF(const char * filenameOBJ, ModalMatrix * modalMatrix); 
+  SceneObjectReduced6DOF(ObjMesh * objMesh, ModalMatrix * modalMatrix, bool deepCopy = true); 
   virtual ~SceneObjectReduced6DOF();
 
   virtual void GetSingleVertexPosition(int vertex, double * x, double * y, double * z);
-  virtual void GetSingleVertexVelocity(int vertex, double * objectVel, double * objectAngVel, double * qvel, double * velx, double * vely, double * velz);
+  virtual void GetSingleVertexVelocity(int vertex, double * objectVel, double * objectAngVel, double * velx, double * vely, double * velz);
 
   virtual void Render() = 0;
   virtual void RenderVertices() = 0;
@@ -49,7 +50,10 @@ public:
   virtual void RenderVertices(int numVertices, int * vertexList) = 0;
   virtual void RenderShadow(double ground[4], double light[4]) = 0;
 
+  virtual void Setqvel(double * qvel); // copies qvel into internal state
+
 protected:
+  double * qvel;
 };
 
 #endif

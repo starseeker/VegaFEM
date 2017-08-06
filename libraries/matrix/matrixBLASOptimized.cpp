@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "matrix" library , Copyright (C) 2007 CMU, 2009 MIT                   *
  * All rights reserved.                                                  *
@@ -24,12 +24,6 @@
 #include "matrixMacros.h"
 #include "matrixBLAS.h"
 #include "lapack-headers.h"
-
-#ifdef __APPLE__
-  #define INTEGER long int
-#else
-  #define INTEGER int
-#endif
 
 //void cblas_scopy(const int N, const float *X, const int incX, float *Y, const int incY); 
 template<bool C>

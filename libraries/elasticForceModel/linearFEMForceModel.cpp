@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "forceModel" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC     *
+ * "forceModel" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -33,6 +33,7 @@ LinearFEMForceModel::LinearFEMForceModel(StVKInternalForces * stVKInternalForces
 {
   StVKStiffnessMatrix * stVKStiffnessMatrix = new StVKStiffnessMatrix(stVKInternalForces);
   stVKStiffnessMatrix->GetStiffnessMatrixTopology(&K);
+  r = K->GetNumRows();
   double * zero = (double*) calloc (K->GetNumRows(), sizeof(double));
   stVKStiffnessMatrix->ComputeStiffnessMatrix(zero, K);
   free(zero);

@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -31,7 +31,7 @@
 
 #include "volumetricMesh.h"
 
-// stores a material specified by E (Young's modulus), nu (Poisson's ratio), and density
+// stores an isotropic material specified by E (Young's modulus), nu (Poisson's ratio), and density
 // such a material specification is very common: (corotational) linear FEM, StVK, etc.
 class VolumetricMesh::ENuMaterial : public VolumetricMesh::Material
 {

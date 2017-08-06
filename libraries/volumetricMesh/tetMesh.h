@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -42,9 +42,14 @@
 class TetMesh : public VolumetricMesh
 {
 public:
-  // loads the mesh from a text file 
-  // (.veg input formut, see documentation and the provided examples)
-  TetMesh(char * filename, int verbose=1);
+  // loads the mesh from a file 
+  // ASCII: .veg text input formut, see documentation and the provided examples
+  // BINARY: .vegb binary input format
+  TetMesh(const char * filename, fileFormatType fileFormat = ASCII, int verbose=1);
+
+  // load from a stream
+  // if memoryLoad is 0, binaryStream is FILE* (load from a file), otherwise, it is char* (load from a memory buffer)
+  TetMesh(void * binaryStream, int memoryLoad = 0);
 
   // constructs a tet mesh from the given vertices and elements, 
   // with a single region and material ("E, nu" material)
@@ -72,7 +77,7 @@ public:
   //   the ".ele" and ".node" format, used by TetGen, 
   //   "filename" is the basename, e.g., passing "mesh" will load the mesh from "mesh.ele" and "mesh.node" 
   // default material parameters will be used
-  TetMesh(char * filename, int specialFileType, int verbose); 
+  TetMesh(const char * filename, int specialFileType, int verbose); 
 
   // creates a mesh consisting of the specified element subset of the given TetMesh
   TetMesh(const TetMesh & mesh, int numElements, int * elements, std::map<int,int> * vertexMap = NULL);
@@ -81,7 +86,12 @@ public:
   virtual VolumetricMesh * clone();
   virtual ~TetMesh();
 
-  virtual int save(char * filename) const;
+  virtual int saveToAscii(const char * filename) const;
+  // saves the mesh to binary format
+  // returns: 0 = success, non-zero = error
+  // output: if bytesWritten is non-NULL, it will contain the number of bytes written 
+  virtual int saveToBinary(const char * filename, unsigned int * bytesWritten = NULL) const;
+  virtual int saveToBinary(FILE * binaryOutputStream, unsigned int * bytesWritten = NULL, bool countBytesOnly = false) const;
 
  // === misc queries ===
 

@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC    *
+ * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -33,7 +33,11 @@
 #include <float.h>
 #include "sceneObjectDeformable6DOF.h"
 
-SceneObjectDeformable6DOF::SceneObjectDeformable6DOF(char * filenameOBJ): SceneObjectWithRestPosition(filenameOBJ), SceneObjectDeformable(filenameOBJ), SceneObject6DOF(filenameOBJ)
+SceneObjectDeformable6DOF::SceneObjectDeformable6DOF(const char * filenameOBJ): SceneObjectWithRestPosition(filenameOBJ), SceneObjectDeformable(filenameOBJ), SceneObject6DOF(filenameOBJ)
+{
+}
+
+SceneObjectDeformable6DOF::SceneObjectDeformable6DOF(ObjMesh * objMesh, bool deepCopy): SceneObjectWithRestPosition(objMesh, deepCopy), SceneObjectDeformable(objMesh, deepCopy), SceneObject6DOF(objMesh, deepCopy)
 {
 }
 

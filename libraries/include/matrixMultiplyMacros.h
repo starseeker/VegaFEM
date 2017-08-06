@@ -56,6 +56,10 @@
   #define MAX(x,y) ((x)>(y) ? (x) : (y))
 #endif
 
+#ifndef FABS
+  #define FABS(x) ((x)>=0 ? (x) : -(x))
+#endif
+
 #ifndef ELT
   #define ELT(rows,i,j) (((long)j)*((long)rows)+((long)i))
 #endif
@@ -208,6 +212,18 @@
   (a)[7] += (b)[7];\
   (a)[8] += (b)[8];
 
+// a -= b
+#define MATRIX_SUBTRACTEQUAL3X3(a,b)\
+  (a)[0] -= (b)[0];\
+  (a)[1] -= (b)[1];\
+  (a)[2] -= (b)[2];\
+  (a)[3] -= (b)[3];\
+  (a)[4] -= (b)[4];\
+  (a)[5] -= (b)[5];\
+  (a)[6] -= (b)[6];\
+  (a)[7] -= (b)[7];\
+  (a)[8] -= (b)[8];
+
 // c = a + b
 #define MATRIX_ADD3X3(a,b,c)\
   (c)[0] = (a)[0] + (b)[0];\
@@ -219,6 +235,18 @@
   (c)[6] = (a)[6] + (b)[6];\
   (c)[7] = (a)[7] + (b)[7];\
   (c)[8] = (a)[8] + (b)[8];
+
+// c = alpha * a + beta * b
+#define MATRIX_ADDWEIGHTED3X3(alpha,a,beta,b,c)\
+  (c)[0] = (alpha) * (a)[0] + (beta) * (b)[0];\
+  (c)[1] = (alpha) * (a)[1] + (beta) * (b)[1];\
+  (c)[2] = (alpha) * (a)[2] + (beta) * (b)[2];\
+  (c)[3] = (alpha) * (a)[3] + (beta) * (b)[3];\
+  (c)[4] = (alpha) * (a)[4] + (beta) * (b)[4];\
+  (c)[5] = (alpha) * (a)[5] + (beta) * (b)[5];\
+  (c)[6] = (alpha) * (a)[6] + (beta) * (b)[6];\
+  (c)[7] = (alpha) * (a)[7] + (beta) * (b)[7];\
+  (c)[8] = (alpha) * (a)[8] + (beta) * (b)[8];
 
 // c = a * b
 #define MATRIX_MULTIPLY3X3(a,b,c)\

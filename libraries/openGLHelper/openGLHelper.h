@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "openGLHelper" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC   *
+ * "openGLHelper" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC   *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -49,14 +49,14 @@
 
 #include "openGL-headers.h"
 
-void OutputText(int x, int y, char *string);
+void OutputText(int x, int y, const char *string);
 
 void UnitCube();
 void UnitCubeWireframe();
 void RenderWireframeBox(double bmin[3], double bmax[3]);
 
-void DrawArrow( GLfloat px, GLfloat py, GLfloat pz,
-    GLfloat nx, GLfloat ny, GLfloat nz,
+void DrawArrow( float px, float py, float pz,
+    float nx, float ny, float nz,
     double arrowEndWidth, double arrowEndLength );
 
 void DetermineCameraParameters(double centerX, double centerY, double centerZ, double modelRadius, double * focusX, double * focusY, double * focusZ, double * cameraRadius, double * zNear, double * zFar);
@@ -67,9 +67,9 @@ void RenderSphere(float x, float y, float z);
 void BuildSphereDisplayList(GLuint * solidSphereList, GLuint * wireSphereList);
 void TransparentSphere(GLuint solidSphereList, GLuint wireSphereList, double x, double y, double z, double radius);
 
-char * DuplicateString(char * s);
+char * DuplicateString(const char * s);
 
-void PrintGLerror( char *msg );
+void PrintGLerror( const char *msg );
 
 #endif
 

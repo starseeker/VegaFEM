@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "isotropic hyperelastic FEM" library , Copyright (C) 2013 USC         *
+ * "isotropic hyperelastic FEM" library , Copyright (C) 2014 USC         *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Fun Shing Sin                            *
@@ -153,9 +153,6 @@ protected:
   // compute inv(Dm)
   void PrepareDeformGrad(); // called once in the constructor
 
-  // given a vector, find a unit vector that is orthogonal to it
-  void FindOrthonormalVector(Vec3d & v, Vec3d & result);
-
   // Compute strain energy based on the user-specified material
   virtual double ComputeEnergyFromStretches(int elementIndex, double * lambda);
   // Compute the diagonalized first Piola-Kirchhoff stress P^hat
@@ -217,13 +214,6 @@ protected:
            | m20 m21 m22 |   | 6 7 8 |
   */
   int teranToRowMajorMatrix[9];
-
-  // Modified SVD of a 3x3 matrix
-  // See comment at the implementation of this function for intended usage.
-  // This routine uses a threshold to determine when the singular values are negligible 
-  // (see the macro modifiedSVD_singularValue_eps in the implementation).
-  // Note: you can overload this function (in your own derived class) if you want to provide your own, custom/faster SVD.
-  virtual int ModifiedSVD(Mat3d & F, Mat3d & U, Vec3d & Fhat, Mat3d & V);
 };
 
 #endif

@@ -37,7 +37,10 @@
 #define OPT_DOUBLE 3
 #define OPT_STR 10
 
-ConfigFile::ConfigFile(): suppressWarnings_(0) {}
+ConfigFile::ConfigFile(): suppressWarnings_(0) 
+{
+  strcpy(stoppingString, "**EOF");
+}
 
 // convert string to uppercase
 void ConfigFile::upperCase(char * s)
@@ -72,19 +75,24 @@ int ConfigFile::getTypeSize(int type)
   {
     case OPT_INT:
       return sizeof(int);
+    break;
 
     case OPT_BOOL:
       return sizeof(bool);
+    break;
 
     case OPT_FLOAT:
       return sizeof(float);
+    break;
 
     case OPT_DOUBLE:
       return sizeof(double);
+    break;
 
     default:
       printf("Error: invalid type requested (1)\n");
       return -1;
+    break;
   }
 }
 
@@ -128,7 +136,7 @@ ConfigFile::~ConfigFile()
 }
 
 // finds a particular option name among all specified options
-int ConfigFile::seekOption(char * optionName)
+int ConfigFile::seekOption(const char * optionName)
 {
   int slen = (int)(strlen(optionName));
   char * upperOptionName = (char*) malloc (sizeof(char) * (slen + 1));
@@ -183,7 +191,7 @@ void ConfigFile::printOptions()
 
 // a generic routine to add a new option entry to the list of all options
 template<class T>
-int ConfigFile::addOptionHelper(char * optionName, T * destLocation)
+int ConfigFile::addOptionHelper(const char * optionName, T * destLocation)
 {
   if (seekOption(optionName) != -1)
   {
@@ -207,7 +215,7 @@ int ConfigFile::addOptionHelper(char * optionName, T * destLocation)
   return 0;
 }
 
-int ConfigFile::addOption(char * optionName, int * destLocation)
+int ConfigFile::addOption(const char * optionName, int * destLocation)
 {
   int code;
   if ((code = addOptionHelper(optionName, destLocation)) != 0)
@@ -218,7 +226,7 @@ int ConfigFile::addOption(char * optionName, int * destLocation)
   return 0;
 }
 
-int ConfigFile::addOption(char * optionName, bool * destLocation)
+int ConfigFile::addOption(const char * optionName, bool * destLocation)
 {
   int code;
   if ((code = addOptionHelper(optionName,destLocation)) != 0)
@@ -229,7 +237,7 @@ int ConfigFile::addOption(char * optionName, bool * destLocation)
   return 0;
 }
 
-int ConfigFile::addOption(char * optionName, double * destLocation)
+int ConfigFile::addOption(const char * optionName, double * destLocation)
 {
   int code;
   if ((code = addOptionHelper(optionName,destLocation)) != 0)
@@ -240,7 +248,7 @@ int ConfigFile::addOption(char * optionName, double * destLocation)
   return 0;
 }
 
-int ConfigFile::addOption(char * optionName, float * destLocation)
+int ConfigFile::addOption(const char * optionName, float * destLocation)
 {
   int code;
   if ((code = addOptionHelper(optionName,destLocation)) != 0)
@@ -251,7 +259,7 @@ int ConfigFile::addOption(char * optionName, float * destLocation)
   return 0;
 }
 
-int ConfigFile::addOption(char * optionName, char * destLocation)
+int ConfigFile::addOption(const char * optionName, char * destLocation)
 {
   int code;
   if ((code = addOptionHelper(optionName,destLocation)) != 0)
@@ -263,7 +271,7 @@ int ConfigFile::addOption(char * optionName, char * destLocation)
 }
 
 template<class T>
-int ConfigFile::addOptionOptional(char * optionName, T * destLocation, T defaultValue)
+int ConfigFile::addOptionOptional(const char * optionName, T * destLocation, T defaultValue)
 {
   int code = addOption(optionName,destLocation);
   *destLocation = defaultValue;
@@ -271,7 +279,7 @@ int ConfigFile::addOptionOptional(char * optionName, T * destLocation, T default
   return code;
 }
 
-int ConfigFile::addOptionOptional(char * optionName, char * destLocation, char * defaultValue)
+int ConfigFile::addOptionOptional(const char * optionName, char * destLocation, const char * defaultValue)
 {
   int code = addOption(optionName,destLocation);
   // must use memmove because strings may overlap
@@ -280,7 +288,7 @@ int ConfigFile::addOptionOptional(char * optionName, char * destLocation, char *
   return code;
 }
 
-int ConfigFile::parseOptions(char * filename)
+int ConfigFile::parseOptions(const char * filename, int verbose)
 {
   FILE * fin = fopen(filename,"r");
   if (!fin)
@@ -289,6 +297,14 @@ int ConfigFile::parseOptions(char * filename)
     return 1;
   }
 
+  int code = parseOptions(fin, verbose);
+  fclose(fin);
+
+  return code;
+}
+
+int ConfigFile::parseOptions(FILE * fin, int verbose)
+{
   int count = 0;
   char line[4096];
   while (fgets(line,4096,fin) != NULL)
@@ -298,14 +314,17 @@ int ConfigFile::parseOptions(char * filename)
     removeTrailingCharacters(line,'\n');
     removeTrailingCharacters(line,' ');
 
+    if (strcmp(line, stoppingString) == 0)
+      break;
+
     // ignore blank lines and comments
     if ((line[0] == '#') || (line[0] == '\0'))
       continue;
 
     if (line[0] != '*')
     {
-      printf("Error: invalid line %d: %s\n",count,line);
-      fclose(fin);
+      if (verbose)
+        printf("Error: invalid line %d: %s\n",count,line);
       return 1; 
     }
 
@@ -313,7 +332,7 @@ int ConfigFile::parseOptions(char * filename)
     //printf("Read entry: %s . Option index: %d .\n", &line[1], index);
     if (index == -1)
     {
-      if (!suppressWarnings_)
+      if ((verbose) && (!suppressWarnings_))
         printf("Warning: unknown option on line %d: %s\n",count,&line[1]);
 
       // eat next line
@@ -321,8 +340,8 @@ int ConfigFile::parseOptions(char * filename)
       {
         if (fgets(line,4096,fin) == NULL)
         {
-          printf("Error: EOF reached without specifying option value.\n");
-          fclose(fin);
+          if (verbose)
+            printf("Error: EOF reached without specifying option value.\n");
           return 1;
         }
         count++;
@@ -338,8 +357,8 @@ int ConfigFile::parseOptions(char * filename)
     {
       if (fgets(dataEntry,4096,fin) == NULL)
       {
-        printf("Error: EOF reached without specifying option value.\n");
-        fclose(fin);
+        if (verbose)
+          printf("Error: EOF reached without specifying option value.\n");
         return 1;
       }
       count++;
@@ -360,8 +379,8 @@ int ConfigFile::parseOptions(char * filename)
       char buffer[4096];
       if (sscanf(dataEntry,typeFormatSpecifier,buffer) == 0)
       {
-        printf("Error: invalid dataline for option %s: %s\n", optionNames[index].c_str(), dataEntry);
-        fclose(fin);
+        if (verbose)
+          printf("Error: invalid dataline for option %s: %s\n", optionNames[index].c_str(), dataEntry);
         return 1;
       }
 
@@ -384,8 +403,8 @@ int ConfigFile::parseOptions(char * filename)
           {
             bool * target = (bool*) buffer;
             *target = true;
-            printf("Error: invalid boolean specification: line %d: %s\n",count,dataEntry);
-            fclose(fin);
+            if (verbose)
+              printf("Error: invalid boolean specification: line %d: %s\n",count,dataEntry);
             return 1;
           }
       }
@@ -400,13 +419,12 @@ int ConfigFile::parseOptions(char * filename)
     optionSet[index] = true;
   }
 
-  fclose(fin);
-
   for(unsigned int i=0; i<optionNames.size(); i++)
   {
     if(!optionSet[i])
     {
-      printf("Error: option %s didn't have an entry in the config file.\n",optionNames[i].c_str());
+      if (verbose)
+        printf("Error: option %s didn't have an entry in the config file.\n",optionNames[i].c_str());
       return 1;
     }
   }
@@ -414,7 +432,18 @@ int ConfigFile::parseOptions(char * filename)
   return 0;
 }
 
-template int ConfigFile::addOptionOptional<bool>(char * optionName, bool * destLocation, bool defaultValue);
-template int ConfigFile::addOptionOptional<int>(char * optionName, int * destLocation, int defaultValue);
-template int ConfigFile::addOptionOptional<float>(char * optionName, float * destLocation, float defaultValue);
-template int ConfigFile::addOptionOptional<double>(char * optionName, double * destLocation, double defaultValue);
+void ConfigFile::setStoppingString(const char * stoppingString_)
+{
+  if (strlen(stoppingString_) >= 32)
+  {
+    printf("Warning: proposed stopping string %s is too long. Stopping string not modifed.\n", stoppingString_);
+    return;
+  }
+
+  strcpy(stoppingString, stoppingString_);
+}
+
+template int ConfigFile::addOptionOptional<bool>(const char * optionName, bool * destLocation, bool defaultValue);
+template int ConfigFile::addOptionOptional<int>(const char * optionName, int * destLocation, int defaultValue);
+template int ConfigFile::addOptionOptional<float>(const char * optionName, float * destLocation, float defaultValue);
+template int ConfigFile::addOptionOptional<double>(const char * optionName, double * destLocation, double defaultValue);

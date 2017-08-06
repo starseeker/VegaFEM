@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC    *
+ * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -33,11 +33,22 @@
 #include <float.h>
 #include "sceneObject6DOF.h"
 
-SceneObject6DOF::SceneObject6DOF(char * filenameOBJ): SceneObjectWithRestPosition(filenameOBJ), scale(1.0) 
+SceneObject6DOF::SceneObject6DOF(const char * filenameOBJ): SceneObjectWithRestPosition(filenameOBJ), scale(1.0) 
 {
-  memset(centerOfMass,0,sizeof(double)*3);
-  memset(R,0,sizeof(double)*9);
+  Construct();
+}
+
+SceneObject6DOF::SceneObject6DOF(ObjMesh * objMesh, bool deepCopy): SceneObjectWithRestPosition(objMesh, deepCopy), scale(1.0) 
+{
+  Construct();
+}
+
+void SceneObject6DOF::Construct()
+{
+  memset(centerOfMass, 0, sizeof(double) * 3);
+  memset(R, 0, sizeof(double) * 9);
   R[0] = 1; R[4] = 1; R[8] = 1;
+  rotation = 1;
 }
 
 SceneObject6DOF::~SceneObject6DOF()
@@ -224,22 +235,38 @@ void SceneObject6DOF::RenderLocalFrame(double axesSize)
 
 void SceneObject6DOF::TransformToLocal(double * globalVector, double * localVector)
 {
-  // global = R * local + pos
-  // local = R^{-1} * (global - pos)
-
-  // R = s * Rot  
-  // R^{-1} = 1 / s Rot^T = 1 / s^2 * R
-
   double temp[3] = { globalVector[0] - centerOfMass[0], globalVector[1] - centerOfMass[1], globalVector[2] - centerOfMass[2] };
 
-  localVector[0] = R[0] * temp[0] + R[3] * temp[1] + R[6] * temp[2];
-  localVector[1] = R[1] * temp[0] + R[4] * temp[1] + R[7] * temp[2];
-  localVector[2] = R[2] * temp[0] + R[5] * temp[1] + R[8] * temp[2];
+  if (rotation != 0)
+  {
+    // global = R * local + pos
+    // local = R^{-1} * (global - pos)
 
-  double invScale2 = 1.0 / (scale * scale);
-  localVector[0] *= invScale2;
-  localVector[1] *= invScale2;
-  localVector[2] *= invScale2;
+    // we know that R = s * Rot, so we can invert R as follows:  
+    // R^{-1} = 1 / s Rot^T = 1 / s^2 * R
+
+    localVector[0] = R[0] * temp[0] + R[3] * temp[1] + R[6] * temp[2];
+    localVector[1] = R[1] * temp[0] + R[4] * temp[1] + R[7] * temp[2];
+    localVector[2] = R[2] * temp[0] + R[5] * temp[1] + R[8] * temp[2];
+    
+    double invScale2 = 1.0 / (scale * scale);
+    localVector[0] *= invScale2;
+    localVector[1] *= invScale2;
+    localVector[2] *= invScale2;
+  }
+  else
+  {
+    // global = R * local + pos
+    // local = R^{-1} * (global - pos)
+    // R is not necessarily a rotation
+
+    double RInv[9];
+    inverse3x3(R, RInv);
+
+    localVector[0] = RInv[0] * temp[0] + RInv[1] * temp[1] + RInv[2] * temp[2];
+    localVector[1] = RInv[3] * temp[0] + RInv[4] * temp[1] + RInv[5] * temp[2];
+    localVector[2] = RInv[6] * temp[0] + RInv[7] * temp[1] + RInv[8] * temp[2];
+  }
 }
 
 void SceneObject6DOF::TransformToGlobal(double * localVector, double * globalVector)

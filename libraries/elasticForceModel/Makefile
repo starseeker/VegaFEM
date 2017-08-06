@@ -9,13 +9,13 @@ include ../../Makefile-headers/Makefile-header
 R ?= ../..
 
 # the object files to be compiled for this library
-ELASTICFORCEMODELOBJECTS=corotationalLinearFEMForceModel.o massSpringSystemForceModel.o StVKForceModel.o isotropicHyperelasticFEMForceModel.o linearFEMForceModel.o
+ELASTICFORCEMODELOBJECTS=corotationalLinearFEMForceModel.o massSpringSystemForceModel.o StVKForceModel.o isotropicHyperelasticFEMForceModel.o linearFEMForceModel.o clothBWForceModel.o
 
 # the libraries this library depends on
-ELASTICFORCEMODELLIBS=forceModel corotationalLinearFEM massSpringSystem stvk isotropicHyperelasticFEM
+ELASTICFORCEMODELLIBS=forceModel corotationalLinearFEM massSpringSystem stvk isotropicHyperelasticFEM clothBW
 
 # the headers in this library
-ELASTICFORCEMODELHEADERS=corotationalLinearFEMForceModel.h massSpringSystemForceModel.h StVKForceModel.h isotropicHyperelasticFEMForceModel.h linearFEMForceModel.h
+ELASTICFORCEMODELHEADERS=corotationalLinearFEMForceModel.h massSpringSystemForceModel.h StVKForceModel.h isotropicHyperelasticFEMForceModel.h linearFEMForceModel.h clothBWForceModel.h
 
 ELASTICFORCEMODELOBJECTS_FILENAMES=$(addprefix $(L)/elasticForceModel/, $(ELASTICFORCEMODELOBJECTS))
 ELASTICFORCEMODELHEADER_FILENAMES=$(addprefix $(L)/elasticForceModel/, $(ELASTICFORCEMODELHEADERS))

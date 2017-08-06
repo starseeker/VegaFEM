@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "reducedStvk" library , Copyright (C) 2007 CMU, 2009 MIT              *
  * All rights reserved.                                                  *
@@ -464,7 +464,7 @@ void StVKReducedStiffnessMatrix::EvaluateLinear(double * q, double * Rq)
 
 }
 
-int StVKReducedStiffnessMatrix::Save(char * filename)
+int StVKReducedStiffnessMatrix::Save(const char * filename)
 {
   FILE * fout = fopen(filename,"wb");
 
@@ -495,7 +495,7 @@ int StVKReducedStiffnessMatrix::Save(char * filename)
 }
 
 
-StVKReducedStiffnessMatrix::StVKReducedStiffnessMatrix(char * filename)
+StVKReducedStiffnessMatrix::StVKReducedStiffnessMatrix(const char * filename)
 {
   FILE * fin = fopen(filename,"rb");
 

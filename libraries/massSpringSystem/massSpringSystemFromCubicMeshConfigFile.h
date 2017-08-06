@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "massSpringSystem" library, Copyright (C) 2007 CMU, 2009 MIT,         *
- *                                           2013 USC                    *
+ *                                           2014 USC                    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic, Daniel Schroeder                          *
@@ -52,10 +52,10 @@ public:
 
   // generates a mass spring system from the given configuration file
   // if massSpringSystemConfiguration is not NULL, it also returns the mass spring parameters read from the file (massSpringSystemConfiguration is output parameter only)
-  int GenerateMassSpringSystem(char * configFilename, MassSpringSystem ** massSpringSystem, MassSpringSystemCubicMeshConfiguration * massSpringSystemCubicMeshConfiguration = NULL);
+  int GenerateMassSpringSystem(const char * configFilename, MassSpringSystem ** massSpringSystem, MassSpringSystemCubicMeshConfiguration * massSpringSystemCubicMeshConfiguration = NULL);
 
 protected:
-  char * DuplicateString(char*);
+  char * DuplicateString(const char*);
 };
 
 #endif

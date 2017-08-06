@@ -1,11 +1,12 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
- * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder      *
+ * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder,     *
+ *               Yili Zhao                                               *
  * http://www.jernejbarbic.com/code                                      *
  *                                                                       *
  * Research: Jernej Barbic, Fun Shing Sin, Daniel Schroeder,             *
@@ -47,10 +48,171 @@
 #include "objMesh.h"
 using namespace std;
 
-ObjMesh::ObjMesh(const std::string & filename_, int verbose)
-{
-  filename = filename_;
+// for faster parallel loading of multimesh binary files, enable the -fopenmp -DUSE_OPENMP macro line in the Makefile-header file (see also documentation)
 
+#ifdef USE_OPENMP
+  #include <omp.h>
+#endif
+
+ObjMesh::ObjMesh(const std::string & filename_, fileFormatType fileFormat, int verbose) : filename(filename_)
+{
+  switch (fileFormat)
+  {
+    case ASCII:
+    {
+      std::string filenameString(filename_);
+      loadFromAscii(filenameString, verbose);
+    }
+    break;
+
+    case BINARY:
+      loadFromBinary(filename_, verbose);
+    break;
+
+    default:
+      printf("Error in ObjMesh::ObjMesh: File format %d is unknown.\n", fileFormat);
+      throw 1;
+    break;
+  }
+
+  computeBoundingBox();
+
+  // statistics
+  if (verbose)
+  {
+    std::cout << "Parsed obj file '" << filename << "'; statistics:" << std::endl;
+    std::cout << "   " << groups.size() << " groups," << std::endl;
+    std::cout << "   " << getNumFaces() << " faces," << std::endl;
+    std::cout << "   " << vertexPositions.size() << " vertices," << std::endl;
+    std::cout << "   " << normals.size() << " normals, " << std::endl;
+    std::cout << "   " << textureCoordinates.size() << " texture coordinates, " << std::endl;
+  }
+}
+
+ObjMesh::ObjMesh(void * binaryInputStream, streamType stream, int verbose)
+{
+  filename = string("");
+  loadFromBinary(binaryInputStream, stream, verbose);
+  computeBoundingBox();
+}
+
+ObjMesh::ObjMesh(int numVertices, double * vertices, int numTriangles, int * triangles)
+{
+  filename = string("");
+
+  for(int i=0; i<numVertices; i++)
+    addVertexPosition(Vec3d(vertices[3*i+0], vertices[3*i+1], vertices[3*i+2]));
+
+  unsigned int materialIndex = 0;
+  addMaterial(string("default"), Vec3d(1,1,1), Vec3d(1,1,1), Vec3d(1,1,1), 0);
+  groups.push_back(Group("defaultGroup", materialIndex));
+  for(int i=0; i<numTriangles; i++)
+  {
+    Face face;
+    face.addVertex(Vertex(triangles[3*i+0]));
+    face.addVertex(Vertex(triangles[3*i+1]));
+    face.addVertex(Vertex(triangles[3*i+2]));
+    addFaceToGroup(face, 0);
+  }
+
+  computeBoundingBox();
+}
+
+ObjMesh::ObjMesh(int numVertices, double * vertices, int numFaces, int* faceVertexCounts, int * faces)
+{
+  filename = string("");
+
+  for(int i = 0; i < numVertices; i++)
+    addVertexPosition(Vec3d(vertices[3*i+0], vertices[3*i+1], vertices[3*i+2]));
+
+  unsigned int materialIndex = 0;
+  addMaterial(string("default"), Vec3d(1,1,1), Vec3d(1,1,1), Vec3d(1,1,1), 0);
+  groups.push_back(Group("defaultGroup", materialIndex));
+  for(int i = 0, k = 0; i < numFaces; i++)
+  {
+    Face face;
+    int faceVertexCount = faceVertexCounts[i];
+    for(int j = 0; j < faceVertexCount; j++)
+    {
+      face.addVertex(Vertex(faces[k]));
+      k++;
+    }
+
+    addFaceToGroup(face, 0);
+  }
+
+  computeBoundingBox();
+}
+
+
+ObjMesh::ObjMesh(const ObjMesh & objMesh_)
+{ 
+  // copy materials 
+  unsigned int numObjMaterials = objMesh_.getNumMaterials();
+  for (unsigned int materialIndex=0; materialIndex < numObjMaterials; materialIndex++)
+  {
+    std::string materialName = objMesh_.getMaterial(materialIndex).getName();
+    Vec3d Ka = objMesh_.getMaterial(materialIndex).getKa();
+    Vec3d Kd = objMesh_.getMaterial(materialIndex).getKd();
+    Vec3d Ks = objMesh_.getMaterial(materialIndex).getKs();
+    double shininess = objMesh_.getMaterial(materialIndex).getShininess();
+
+    // add a new material
+    addMaterial(materialName, Ka, Kd, Ks, shininess);
+
+    if (objMesh_.getMaterial(materialIndex).hasTextureFilename())
+    {
+      std::string textureFilename = objMesh_.getMaterial(materialIndex).getTextureFilename();
+      materials[materialIndex].setTextureFilename(textureFilename);
+    }
+  }  // for materialIndex
+
+  // copy vertices
+  unsigned int numVertices = objMesh_.getNumVertices();
+  for(unsigned int vertexIndex=0; vertexIndex < numVertices; vertexIndex++)
+    vertexPositions.push_back(objMesh_.vertexPositions[vertexIndex]);
+
+  // copy texture coordinates
+  unsigned int numTexCoordinates = objMesh_.getNumTextureCoordinates();
+  for(unsigned int textureCoordinateIndex=0; textureCoordinateIndex < numTexCoordinates; textureCoordinateIndex++)
+    textureCoordinates.push_back(objMesh_.textureCoordinates[textureCoordinateIndex]);
+
+  // copy normals
+  unsigned int numNormals = objMesh_.getNumNormals();
+  for(unsigned int normalIndex=0; normalIndex < numNormals; normalIndex++)
+    normals.push_back(objMesh_.normals[normalIndex]);
+
+  // copy groups
+  unsigned int numGroups = objMesh_.getNumGroups();
+  for(unsigned int groupIndex=0; groupIndex < numGroups; groupIndex++)
+  {
+    // group name and material index
+    std::string groupName = objMesh_.groups[groupIndex].getName();
+    unsigned int materialIndex = objMesh_.groups[groupIndex].getMaterialIndex();
+    groups.push_back(Group(groupName, materialIndex));
+
+    // copy faces of current group
+    unsigned int numFaces = objMesh_.groups[groupIndex].getNumFaces();
+    for (unsigned int faceIndex=0; faceIndex < numFaces; faceIndex++)
+    {
+      const Face * objMeshFace = objMesh_.groups[groupIndex].getFaceHandle(faceIndex);
+      unsigned int numFaceVerices = objMeshFace->getNumVertices();
+      Face currentFace;
+      for (unsigned int vertexIndex=0; vertexIndex < numFaceVerices; vertexIndex++)
+        currentFace.addVertex(objMeshFace->getVertex(vertexIndex));
+
+      groups[groupIndex].addFace(currentFace);
+    }
+  }  // for groupIndex
+  
+  // copy filename
+  filename = objMesh_.filename;
+
+  computeBoundingBox();
+}
+
+int ObjMesh::loadFromAscii(const string & filename, int verbose)
+{
   unsigned int numFaces = 0;
 
   const int maxline = 4096;
@@ -60,8 +222,9 @@ ObjMesh::ObjMesh(const std::string & filename_, int verbose)
   unsigned int currentGroup=0;
   unsigned int ignoreCounter=0;
 
-  unsigned int  currentMaterialIndex = 0;
-  addMaterial("default", Vec3d(0.2,0.2,0.2), Vec3d(0.6,0.6,0.6), Vec3d(0.0,0.0,0.0), 65);
+  unsigned int currentMaterialIndex = 0;
+
+  // Note: the default material will be added when encountered in the obj file, or at the end if necessary. One cannot simply add it here at the beginning because a material read from the .mtl file could also be called "default".
 
   if (verbose)
     std::cout << "Parsing .obj file '" << filename << "'." << std::endl;
@@ -69,7 +232,7 @@ ObjMesh::ObjMesh(const std::string & filename_, int verbose)
   if (!ifs)
   {
     std::string message = "Could not open .obj file '";
-    message.append( filename );
+    message.append(filename);
     message.append( "'" );
     throw ObjMeshException( message );
   }
@@ -213,7 +376,7 @@ ObjMesh::ObjMesh(const std::string & filename_, int verbose)
         char * tokenEnd = curPos;
         while ((*tokenEnd != ' ') && (*tokenEnd != '\0'))
           tokenEnd++;
- 
+
         bool whiteSpace = false;
         if (*tokenEnd == ' ')
         {
@@ -317,7 +480,8 @@ ObjMesh::ObjMesh(const std::string & filename_, int verbose)
       numGroupFaces++;
     }
     else if ((strncmp(line, "#", 1) == 0 ) || (strncmp(line, "\0", 1) == 0))
-    { // ignore comment lines and empty lines
+    { 
+      // ignore comment lines and empty lines
     }
     else if (strncmp(line, "usemtl", 6) == 0)
     {
@@ -337,6 +501,7 @@ ObjMesh::ObjMesh(const std::string & filename_, int verbose)
         groupCloneIndex++;
       }
 
+      materialSearch:
       bool materialFound = false;
       unsigned int counter = 0;
       char * materialName = &line[7];
@@ -359,10 +524,17 @@ ObjMesh::ObjMesh(const std::string & filename_, int verbose)
         }
         counter++;
       }
+
       if (!materialFound)
       {
+        if (strcmp(materialName, "default") == 0)
+        {
+          addDefaultMaterial();
+          goto materialSearch;
+        }
+
         char msg[4096];
-        sprintf(msg,"Material %s does not exist.\n",materialName);
+        sprintf(msg, "Obj mesh material %s does not exist.\n", materialName);
         throw ObjMeshException(msg);
       }
     }
@@ -374,7 +546,7 @@ ObjMesh::ObjMesh(const std::string & filename_, int verbose)
     }
     else if ((strncmp(line, "s ", 2) == 0 ) || (strncmp(line, "o ", 2) == 0))
     {
-      // ignore 
+      // ignore lines beginning with s and o
       //std::cout << command << " ";
       if (ignoreCounter < 5)
       {
@@ -398,38 +570,33 @@ ObjMesh::ObjMesh(const std::string & filename_, int verbose)
     }
   }
 
-  computeBoundingBox();
-  
-  // statistics
-  if (verbose)
-  {
-    std::cout << "Parsed obj file '" << filename << "'; statistics:" << std::endl;
-    std::cout << "   " << groups.size() << " groups," << std::endl;
-    std::cout << "   " << numFaces << " faces," << std::endl;
-    std::cout << "   " << vertexPositions.size() << " vertices," << std::endl;
-    std::cout << "   " << normals.size() << " normals, " << std::endl;
-    std::cout << "   " << textureCoordinates.size() << " texture coordinates, " << std::endl;
-  }
+  // add the "default" material if it doesn't already exist
+  addDefaultMaterial();
+
+  return 0;
 }
 
-ObjMesh::ObjMesh(int numVertices, double * vertices, int numTriangles, int * triangles)
+void ObjMesh::addDefaultMaterial()
 {
-  for(int i=0; i<numVertices; i++)
-    addVertexPosition(Vec3d(vertices[3*i+0], vertices[3*i+1], vertices[3*i+2]));
-
-  unsigned int materialIndex = 0;
-  addMaterial("default", Vec3d(1,1,1), Vec3d(1,1,1), Vec3d(1,1,1), 0);
-  groups.push_back(Group("defaultGroup", materialIndex));
-  for(int i=0; i<numTriangles; i++)
+  // search if there already is the "default" material
+  bool addDefaultMaterial = true;
+  unsigned int numObjMaterials = getNumMaterials();
+  for (unsigned int materialIndex=0; materialIndex<numObjMaterials; materialIndex++)
   {
-    Face face;
-    face.addVertex(Vertex(triangles[3*i+0]));
-    face.addVertex(Vertex(triangles[3*i+1]));
-    face.addVertex(Vertex(triangles[3*i+2]));
-    addFaceToGroup(face, 0);
+    std::string materialNameString = materials[materialIndex].getName();
+    char * materialName = (char *)(materialNameString.c_str());
+
+    if(strcmp(materialName, "default") == 0)
+    {
+      addDefaultMaterial = false;
+      break;
+    }
   }
 
-  computeBoundingBox();
+  if (addDefaultMaterial)
+  {
+    addMaterial(string("default"), Vec3d(0.2,0.2,0.2), Vec3d(0.6,0.6,0.6), Vec3d(0.0,0.0,0.0), 65);
+  }
 }
 
 std::vector<std::string> ObjMesh::getGroupNames() const
@@ -636,7 +803,442 @@ double ObjMesh::getDiameter() const
   return diameter;
 }
 
-void ObjMesh::save(const string & filename, int outputMaterials, int verbose) const
+int ObjMesh::saveObjMeshesToBinary(const std::string & filename, int numObjMeshes, ObjMesh ** objMeshes, int * saveObjMeshesFlag, int outputMaterials, int verbose)
+{
+  FILE * output = fopen(filename.c_str(), "wb");
+  if (output == NULL)
+  {
+    printf("Error in ObjMesh::saveToBinary: cannot open %s to write.\n", filename.c_str());
+    return 1;
+  }
+
+  unsigned int * bytesWritten = (unsigned int*) calloc (numObjMeshes, sizeof(unsigned int));
+
+  // count the number of bytes written to the file for every obj mesh
+  for(int i=0; i<numObjMeshes; i++)
+  {
+    if (saveObjMeshesFlag[i] == 0)
+      continue;
+
+    bool countBytesOnly = true;
+    objMeshes[i]->saveToBinary(NULL, outputMaterials, &bytesWritten[i], countBytesOnly);
+  }
+
+  if (verbose)
+  {
+    printf("number of bytes for each obj mesh: \n");
+    for(int i=0; i<numObjMeshes; i++)
+      printf("%u, ", bytesWritten[i]);
+    printf("\n");
+  }
+
+  // write the header to the file
+  fwrite(&numObjMeshes, sizeof(int), 1, output);
+  fwrite(bytesWritten, sizeof(unsigned int), numObjMeshes, output);
+
+  // write the obj meshes to the file
+  for(int i=0; i<numObjMeshes; i++)
+  {
+    if (saveObjMeshesFlag[i] == 0)
+      continue;
+
+    bool countBytesOnly = false;
+    objMeshes[i]->saveToBinary(output, outputMaterials, &bytesWritten[i], countBytesOnly, verbose);
+  }
+
+  free(bytesWritten);
+  fclose(output);
+
+  return 0;
+}
+
+int ObjMesh::saveToBinary(const std::string & filename_, int outputMaterials, int verbose) const
+{
+  FILE * fout = fopen(filename_.c_str(), "wb");
+  if (fout == NULL)
+  {
+    printf("Error in ObjMesh::saveToBinary: cannot open file %s to write.\n", filename_.c_str());
+  }
+  int code = saveToBinary(fout, outputMaterials, NULL, verbose);
+  fclose(fout);
+  return code;
+}
+
+// return:
+// 0 = succeeded
+// 1 = failed
+int ObjMesh::saveToBinary(FILE * binaryOutputStream, int outputMaterials, unsigned int * bytesWritten, bool countBytesOnly, int verbose) const
+{
+  // first pass: count the total number of bytes to be written to the file
+  // second pass: do the actual writing 
+  enum {COUNT_BYTES, WRITE_TO_DISK, NUM_PASSES};
+  int totalPasses = NUM_PASSES;
+  if (countBytesOnly)
+    totalPasses = WRITE_TO_DISK;
+
+  unsigned int totalBytes = 0;
+  for(int pass = 0; pass < totalPasses; pass++)
+  {
+    unsigned int bytes = 0;
+    unsigned int items;
+
+    // the header will be the number of bytes (including the totalbytes itself)
+    items = 1;
+    if (pass == WRITE_TO_DISK)
+      items = fwrite(&totalBytes, sizeof(unsigned int), 1, binaryOutputStream);
+    if (items != 1)
+      return 1;
+    bytes += items * sizeof(unsigned int);
+
+    // save the flag that determines whether to output materials or not
+    items = 1;
+    if (pass == WRITE_TO_DISK)
+      items = fwrite(&outputMaterials, sizeof(int), 1, binaryOutputStream);
+    if (items != 1)
+      return 1;
+    bytes += items * sizeof(int);
+
+    // save materials, if necessary
+    if (outputMaterials)
+    {
+      unsigned int numObjMaterials = getNumMaterials();
+
+      // save the number of materials
+      items = 1;
+      if (pass == WRITE_TO_DISK)
+        items = fwrite(&numObjMaterials, sizeof(unsigned int), 1, binaryOutputStream);
+      if (items != 1)
+        return 1;
+      bytes += items * sizeof(unsigned int);
+
+      // save the material names
+      for (unsigned int materialIndex=0; materialIndex < numObjMaterials; materialIndex++)
+      {
+        std::string materialNameString = materials[materialIndex].getName();
+        char * materialName = (char *)(materialNameString.c_str());
+        unsigned int strLength = strlen(materialName);
+        items = 1;
+        if (pass == WRITE_TO_DISK)
+          items = fwrite(&strLength, sizeof(unsigned int), 1, binaryOutputStream);
+        if (items != 1)
+          return 1;
+        bytes += items * sizeof(unsigned int);
+
+        items = strLength;
+        if (pass == WRITE_TO_DISK)
+          items = fwrite(materialName, sizeof(char), strLength, binaryOutputStream);
+        if (items != strLength)
+          return 1;
+        bytes += items * sizeof(char);
+      }
+
+      // Ka, Kd, Ks, each of which has 3 doubles, plus Ns, a double
+      // So there are 10 doubles for every material
+      enum {KA_0, KA_1, KA_3, KD_0, KD_1, KD_2, KS_0, KS_1, KS_2, NS, NUM_MATERIAL_PROPERTIES};
+      double * materialProperties = (double *) malloc(sizeof(double) * NUM_MATERIAL_PROPERTIES * numObjMaterials);
+
+      std::vector<unsigned int> materialHasTextureImageKd;
+
+      for (unsigned int materialIndex=0; materialIndex < numObjMaterials; materialIndex++)
+      {
+        unsigned int offset = materialIndex * NUM_MATERIAL_PROPERTIES;
+
+        Vec3d Ka = materials[materialIndex].getKa();
+        Ka.convertToArray(&materialProperties[offset]);
+
+        Vec3d Kd = materials[materialIndex].getKd();
+        Kd.convertToArray(&materialProperties[offset + 3]);
+
+        Vec3d Ks = materials[materialIndex].getKs();
+        Ks.convertToArray(&materialProperties[offset + 6]);
+
+        materialProperties[offset + 9] = materials[materialIndex].getShininess() * 1000.0 / 128.0;
+
+        if (materials[materialIndex].hasTextureFilename())
+          materialHasTextureImageKd.push_back(materialIndex);
+      }  // for materialIndex
+
+      // save the material properties
+      items = NUM_MATERIAL_PROPERTIES * numObjMaterials;
+      if (pass == WRITE_TO_DISK)
+        items = fwrite(materialProperties, sizeof(double), NUM_MATERIAL_PROPERTIES * numObjMaterials, binaryOutputStream);
+      if (items !=  NUM_MATERIAL_PROPERTIES * numObjMaterials)
+        return 1;
+      bytes += items * sizeof(double);
+
+      free(materialProperties);
+
+      // save the number of materials which have map_Kd texture images
+      unsigned int vectorSize = materialHasTextureImageKd.size();
+      items = 1;
+      if (pass == WRITE_TO_DISK)
+        items = fwrite(&vectorSize, sizeof(unsigned int), 1, binaryOutputStream);
+      if (items != 1)
+        return 1;
+      bytes += items * sizeof(unsigned int);
+
+      for(unsigned int materialIndex=0; materialIndex < vectorSize; materialIndex++)
+      {
+        // save the material ID
+        unsigned int materialID = materialHasTextureImageKd[materialIndex];
+        items = 1;
+        if (pass == WRITE_TO_DISK)
+          items = fwrite(&materialID, sizeof(unsigned int), 1, binaryOutputStream);
+        if (items != 1)
+          return 1;
+        bytes += items * sizeof(unsigned int);
+
+        // save the material image
+        std::string textureFilenameString = materials[materialID].getTextureFilename();
+        char * textureFilename = (char *)(textureFilenameString.c_str());
+        unsigned int strLength = strlen(textureFilename);
+        items = 1;
+        if (pass == WRITE_TO_DISK)
+          items = fwrite(&strLength, sizeof(unsigned int), 1, binaryOutputStream);
+        if (items != 1)
+          return 1;
+        bytes += items * sizeof(unsigned int);
+
+        items = strLength;
+        if (pass == WRITE_TO_DISK)
+          items = fwrite(textureFilename, sizeof(char), strLength, binaryOutputStream);
+        if (items != strLength)
+          return 1;
+        bytes += items * sizeof(char);
+      }  // for materialIndex
+    }  // if outputMaterials
+
+    // save the number of vertices
+    unsigned int numVertices = vertexPositions.size();
+    items = 1;
+    if (pass == WRITE_TO_DISK)
+      items = fwrite(&numVertices, sizeof(unsigned int), 1, binaryOutputStream);
+    if (items != 1)
+      return 1;
+    bytes += items * sizeof(unsigned int);
+
+    // save vertices
+    for (unsigned int vertexIndex=0; vertexIndex < numVertices; vertexIndex++)
+    {
+      Vec3d pos = getPosition(vertexIndex);
+      double temp[3];
+      pos.convertToArray(temp);
+
+      items = 3;
+      if (pass == WRITE_TO_DISK)
+        items = fwrite(temp, sizeof(double), 3, binaryOutputStream);
+      if (items != 3)
+        return 1;
+      bytes += items * sizeof(double);
+    }
+
+    // save the number of texture coordinates
+    unsigned int numTexCoordinates = textureCoordinates.size();
+    items = 1;
+    if (pass == WRITE_TO_DISK)
+      items = fwrite(&numTexCoordinates, sizeof(unsigned int), 1, binaryOutputStream);
+    if (items != 1)
+      return 1;
+    bytes += items * sizeof(unsigned int);
+
+    // save texture coordinates
+    for (unsigned int texCoordinateIndex=0; texCoordinateIndex < numTexCoordinates; texCoordinateIndex++)
+    {
+      Vec3d texCoord_ = getTextureCoordinate(texCoordinateIndex);
+      double temp[3];
+      texCoord_.convertToArray(temp);
+
+      items = 3;
+      if (pass == WRITE_TO_DISK)
+        items = fwrite(temp, sizeof(double), 3, binaryOutputStream);
+      if (items != 3)
+        return 1;
+      bytes += items * sizeof(double);
+    }
+
+    // save the number of normals
+    unsigned int numNormals = normals.size();
+    items = 1;
+    if (pass == WRITE_TO_DISK)
+      items = fwrite(&numNormals, sizeof(unsigned int), 1, binaryOutputStream);
+    if (items != 1)
+      return 1;
+    bytes += items * sizeof(unsigned int);
+
+    // save normals
+    for (unsigned int normalIndex=0; normalIndex < numNormals; normalIndex++)
+    {
+      Vec3d normal_ = getNormal(normalIndex);
+      double temp[3];
+      normal_.convertToArray(temp);
+      items = 3;
+      if (pass == WRITE_TO_DISK)
+        items = fwrite(temp, sizeof(double), 3, binaryOutputStream);
+      if (items != 3)
+        return 1;
+      bytes += items * sizeof(double);
+    }
+
+    // save the number of groups
+    unsigned int numGroups = groups.size();
+    items = 1;
+    if (pass == WRITE_TO_DISK)
+      items = fwrite(&numGroups, sizeof(unsigned int), 1, binaryOutputStream);
+    if (items != 1)
+      return 1;
+    bytes += items * sizeof(unsigned int);
+
+    // save groups and faces
+    for(unsigned int groupIndex=0; groupIndex < groups.size(); groupIndex++)
+    {
+      // save group name 
+      std::string groupNameString = groups[groupIndex].getName();
+      char * groupNameStr = (char *)(groupNameString.c_str());
+      unsigned int strLength = strlen(groupNameStr);
+      items = 1;
+      if (pass == WRITE_TO_DISK)
+        items = fwrite(&strLength, sizeof(unsigned int), 1, binaryOutputStream);
+      if (items != 1)
+        return 1;
+      bytes += items * sizeof(unsigned int);
+
+
+      items = strLength;
+      if (pass == WRITE_TO_DISK)
+        items = fwrite(groupNameStr, sizeof(char), strLength, binaryOutputStream);
+      if (items != strLength)
+        return 1;
+      bytes += items * sizeof(char);
+
+      // save the material index of the current group
+      if (outputMaterials)
+      {
+        unsigned int materialIndex = groups[groupIndex].getMaterialIndex();
+        items = 1;
+        if (pass == WRITE_TO_DISK)
+          items = fwrite(&materialIndex, sizeof(unsigned int), 1, binaryOutputStream);
+        if (items != 1)
+          return 1;
+        bytes += items * sizeof(unsigned int);
+      }
+
+      // save the number of faces of the current group
+      unsigned int numFaces = groups[groupIndex].getNumFaces();
+      items = 1;
+      if (pass == WRITE_TO_DISK)
+        items = fwrite(&numFaces, sizeof(unsigned int), 1, binaryOutputStream);
+      if (items != 1)
+        return 1;
+      bytes += items * sizeof(unsigned int);
+
+      // save the number of vertices of each face in current group
+      unsigned int totalFaceVertices = 0;
+      unsigned int * numFaceVerticesArray = (unsigned int *) malloc (sizeof(unsigned int) * numFaces);
+      for (unsigned int faceIndex=0; faceIndex < numFaces; faceIndex++)
+      {
+        Face face = groups[groupIndex].getFace(faceIndex); // get face whose number is faceIndex
+        numFaceVerticesArray[faceIndex] = face.getNumVertices();
+        totalFaceVertices += numFaceVerticesArray[faceIndex];
+      }
+      items = numFaces;
+      if (pass == WRITE_TO_DISK)
+        items = fwrite(numFaceVerticesArray, sizeof(unsigned int), numFaces, binaryOutputStream);
+      if (items != numFaces)
+        return 1;
+      bytes += items * sizeof(unsigned int);
+      free(numFaceVerticesArray);
+
+      unsigned int * verticesArray = (unsigned int *) malloc (sizeof(unsigned int) * totalFaceVertices);
+      // because the output is 1-indexed, we can use 0 to represent "no such property"
+      unsigned int * textureCoordinateIndexArray = (unsigned *) malloc (sizeof(unsigned int) * totalFaceVertices);
+      unsigned int * normalIndexArray = (unsigned *) malloc (sizeof(unsigned int) * totalFaceVertices);
+      memset(textureCoordinateIndexArray, 0, sizeof(unsigned int) * totalFaceVertices);
+      memset(normalIndexArray, 0, sizeof(unsigned int) * totalFaceVertices);
+      unsigned int vertexCount = 0;
+      for (unsigned int faceIndex=0; faceIndex < numFaces; faceIndex++)
+      {
+        Face face = groups[groupIndex].getFace(faceIndex); // get the face whose number is faceIndex
+        unsigned int numFaceVertices = face.getNumVertices();
+
+        // current face
+        for (unsigned int vertexIndex=0; vertexIndex < numFaceVertices; vertexIndex++)
+        {
+          Vertex vertex = face.getVertex(vertexIndex);
+          verticesArray[vertexCount] = vertex.getPositionIndex() + 1; // 1-indexed
+
+          if (vertex.hasTextureCoordinateIndex())
+            textureCoordinateIndexArray[vertexCount] = vertex.getTextureCoordinateIndex() + 1; // 1-indexed
+
+          if (vertex.hasNormalIndex())
+            normalIndexArray[vertexCount] = vertex.getNormalIndex() + 1; // 1-indexed
+
+          vertexCount++;
+        }  // for vertexIndex
+      }  // for faceIndex
+
+      // save the vertices of each face
+      items = totalFaceVertices;
+      if (pass == WRITE_TO_DISK)
+        items = fwrite(verticesArray, sizeof(unsigned int), totalFaceVertices, binaryOutputStream);
+      if (items != totalFaceVertices)
+        return 1;
+      bytes += items * sizeof(unsigned int);
+
+      items = totalFaceVertices;
+      if (pass == WRITE_TO_DISK)
+        items = fwrite(textureCoordinateIndexArray, sizeof(unsigned int), totalFaceVertices, binaryOutputStream);
+      if (items != totalFaceVertices)
+        return 1;
+      bytes += items * sizeof(unsigned int);
+
+      items = totalFaceVertices;
+      if (pass == WRITE_TO_DISK)
+        items = fwrite(normalIndexArray, sizeof(unsigned int), totalFaceVertices, binaryOutputStream);
+      if (items != totalFaceVertices)
+        return 1;
+      bytes += items * sizeof(unsigned int);
+
+      free(verticesArray);
+      free(textureCoordinateIndexArray);
+      free(normalIndexArray);
+
+    }  // for groupIndex
+
+    if (pass == COUNT_BYTES)
+      totalBytes = bytes;
+  } // for pass
+
+  if (bytesWritten != NULL)
+    *bytesWritten = totalBytes;
+  else
+    if (countBytesOnly)
+    {
+      printf("Warning in ObjMesh::saveToBinary: 'bytesWritten' is set to NULL while 'countBytesOnly' is set true.\n");
+      return 2;
+    }
+  
+  return 0;
+}
+
+void ObjMesh::save(const string & filename, int outputMaterials, fileFormatType fileFormat, int verbose) const
+{
+  switch(fileFormat)
+  {
+    case ASCII:
+      saveToAscii(filename, outputMaterials, verbose);
+      break;
+    
+    case BINARY:
+        saveToBinary(filename, outputMaterials, verbose);
+      break;
+
+    default:
+      printf("Error in ObjMesh::save: file format is unknown.\n");
+      break;
+  }
+}
+
+void ObjMesh::saveToAscii(const string & filename, int outputMaterials, int verbose) const
 {
   string materialFilename;
   string materialFilenameLocal;
@@ -1334,12 +1936,19 @@ ObjMesh * ObjMesh::extractGroup(unsigned int groupID, int keepOnlyUsedNormals, i
   output->addGroup(s);
 
   // set material for the extracted group
-  unsigned int newGroupIndex = output->groups.size() - 1;
-  if (newGroupIndex < 0)
+  //unsigned int newGroupIndex = output->groups.size() - 1;
+  //if (newGroupIndex < 0)
+  //{
+  //  printf("Error: failed to add a new group to the mesh.\n");
+  //  exit(0);
+  //}
+  if (output->groups.size() == 0)
   {
     printf("Error: failed to add a new group to the mesh.\n");
     exit(0);
   }
+  unsigned int newGroupIndex = output->groups.size() - 1;
+
   output->groups[newGroupIndex].setMaterialIndex(groups[groupID].getMaterialIndex());
 
   // add faces to the group
@@ -1508,19 +2117,18 @@ double ObjMesh::computeVolume() const
     {
       ObjMesh::Face face = groups[i].getFace(iFace); // get face whose number is iFace
 
-      if (face.getNumVertices() != 3)
-        cout << "Warning: encountered a face (group=" << i << ",face=" << iFace << ") which is not a triangle." << endl;
+      for (unsigned int iVertex = 0; iVertex < face.getNumVertices() - 2; iVertex++)
+      {
+        // base vertex
+        Vec3d v0 = getPosition(face.getVertex(0));
+        Vec3d v1 = getPosition(face.getVertex(iVertex+1));
+        Vec3d v2 = getPosition(face.getVertex(iVertex+2));
 
-      // base vertex
-      Vec3d v0 = getPosition(face.getVertex(0));
-      Vec3d v1 = getPosition(face.getVertex(1));
-      Vec3d v2 = getPosition(face.getVertex(2));
+        Vec3d normal = cross(v1-v0, v2-v0);
+        Vec3d center = 1.0 / 3 * (v0 + v1 + v2);
 
-      Vec3d normal = cross(v1-v0, v2-v0);
-      Vec3d center = 1.0 / 3 * (v0 + v1 + v2);
-
-      volume += dot(normal,center);
-
+        volume += dot(normal, center);
+      }
     }
   }
   
@@ -2599,21 +3207,21 @@ void ObjMesh::dirname(const char * path, char * result)
   }
 }
 
-void ObjMesh::parseMaterials(const char * objMeshFilename, const char * materialFilename, int verbose)
+void ObjMesh::parseMaterials(const std::string & objMeshFilename, const std::string & materialFilename, int verbose)
 {
   FILE * file;
-  char buf[128];
-  unsigned int numMaterials;
+  //char buf[128];
+  //unsigned int numMaterials;
   
   char objMeshFilenameCopy[4096];
-  strcpy(objMeshFilenameCopy, objMeshFilename);
+  strcpy(objMeshFilenameCopy, objMeshFilename.c_str());
 
   char dir[4096];
   dirname(objMeshFilenameCopy,dir);
   char filename[4096];
   strcpy(filename, dir);
   strcat(filename, "/");
-  strcat(filename, materialFilename);
+  strcat(filename, materialFilename.c_str());
 
   file = fopen(filename, "r");
   if (!file) 
@@ -2625,34 +3233,6 @@ void ObjMesh::parseMaterials(const char * objMeshFilename, const char * material
     throw ObjMeshException(message);
   }
   
-  /* count the number of materials in the file */
-  numMaterials = 1;
-  while(fscanf(file, "%s", buf) != EOF) 
-  {
-    switch(buf[0]) 
-    {
-      case '#': 
-        //
-        // eat up rest of line 
-        fgets_(buf, sizeof(buf), file);
-      break;
-
-      case 'n':
-        // newmtl 
-        fgets_(buf, sizeof(buf), file);
-        numMaterials++;
-        sscanf(buf, "%s %s", buf, buf);
-      break;
-
-      default:
-        /* eat up rest of line */
-        fgets_(buf, sizeof(buf), file);
-      break;
-    }
-  }
-  
-  rewind(file);
-    
   double Ka[3];
   double Kd[3];
   double Ks[3];
@@ -2660,20 +3240,21 @@ void ObjMesh::parseMaterials(const char * objMeshFilename, const char * material
   string matName;
   string textureFile = string();
 
-  /* now, read in the data */
-  numMaterials = 0;
+  // now, read in the data 
+  char buf[4096];
+  unsigned int numMaterials = 0;
   while(fscanf(file, "%s", buf) != EOF) 
   {
     switch(buf[0]) 
     {
       case '#':
-        /* comment */
-        /* ignore the rest of line */
+        // comment 
+        // ignore the rest of line
         fgets_(buf, sizeof(buf), file);
       break;
 
       case 'n':               
-        /* newmtl */
+        // newmtl
         if (numMaterials >= 1) // flush previous material
           addMaterial(matName, Vec3d(Ka[0], Ka[1], Ka[2]), Vec3d(Kd[0], Kd[1], Kd[2]), Vec3d(Ks[0], Ks[1], Ks[2]), shininess, textureFile);
 
@@ -2694,12 +3275,12 @@ void ObjMesh::parseMaterials(const char * objMeshFilename, const char * material
         if (buf[1] == 's')
         {
           if (fscanf(file, "%lf", &shininess) < 1)
-            printf("Warning: bad file syntax. Unable to read shininess.\n");
+            printf("Warning: incorect mtl file syntax. Unable to read shininess.\n");
           // wavefront shininess is from [0, 1000], so scale for OpenGL 
           shininess *= 128.0 / 1000.0;
         }
         else
-          fgets_(buf, sizeof(buf), file); //eat rest of line
+          fgets_(buf, sizeof(buf), file); // ignore the rest of the line
       break;
 
       case 'K':
@@ -2707,21 +3288,21 @@ void ObjMesh::parseMaterials(const char * objMeshFilename, const char * material
         {
           case 'd':
             if (fscanf(file, "%lf %lf %lf", &Kd[0], &Kd[1], &Kd[2]) < 3)
-              printf("Warning: bad file syntax. Unable to read Kd.\n");
+              printf("Warning: incorect mtl file syntax. Unable to read Kd.\n");
           break;
 
           case 's':
             if (fscanf(file, "%lf %lf %lf", &Ks[0], &Ks[1], &Ks[2]) < 3)
-              printf("Warning: bad file syntax. Unable to read Ks.\n");
+              printf("Warning: incorect mtl file syntax. Unable to read Ks.\n");
            break;
 
           case 'a':
             if (fscanf(file, "%lf %lf %lf", &Ka[0], &Ka[1], &Ka[2]) < 3)
-              printf("Warning: bad file syntax. Unable to read Ka.\n");
+              printf("Warning: incorect mtl file syntax. Unable to read Ka.\n");
           break;
 
           default:
-            // eat up rest of line 
+            // ignore the rest of the line
             fgets_(buf, sizeof(buf), file);
           break;
         }
@@ -2739,7 +3320,7 @@ void ObjMesh::parseMaterials(const char * objMeshFilename, const char * material
       break;
 
       default:
-        /* eat up rest of line */
+        // ignore the rest of the line
         fgets_(buf, sizeof(buf), file);
       break;
     }
@@ -3511,8 +4092,30 @@ unsigned int ObjMesh::getGroupIndex(const std::string name) const
   return 0;
 }
 
+unsigned int ObjMesh::getMaterialIndex(const std::string name) const
+{
+  int count = 0;
+  for(std::vector<Material>::const_iterator itr = materials.begin(); itr != materials.end(); itr++)
+  {
+    if (itr->getName() == name)
+      return count;
+    count++;
+  }
+
+  std::ostringstream oss;
+  oss << "Invalid material name: '" << name << "'.";
+  throw ObjMeshException(oss.str());
+
+  return 0;
+}
+
 void ObjMesh::removeGroup(const int groupIndex)
 {
+  if ((groupIndex >= (int) groups.size()) || (groupIndex < 0))
+  {
+    printf("Warning: cannot remove group %d. Invalid group number.\n", groupIndex);
+    return;
+  }
   groups[groupIndex] = groups[groups.size() - 1];
   groups.pop_back();
   computeBoundingBox();
@@ -3540,5 +4143,434 @@ int ObjMesh::usesTextureMapping()
     result = result | material->hasTextureFilename();
   }
   return result;
+}
+
+int ObjMesh::loadObjMeshesFromBinary(const std::string & binaryFilename, int * numObjMeshes, ObjMesh *** objMeshes, int verbose)
+{
+  FILE * fin = fopen(binaryFilename.c_str(), "rb");
+  if (fin == NULL)
+  {
+    if (verbose)
+      printf("Error in ObjMesh::loadObjMeshesFromBinary: cannot open %s to load.\n", binaryFilename.c_str());
+    return 1;
+  }
+
+  int code = loadObjMeshesFromBinary(fin, numObjMeshes, objMeshes, verbose);
+
+  for(int objMeshIndex = 0; objMeshIndex < *numObjMeshes; objMeshIndex++)
+    if ((*objMeshes)[objMeshIndex])
+      (*objMeshes)[objMeshIndex]->filename = binaryFilename;
+
+  return code;
+}
+
+int ObjMesh::loadObjMeshesFromBinary(FILE * fin, int * numObjMeshes, ObjMesh *** objMeshes, int verbose)
+{
+  // read the number of obj meshes
+  unsigned int items = fread(numObjMeshes, sizeof(int), 1, fin);
+  if (items != 1)
+    return 1;
+
+  int numMeshes = *numObjMeshes;
+
+  if (verbose)
+    printf("number of obj meshes to be read from binary: %d\n", numMeshes);
+
+  // read how many bytes are stored for every obj mesh
+  unsigned int * bytesWritten = (unsigned int *) calloc (numMeshes, sizeof(unsigned int));
+  items = fread(bytesWritten, sizeof(unsigned int), numMeshes, fin);
+  if ((int)items != numMeshes)
+    return 1;
+
+  if (verbose)
+  {
+    printf("number of bytes for each obj mesh: \n");
+    for(int i=0; i<numMeshes; i++)
+      printf("%u, ", bytesWritten[i]);
+    printf("\n");
+  }
+
+  // compute the total bytes
+  unsigned int totalBytes = 0;
+  for(int i=0; i<numMeshes; i++)
+    totalBytes += bytesWritten[i];
+
+  // allocate memory for obj meshes
+  (*objMeshes) = (ObjMesh **) malloc (sizeof(ObjMesh *) * numMeshes);
+  for (int i=0; i<numMeshes; i++)
+    (*objMeshes)[i] = NULL;
+
+  // read entire block from the memory
+  unsigned char * memory = (unsigned char *) malloc (sizeof(unsigned char) * totalBytes);
+  items = fread(memory, sizeof(unsigned char), totalBytes, fin);
+
+  if (verbose)
+    printf("total bytes excluding header: %u\n", totalBytes);
+
+  // compute the offset for every obj mesh
+  unsigned int * offset = (unsigned int *) calloc (numMeshes, sizeof(unsigned int));
+  for(int i=1; i<numMeshes; i++)
+    offset[i] = offset[i-1] + bytesWritten[i-1];
+
+  // load every obj mesh from memory
+  #ifdef USE_OPENMP
+    #pragma omp parallel for
+  #endif
+  for(int i=0; i<numMeshes; i++)
+  {
+    if (bytesWritten[i] != 0)
+    {
+      unsigned char * location = memory + offset[i];
+      streamType stream = MEMORY_STREAM;
+      int verbose = 0;
+      (*objMeshes)[i] = new ObjMesh((void *)location, stream, verbose);
+    }
+  }
+
+  free(bytesWritten);
+  free(memory);
+  free(offset);
+
+  return 0;
+}
+
+int ObjMesh::loadFromBinary(const std::string & filename_, int verbose)
+{
+  filename = filename_;
+  FILE * binaryInputStream = fopen(filename_.c_str(), "rb");
+  if (binaryInputStream == NULL)
+  {
+    printf("Error in ObjMesh::loadFromBinary: cannot load obj from binary file %s.\n", filename_.c_str());
+    return 1;
+  }
+
+  if (verbose)
+    std::cout << "Parsing .obj file '" << filename << "'." << std::endl;
+
+  streamType stream = FILE_STREAM;
+  int code = loadFromBinary(binaryInputStream, stream, verbose);
+  fclose(binaryInputStream);
+
+  // statistics
+  if (code == 0 && verbose)
+  {
+    std::cout << "Parsed obj file '" << filename << "'; statistics:" << std::endl;
+    std::cout << "   " << groups.size() << " groups," << std::endl;
+    std::cout << "   " << getNumFaces() << " faces," << std::endl;
+    std::cout << "   " << vertexPositions.size() << " vertices," << std::endl;
+    std::cout << "   " << normals.size() << " normals, " << std::endl;
+    std::cout << "   " << textureCoordinates.size() << " texture coordinates, " << std::endl;
+  }
+  return code;
+}
+
+int ObjMesh::loadFromBinary(void * binaryInputStream_, streamType stream, int verbose)
+{
+  unsigned int (*genericRead)(void *, unsigned int, unsigned int, void *);
+  void * binaryInputStream;
+  if (stream == MEMORY_STREAM)
+  {
+    genericRead = &ObjMesh::readFromMemory;
+    binaryInputStream = &(binaryInputStream_); // a wrapper for input stream
+  }
+  else
+  {
+    genericRead = &ObjMesh::readFromFile;
+    binaryInputStream = binaryInputStream_;
+  }
+
+  const unsigned int defaultMaterialIndex = 0;
+  Vec3d defaultKa(0.2,0.2,0.2);
+  Vec3d defaultKd(0.6,0.6,0.6);
+  Vec3d defaultKs(0.0,0.0,0.0);
+  double defaultShininess = 65.0;
+
+  unsigned int totalBytes;
+  unsigned int items = genericRead(&totalBytes, sizeof(unsigned int), 1, binaryInputStream);
+  if (items != 1)
+  {
+    if (verbose)
+      printf("Error in ObjMesh::loadFromBinary: cannot read the number of total bytes.\n");
+    return 1;
+  }
+
+  // important: subtract the bytes used to save totalBytes
+  totalBytes -= sizeof(unsigned int);
+
+  unsigned char * objMeshBuffer;
+  if (stream == FILE_STREAM)
+  {
+    objMeshBuffer = (unsigned char *) malloc (sizeof(unsigned char *) * totalBytes);
+    if (objMeshBuffer == NULL)
+    {
+      if (verbose)
+        printf("Error in ObjMesh::loadFromBinary: cannot allocate buffer to read entire obj mesh.\n");
+      return 1;
+    }
+  }
+  else
+    objMeshBuffer = (unsigned char *) binaryInputStream_; // use current input stream directly, NOT the binaryInputStream wrapper
+
+  if (stream == FILE_STREAM)
+  {
+    items = genericRead(objMeshBuffer, sizeof(unsigned char), totalBytes, binaryInputStream);
+    if (items != totalBytes)
+    {
+        free(objMeshBuffer);
+      if (verbose)
+        printf("Error in ObjMesh::loadFromBinary: cannot read from the binary file.\n");
+      return 1;
+    }
+  }
+
+  void * binaryInputBuffer = &(objMeshBuffer);
+
+  // read whether the mesh has materials or not 
+  int hasMaterials = 0;
+  readFromMemory(&hasMaterials, sizeof(int), 1, binaryInputBuffer);
+  if (!hasMaterials)
+  {
+    // add default material
+    addMaterial(string("default"), defaultKa, defaultKd, defaultKs, defaultShininess);
+  }
+
+  double * doubleVec;
+  if (hasMaterials)
+  {
+    // number of materials
+    unsigned int numObjMaterials;
+    readFromMemory(&numObjMaterials, sizeof(unsigned int), 1, binaryInputBuffer);
+    if (numObjMaterials == 0)
+    {
+      // add default materials
+      addMaterial(string("default"), defaultKa, defaultKd, defaultKs, defaultShininess);
+    }
+
+    // name of the materials
+    for (unsigned int materialIndex=0; materialIndex < numObjMaterials; materialIndex++)
+    {
+      // the length of current material name
+      unsigned int strLength;
+      readFromMemory(&strLength, sizeof(unsigned int), 1, binaryInputBuffer);
+
+      // material name
+      char * materialName = (char *) malloc (sizeof(char) * (strLength + 1));
+      readFromMemory(materialName, sizeof(char), strLength, binaryInputBuffer);
+      materialName[strLength] = '\0';
+
+      // add a new material
+      addMaterial(materialName, defaultKa, defaultKd, defaultKs, defaultShininess);
+    }
+
+    // material properties
+    // Ka, Kd, Ks, each of which has 3 doubles, plus Ns, a double
+    // So there are 10 doubles for every material
+    const int numDoubles = 10;
+    doubleVec = (double *) malloc (sizeof(double) * numDoubles * numObjMaterials);
+    readFromMemory(doubleVec, sizeof(double), numDoubles * numObjMaterials, binaryInputBuffer);
+    for (unsigned int materialIndex=0; materialIndex < numObjMaterials; materialIndex++)
+    {
+      unsigned int offset = materialIndex * numDoubles;
+      Vec3d Ka(&doubleVec[offset]);
+      Vec3d Kd(&doubleVec[offset+3]);
+      Vec3d Ks(&doubleVec[offset+6]);
+      double shininess = doubleVec[offset+9];
+      materials[materialIndex].setKa(Ka);
+      materials[materialIndex].setKd(Kd);
+      materials[materialIndex].setKs(Ks);
+      materials[materialIndex].setShininess(shininess);
+    }
+    free(doubleVec);
+
+    // number of materials which have map_Kd images
+    unsigned int numMaterialsHasKdImages;
+    readFromMemory(&numMaterialsHasKdImages, sizeof(unsigned int), 1, binaryInputBuffer);
+    for (unsigned int materialIndex=0; materialIndex < numMaterialsHasKdImages; materialIndex++)
+    {
+      // the material ID
+      unsigned int materialID;
+      readFromMemory(&materialID, sizeof(unsigned int), 1, binaryInputBuffer);
+
+      // material image
+      unsigned int strLength;
+      readFromMemory(&strLength, sizeof(unsigned int), 1, binaryInputBuffer);
+      char textureFilename[4096];
+      readFromMemory(textureFilename, sizeof(char), strLength, binaryInputBuffer);
+      textureFilename[strLength] = '\0';
+
+      // set the image
+      materials[materialID].setTextureFilename(textureFilename);
+    }  // for materialIndex
+  }  // if (hasMaterials)
+
+  // the number of vertices
+  unsigned int numVertices;
+  readFromMemory(&numVertices, sizeof(unsigned int), 1, binaryInputBuffer);
+
+  // vertices
+  doubleVec = (double *) malloc (sizeof(double) * numVertices * 3);
+  readFromMemory(doubleVec, sizeof(double), numVertices * 3, binaryInputBuffer);
+  for(unsigned int vertexIndex=0; vertexIndex < numVertices; vertexIndex++)
+  {
+    unsigned int offset = vertexIndex * 3;
+    Vec3d pos(doubleVec[offset], doubleVec[offset+1], doubleVec[offset+2]);
+    vertexPositions.push_back(pos);
+  }
+  free(doubleVec);
+
+  // the number of texture coordinates
+  unsigned int numTexCoordinates;
+  readFromMemory(&numTexCoordinates, sizeof(unsigned int), 1, binaryInputBuffer);
+
+  // texture coordinates
+  if (numTexCoordinates > 0)
+  {
+    doubleVec = (double *) malloc (sizeof(double) * numTexCoordinates * 3);
+    readFromMemory(doubleVec, sizeof(double), numTexCoordinates * 3, binaryInputBuffer);
+    for(unsigned int textureCoordinateIndex=0; textureCoordinateIndex < numTexCoordinates; textureCoordinateIndex++)
+    {
+      unsigned int offset = textureCoordinateIndex * 3;
+      Vec3d tex(doubleVec[offset], doubleVec[offset+1], doubleVec[offset+2]);
+      textureCoordinates.push_back(tex);
+    }
+    free(doubleVec);
+  }
+
+  // the number of normals
+  unsigned int numNormals;
+  readFromMemory(&numNormals, sizeof(unsigned int), 1, binaryInputBuffer);
+
+  // normals
+  if (numNormals > 0)
+  {
+    doubleVec = (double *) malloc (sizeof(double) * numNormals * 3);
+    readFromMemory(doubleVec, sizeof(double), numNormals * 3, binaryInputBuffer);
+    for(unsigned int normalIndex=0; normalIndex < numNormals; normalIndex++)
+    {
+      unsigned int offset = normalIndex * 3;
+      Vec3d normal(doubleVec[offset], doubleVec[offset+1], doubleVec[offset+2]);
+      normals.push_back(normal);
+    }
+    free(doubleVec);
+  }
+
+  // the number of groups
+  unsigned int numGroups;
+  readFromMemory(&numGroups, sizeof(unsigned int), 1, binaryInputBuffer);
+
+  // groups and faces
+  for(unsigned int groupIndex=0; groupIndex < numGroups; groupIndex++)
+  {
+    // group name
+    unsigned int strLength;
+    readFromMemory(&strLength, sizeof(unsigned int), 1, binaryInputBuffer);
+    char groupName[4096];
+    readFromMemory(groupName, sizeof(char), strLength, binaryInputBuffer);
+    groupName[strLength] = '\0';
+
+    // group material index
+    if (hasMaterials)
+    {
+      // material index
+      unsigned int materialIndex;
+      readFromMemory(&materialIndex, sizeof(unsigned int), 1, binaryInputBuffer);
+      groups.push_back(Group(groupName, materialIndex));
+    }
+    else
+    {
+      // use default material
+      groups.push_back(Group(groupName, defaultMaterialIndex));
+    }
+
+    // the number of faces of the current group
+    unsigned int numFaces;
+    readFromMemory(&numFaces, sizeof(unsigned int), 1, binaryInputBuffer);
+
+    // the number of vertices in every face
+    unsigned int * numFaceVerticesArray = (unsigned int *) malloc (sizeof(unsigned int) * numFaces);
+    readFromMemory(numFaceVerticesArray, sizeof(unsigned int), numFaces, binaryInputBuffer);
+
+    unsigned int totalFaceVertices = 0;
+    for (unsigned int faceIndex=0; faceIndex < numFaces; faceIndex++)
+      totalFaceVertices += numFaceVerticesArray[faceIndex];
+
+    // vertex indices of every face in the current group
+    unsigned int * vertexArray = (unsigned int *) malloc (sizeof(unsigned int) * totalFaceVertices);
+    readFromMemory(vertexArray, sizeof(unsigned int), totalFaceVertices, binaryInputBuffer);
+
+    // texture coordinate indices of every face in the current group
+    unsigned int * texCoordinateArray = (unsigned int *) malloc (sizeof(unsigned int) * totalFaceVertices);
+    readFromMemory(texCoordinateArray, sizeof(unsigned int), totalFaceVertices, binaryInputBuffer);
+
+    // normal indices of every face in the current group
+    unsigned int * normalArray = (unsigned int *) malloc (sizeof(unsigned int) * totalFaceVertices);
+    readFromMemory(normalArray, sizeof(unsigned int), totalFaceVertices, binaryInputBuffer);
+
+    unsigned int vertexCount = 0;
+    for (unsigned int faceIndex=0; faceIndex < numFaces; faceIndex++)
+    {
+      Face currentFace;
+      for (unsigned int vertexIndex=0; vertexIndex < numFaceVerticesArray[faceIndex]; vertexIndex++)
+      {
+        unsigned int pos = vertexArray[vertexCount] - 1; // 0-indexed
+        std::pair< bool, unsigned int > texPos;
+        std::pair< bool, unsigned int > normal;
+
+        if (texCoordinateArray[vertexCount] == 0)  // no texture coordinate index
+        {
+          texPos.first = false;
+          texPos.second = 0;  
+        }
+        else
+        {
+          texPos.first = true;
+          texPos.second = texCoordinateArray[vertexCount] - 1; 
+        }
+
+        if (normalArray[vertexCount] == 0)  // no normal index
+        {
+          normal.first = false;
+          normal.second = 0;  
+        }
+        else
+        {
+          normal.first = true;
+          normal.second = normalArray[vertexCount] - 1;
+        }
+        currentFace.addVertex(Vertex(pos, texPos, normal));
+
+        vertexCount++;
+      }  // for vertexIndex (current face)
+
+      groups[groupIndex].addFace(currentFace);
+    }
+
+    free(numFaceVerticesArray);
+    free(vertexArray);
+    free(texCoordinateArray);
+    free(normalArray);
+  }  // for groupIndex
+
+  // search if there is a "default" material, if not, add it
+  addDefaultMaterial();
+
+  if (stream == FILE_STREAM)
+    free(objMeshBuffer);
+
+  return 0;
+}
+
+unsigned int ObjMesh::readFromMemory(void * buf, unsigned int elementSize, unsigned int numElements, void * memoryLocation_)
+{
+  unsigned char * memoryLocation = (unsigned char *)(*(void **)(memoryLocation_));
+  unsigned int numBytes = elementSize * numElements;
+  memcpy(buf, memoryLocation, numBytes);
+  (*(void **)(memoryLocation_)) = (void *)((unsigned char *)(*(void **)(memoryLocation_)) + numBytes);
+  return numElements;
+}
+
+unsigned int ObjMesh::readFromFile(void * buf, unsigned int elementSize, unsigned int numElements, void * fin)
+{
+  return fread(buf, elementSize, numElements, (FILE*)fin);
 }
 

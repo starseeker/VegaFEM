@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "openGLHelper" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC   *
+ * "openGLHelper" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC   *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -34,7 +34,7 @@
 
 /* Write a screenshot to the specified filename */
 
-void Screenshot::SaveScreenshot(char * filename, ImageIO::fileFormatType fileFormat, int windowWidth, int windowHeight)
+void Screenshot::SaveScreenshot(const char * filename, ImageIO::fileFormatType fileFormat, int windowWidth, int windowHeight)
 {
   if (filename == NULL)
     return;
@@ -43,8 +43,8 @@ void Screenshot::SaveScreenshot(char * filename, ImageIO::fileFormatType fileFor
 
   unsigned char * pixels = (unsigned char*) malloc (sizeof(unsigned char) * 3 * windowWidth * windowHeight);
 
-  for (int i=windowHeight-1; i>=0; i--) 
-    glReadPixels(0, windowHeight-1-i, windowWidth, 1, GL_RGB, GL_UNSIGNED_BYTE, &pixels[3 * windowWidth * i]);
+  for (int i=0; i<windowHeight; i++)
+    glReadPixels(0, i, windowWidth, 1, GL_RGB, GL_UNSIGNED_BYTE, &pixels[3 * windowWidth * i]);
 
   ImageIO imageIO(windowWidth, windowHeight, 3, pixels);
   ImageIO::errorType errorCode = imageIO.save(filename, fileFormat);
@@ -57,7 +57,7 @@ void Screenshot::SaveScreenshot(char * filename, ImageIO::fileFormatType fileFor
   free(pixels);
 }
 
-void Screenshot::SaveStencilBuffer(char *filename, ImageIO::fileFormatType fileFormat, int windowWidth, int windowHeight, int rescale)
+void Screenshot::SaveStencilBuffer(const char *filename, ImageIO::fileFormatType fileFormat, int windowWidth, int windowHeight, int rescale)
 {
   if (filename == NULL)
     return;

@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC    *
+ * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -28,7 +28,11 @@
 
 #include "sceneObjectReducedCPU6DOF.h"
 
-SceneObjectReducedCPU6DOF::SceneObjectReducedCPU6DOF(char * filenameOBJ, ModalMatrix * modalMatrix): SceneObjectWithRestPosition(filenameOBJ), SceneObjectReduced(filenameOBJ, modalMatrix), SceneObjectReducedCPU(filenameOBJ, modalMatrix), SceneObjectReduced6DOF(filenameOBJ, modalMatrix)
+SceneObjectReducedCPU6DOF::SceneObjectReducedCPU6DOF(const char * filenameOBJ, ModalMatrix * modalMatrix): SceneObjectWithRestPosition(filenameOBJ), SceneObjectReduced(filenameOBJ, modalMatrix), SceneObjectReducedCPU(filenameOBJ, modalMatrix), SceneObjectReduced6DOF(filenameOBJ, modalMatrix)
+{
+}
+
+SceneObjectReducedCPU6DOF::SceneObjectReducedCPU6DOF(ObjMesh * objMesh, ModalMatrix * modalMatrix, bool deepCopy): SceneObjectWithRestPosition(objMesh, deepCopy), SceneObjectReduced(objMesh, modalMatrix, deepCopy), SceneObjectReducedCPU(objMesh, modalMatrix, deepCopy), SceneObjectReduced6DOF(objMesh, modalMatrix, deepCopy)
 {
 }
 

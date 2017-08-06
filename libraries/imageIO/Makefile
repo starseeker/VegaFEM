@@ -31,7 +31,7 @@ $(L)/imageIO/libimageIO.a: $(IMAGEIO_OBJECTS_FILENAMES)
 	ar r $@ $^; cp $@ $(L)/lib; cp $(L)/imageIO/*.h $(L)/include
 
 $(IMAGEIO_OBJECTS_FILENAMES): %.o: %.cpp $(IMAGEIO_LIB_FILENAMES) $(IMAGEIO_HEADER_FILENAMES)
-	$(CXX) $(CXXFLAGS) -c $(INCLUDE) $(IMAGE_INCLUDE) $< -o $@
+	$(CXX) $(CXXFLAGS) -c -I$(LIBRARIES_DIR)/include $(IMAGE_INCLUDE) $< -o $@
 
 ifeq ($(CLEANFOLDER), IMAGEIO)
 clean: cleanimageIO

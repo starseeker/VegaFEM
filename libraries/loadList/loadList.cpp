@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "loadList" library , Copyright (C) 2007 CMU, 2009 MIT                 *
  * All rights reserved.                                                  *
@@ -51,7 +51,7 @@ int compareLoadList(const void * a, const void * b)
   return ( *(int*)a - *(int*)b );
 }
 
-int LoadList::load(char * filename, int * numListEntries, int ** listEntries, int offset)
+int LoadList::load(const char * filename, int * numListEntries, int ** listEntries, int offset)
 {
    // comma-separated text file of fixed vertices
   FILE * fin;
@@ -121,14 +121,14 @@ void LoadList::sort(int numListEntries, int * listEntries)
   qsort(listEntries,numListEntries,sizeof(int),loadListComparator);
 }
 
-int LoadList::save(char * filename, int numListEntries, int * listEntries, int offset)
+int LoadList::save(const char * filename, int numListEntries, int * listEntries, int offset)
 {
   // comma-separated text file of fixed vertices
   FILE * fout;
   fout = fopen(filename, "w");
   if (!fout)
   {
-    printf("Error: could not open boundary vertices specification file %s.\n",filename);
+    printf("Error: could not open list file %s.\n",filename);
     return 1;
   }
 
@@ -154,5 +154,125 @@ void LoadList::print(int numListEntries, int * listEntries)
       printf("\n");
   }
   printf("\n"); fflush(NULL);
+}
+
+int LoadList::loadBinary(const char * filename, int * numListEntries, int ** listEntries, int offset)
+{
+  FILE * fin;
+  fin = fopen(filename, "rb");
+  if (!fin)
+  {
+    printf("Error: could not open list file %s.\n",filename);
+    return 1;
+  }
+
+  int code = loadBinary(fin, numListEntries, listEntries, offset);
+  fclose(fin);
+  return code;
+}
+
+int LoadList::loadBinary(FILE * fin, int * numListEntries, int ** listEntries, int offset)
+{
+  int item = fread(numListEntries, sizeof(int), 1, fin);
+  if (item != 1)
+  {
+    printf("Error: could not read the number of list entries.\n");
+    return 1;
+  }
+  *listEntries = (int*) malloc (sizeof(int) * (*numListEntries));
+
+  for(int nv=0; nv < *numListEntries; nv++)
+  {
+    item = fread(&(*listEntries)[nv], sizeof(int), 1, fin);
+    if (item != 1)
+    {
+      printf("Error: could not read the list entry %d.\n", nv);
+      return 1;
+    }
+  }
+
+  for(int nv=0; nv < *numListEntries; nv++)
+    (*listEntries)[nv] -= offset;
+
+  return 0;
+}
+
+int LoadList::saveBinary(const char * filename, int numListEntries, int * listEntries, int offset)
+{
+  FILE * fout;
+  fout = fopen(filename, "wb");
+  if (!fout)
+  {
+    printf("Error: could not open list file %s.\n",filename);
+    return 1;
+  }
+
+  int code = saveBinary(fout, numListEntries, listEntries, offset);
+  fclose(fout);
+  return code;
+}
+
+int LoadList::saveBinary(FILE * fout, int numListEntries, int * listEntries, int offset)
+{
+  fwrite(&numListEntries, sizeof(int), 1, fout);
+
+  for(int nv=0; nv < numListEntries; nv++)
+  {
+    int value = listEntries[nv] + offset;
+    fwrite(&value, sizeof(int), 1, fout);
+  }
+
+  return 0;
+}
+
+// loads/saves multiple lists to one binary file
+int LoadList::loadBinaryMulti(const char * filename, int * numLists, int ** numListEntries, int *** listEntries, int offset)
+{
+  FILE * fin;
+  fin = fopen(filename, "rb");
+  if (!fin)
+  {
+    printf("Error: could not open list file %s.\n",filename);
+    return 1;
+  }
+
+  int item = fread(numLists, sizeof(int), 1, fin);
+  if (item != 1)
+  {
+    printf("Error: could not read the number of list.\n");
+    return 1;
+  }
+
+  *numListEntries = (int*) malloc (sizeof(int) * *numLists);
+  *listEntries = (int**) malloc (sizeof(int*) * *numLists);
+
+  int code = 0;
+  for(int i=0; i<*numLists; i++)
+    code = code || loadBinary(fin, &((*numListEntries)[i]), &((*listEntries)[i]), offset);
+
+  fclose(fin);
+
+  return code;
+}
+
+int LoadList::saveBinaryMulti(const char * filename, int numLists, int * numListEntries, int ** listEntries, int offset)
+{
+  FILE * fout;
+  fout = fopen(filename, "wb");
+  if (!fout)
+  {
+    printf("Error: could not open list file %s.\n",filename);
+    return 1;
+  }
+
+  fwrite(&numLists, sizeof(int), 1, fout);
+
+  int code = 0;
+  for(int i=0; i<numLists; i++)
+    code = code || saveBinary(fout, numListEntries[i], listEntries[i], offset);
+
+  fclose(fout);
+
+  return code;
 }
 

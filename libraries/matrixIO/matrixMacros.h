@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "matrix" library , Copyright (C) 2007 CMU, 2009 MIT                   *
  * All rights reserved.                                                  *
@@ -35,7 +35,13 @@
   #define ELT(numRows,i,j) (((long)j)*((long)numRows)+((long)i))
 #endif
 
-#define MIN(x,y) ((x)<(y) ? (x) : (y))
-#define MAX(x,y) ((x)>(y) ? (x) : (y))
+#ifndef MIN
+  #define MIN(x,y) ((x)<(y) ? (x) : (y))
+#endif
+
+#ifndef MAX
+  #define MAX(x,y) ((x)>(y) ? (x) : (y))
+#endif
+
 
 #endif

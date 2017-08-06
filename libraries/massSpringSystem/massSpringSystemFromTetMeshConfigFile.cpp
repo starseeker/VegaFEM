@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "massSpringSystem" library, Copyright (C) 2007 CMU, 2009 MIT,         *
- *                                           2013 USC                    *
+ *                                           2014 USC                    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -32,7 +32,7 @@
 #include "massSpringSystemFromTetMesh.h"
 #include "massSpringSystemFromTetMeshConfigFile.h"
 
-char * MassSpringSystemFromTetMeshConfigFile::DuplicateString(char * s)
+char * MassSpringSystemFromTetMeshConfigFile::DuplicateString(const char * s)
 {
   // strdup sometimes didn't work well, so we used this
   char * p = (char*) malloc (sizeof(char) * (strlen(s) + 1));
@@ -40,7 +40,7 @@ char * MassSpringSystemFromTetMeshConfigFile::DuplicateString(char * s)
   return p;
 }
 
-int MassSpringSystemFromTetMeshConfigFile::GenerateMassSpringSystem(char * configFilename, MassSpringSystem ** massSpringSystem, MassSpringSystemTetMeshConfiguration * massSpringSystemTetMeshConfiguration)
+int MassSpringSystemFromTetMeshConfigFile::GenerateMassSpringSystem(const char * configFilename, MassSpringSystem ** massSpringSystem, MassSpringSystemTetMeshConfiguration * massSpringSystemTetMeshConfiguration)
 {
   char tetMeshFilename[4096];
   char surfaceMeshFilename[4096];

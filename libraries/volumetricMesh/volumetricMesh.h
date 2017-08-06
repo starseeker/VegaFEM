@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -59,7 +59,7 @@ class VolumetricMesh
 {
 public:
 
-  // Note: This class is abstract and cannot be instantiated; use the constructors in the derived classes (TetMesh, CubicMesh) to initialize a mesh
+  // Note: This class is abstract and cannot be instantiated; use the constructors in the derived classes (TetMesh, CubicMesh) to initialize a mesh, or use the load routine in volumetricMeshLoader.h
 
   // copy constructor, destructor
   VolumetricMesh(const VolumetricMesh & volumetricMesh);
@@ -74,10 +74,19 @@ public:
   // === save/export ===
 
   // saves the mesh to a text file (.veg file format, see examples and documentation)
-  virtual int save(char * filename) const = 0; 
+  virtual int saveToAscii(const char * filename) const = 0; 
+  virtual int save(const char * filename) const; // for backward compatibility (just calls saveToAscii)
+
+  // saves the mesh to binary format
+  // returns: 0 = success, non-zero = error
+  // output: if bytesWritten is non-NULL, it will contain the number of bytes written 
+  virtual int saveToBinary(const char * filename, unsigned int * bytesWritten = NULL) const = 0;
+  // if countBytesOnly = true, user can pass NULL to binaryOutputStream
+  virtual int saveToBinary(FILE * binaryOutputStream, unsigned int * bytesWritten = NULL, bool countBytesOnly = false) const = 0;
+
   // exports the mesh geometry to an .ele and .node file (TetGen and Stellar format)
   // if includeRegions=1, an extra column is added to output, identifying the region of each element
-  int exportToEle(char * baseFilename, int includeRegions=0) const;
+  int exportToEle(const char * baseFilename, int includeRegions=0) const;
   // exports the mesh geometry to memory arrays (say, for external usage)
   // all parameters are output parameters
   // vertices and elements will be allocated inside the routine
@@ -86,9 +95,13 @@ public:
   // === vertex and element access ===
 
   typedef enum { INVALID, TET, CUBIC } elementType;
+  typedef enum { ASCII, BINARY, NUM_FILE_FORMATS } fileFormatType; // ASCII is the text .veg format, BINARY is the binary .vegb format
   // opens the file and returns the element type of the volumetric mesh in the file; returns INVALID if no type information found
-  static elementType getElementType(char * filename); 
+  static elementType getElementType(const char * filename, fileFormatType fileFormat = ASCII); 
   virtual elementType getElementType() const = 0; // calls the derived class to identify itself
+  // advanced usage: returns the element type of the volumetric mesh from a BINARY stream (does not modify fin)
+  //static elementType getElementType(FILE * fin);
+  static elementType getElementType(void * fin, int memoryLoad = 0);
 
   inline int getNumVertices() const { return numVertices; }
   inline Vec3d * getVertex(int i) const { return vertices[i]; }
@@ -128,7 +141,8 @@ public:
   virtual double getElementVolume(int el) const = 0;
   void getVertexVolumes(double * vertexVolumes) const; // compute the volume "belonging" to each vertex
   virtual void getElementInertiaTensor(int el, Mat3d & inertiaTensor) const = 0; // returns the inertia tensor of a single element, around its center of mass, with unit density
-  void getInertiaParameters(double & mass, Vec3d & centerOfMass, Mat3d & inertiaTensor) const ; // center of mass and inertia tensor for the entire mesh
+  double getMass() const; // compute the total mass of the mesh, using the mass density material information
+  void getInertiaParameters(double & mass, Vec3d & centerOfMass, Mat3d & inertiaTensor) const ; // mass, center of mass and inertia tensor for the entire mesh
 
   // centroid is the geometric center of all vertices; radius is the tightest fitting sphere centered at the centroid
   void getMeshGeometricParameters(Vec3d & centroid, double * radius) const;
@@ -165,32 +179,42 @@ public:
   // === interpolation ===
 
   // the interpolant is a triple (numTargetLocations, vertices, weights)
-
   // Generates interpolation weights to transfer quantities from volumetric mesh to (embedded) surface meshes.
   // Input is a list of 3D target locations where the interpolant will be computed,
   // e.g., those could be vertices of a triangle mesh embedded into the volumetric mesh.
-  // Each location is a 3-vector, i.e., 3 consecutive double-precision vectors.
+  // Each location is a 3-vector, i.e., 3 consecutive double-precision values.
   // If zeroThreshold is set positive, than for any target location that is 
-  //   more than zeroThreshold away from the closest voxel, 
+  //   more than zeroThreshold away from the closest element, 
   //   all weights will be set to zero; this is useful, e.g. to 
-  //   stabilize locations far away from your mesh.
+  //   fix locations far away from your mesh.
   // Output: vertices and weights arrays
-  // vertices: gives a list of integer indicies of the vertices of the element
+  // vertices: gives a list of integer indices of the vertices of the element
   //   closest to the target location (numElementVertices entries per target location, one for each element vertex)
   //   note: if target location is inside a voxel, that voxel will be chosen as closest
   // weights: a list of numElementVertices_ weights, as per the numElementVertices_ vertices of each element (weights sum to 1)
   // If zeroThreshold >= 0, then the points that are further than zeroThreshold away from any volumetric mesh vertex, are assigned weights of 0.
-  // If closestElementList is not NULL, the closest elements will be returned in the vector "closestElementList".
-  // Returns the number of target points which do not lie inside any element.
-  int generateInterpolationWeights(int numTargetLocations, double * targetLocations, int ** vertices, double ** weights, 
-	double zeroThreshold = -1.0, std::vector<int> * closestElementList = NULL, int verbose=0) const;  
-  static int getNumInterpolationElementVertices(char * filename); // looks at the first line of "filename" to determine "numElementVertices" for this particular interpolant
-  static int loadInterpolationWeights(char * filename, int numTargetLocations, int numElementVertices, int ** vertices, double ** weights); // returns 0 on success
-  static int saveInterpolationWeights(char * filename, int numTargetLocations, int numElementVertices, int * vertices, double * weights);
+  // If elements is not NULL, the closest elements for each target location will be returned in the integer list "*elements" (allocated inside the function)
+  // If elements is not NULL, the function will allocate an integer array *elements, and return the closest element to each target location in it.
+  // Returns the number of target points that do not lie inside any element.
+  int generateInterpolationWeights(int numTargetLocations, double * targetLocations, int ** vertices, double ** weights, double zeroThreshold = -1.0, int ** elements = NULL, int verbose=0) const; // this is the "master" function, meant to be typically used to create the interpolant
+
   // interpolates 3D vector data from vertices of the 
   //   volumetric mesh (data given in u) to the target locations (output goes into uTarget)
   //   e.g., use this to interpolate deformation from the volumetric mesh to a triangle mesh
   static void interpolate(double * u, double * uTarget, int numTargetLocations, int numElementVertices, int * vertices, double * weights);
+
+  // the following are less often used, more specialized functions
+  // same as "generateInterpolationWeights" above, except here the elements that contain the target locations are assumed to be known, and are provided in array "elements"; returns 0 on success, 1 otherwise
+  int generateInterpolationWeights(int numTargetLocations, double * targetLocations, int * elements, int ** vertices, double ** weights, double zeroThreshold = -1.0, int verbose=0) const; 
+  // generates the integer list "elements" of the elements that contain given vertices; if closestElementIfOutside==1, then vertices outside of the mesh are assigned the closest element, otherwise -1 is assigned; returns the number of target locations outside of the mesh
+  int generateContainingElements(int numTargetLocations, double * targetLocations, int ** elements, int useClosestElementIfOutside=1, int verbose=0) const; 
+  static int getNumInterpolationElementVertices(const char * filename); // looks at the first line of "filename" to determine "numElementVertices" for this particular interpolant
+  static int loadInterpolationWeights(const char * filename, int numTargetLocations, int numElementVertices, int ** vertices, double ** weights); // ASCII version; returns 0 on success
+  static int saveInterpolationWeights(const char * filename, int numTargetLocations, int numElementVertices, int * vertices, double * weights); // ASCII version
+  static int loadInterpolationWeightsBinary(const char * filename, int * numTargetLocations, int * numElementVertices, int ** vertices, double ** weights); // binary version; returns 0 on success
+  static int saveInterpolationWeightsBinary(const char * filename, int numTargetLocations, int numElementVertices, int * vertices, double * weights); // binary version
+  static int loadInterpolationWeightsBinary(FILE * fin, int * numTargetLocations, int * numElementVertices, int ** vertices, double ** weights); // binary version; returns 0 on success
+  static int saveInterpolationWeightsBinary(FILE * fout, int numTargetLocations, int numElementVertices, int * vertices, double * weights); // binary version
 
   // computes barycentric weights of the given position with respect to the given element
   virtual void computeBarycentricWeights(int element, Vec3d pos, double * weights) const = 0;
@@ -241,10 +265,15 @@ public:
     inline void setName(const std::string name);
     inline void setDensity(double density);
 
-    // ENU = any material parameterized by E (Young's modulus), nu (Poisson's ratio)
+    // ENU = any isotropic material parameterized by E (Young's modulus), nu (Poisson's ratio)
+    // ORTHOTROPIC = orthotropic anisotropic material
     // MOONEYRIVLIN = Mooney-Rivlin material
-    typedef enum { INVALID, ENU, MOONEYRIVLIN } materialType;
+    typedef enum { INVALID, ENU, ORTHOTROPIC, MOONEYRIVLIN } materialType;
     virtual materialType getType() = 0;
+
+    typedef enum { ENU_DENSITY, ENU_E, ENU_NU, ENU_NUM_PROPERTIES } enuMaterialProperties;
+    typedef enum { ORTHOTROPIC_DENSITY, ORTHOTROPIC_E1, ORTHOTROPIC_E2, ORTHOTROPIC_E3, ORTHOTROPIC_NU12, ORTHOTROPIC_NU23, ORTHOTROPIC_NU31, ORTHOTROPIC_G12, ORTHOTROPIC_G23, ORTHOTROPIC_G31, ORTHOTROPIC_NUM_PROPERTIES } orthotropicMaterialProperties;
+    typedef enum { MOONEYRIVLIN_DENSITY, MOONEYRIVLIN_MU01, MOONEYRIVLIN_MU10, MOONEYRIVLIN_V1, MOONEYRIVLIN_NUM_PROPERTIES } mooneyrivlinMaterialProperties;
 
   protected:
     std::string name;
@@ -255,6 +284,8 @@ public:
   class ENuMaterial;
   // Mooney-Rivlin material (defined in volumetricMeshMooneyRivlinMaterial.h)
   class MooneyRivlinMaterial;
+  // Orthotropic material (defined in volumetricMeshOrthotropicMaterial.h)
+  class OrthotropicMaterial;
 
   // a volumetric mesh region, i.e., a set of elements sharing the same material
   class Region
@@ -289,9 +320,12 @@ protected:
   int * elementMaterial;  // material index of each element
 
   // parses the mesh, and returns the mesh element type
-  VolumetricMesh(char * filename, int numElementVertices, int verbose, elementType * elementType_);
+  VolumetricMesh(const char * filename, fileFormatType fileFormat, int numElementVertices, elementType * elementType_, int verbose);
+  // if memoryLoad is 0, binaryInputStream is FILE* (load from a file, via a stream), otherwise, it is char* (load from a memory buffer)
+  VolumetricMesh(void * binaryInputStream, int numElementVertices, elementType * elementType_, int memoryLoad = 0);
   VolumetricMesh(int numElementVertices_) { numElementVertices = numElementVertices_; }
-  void PropagateRegionsToElements();
+  void propagateRegionsToElements();
+  void loadFromBinaryGeneric(void * binaryInputStream, elementType * elementType_, int memoryLoad);
 
   // constructs a mesh from the given vertices and elements, 
   // with a single region and material ("E, nu" material)
@@ -317,13 +351,26 @@ protected:
   // if vertexMap is non-null, it also returns a renaming datastructure: vertexMap[big mesh vertex] is the vertex index in the subset mesh
   VolumetricMesh(const VolumetricMesh & mesh, int numElements, int * elements, std::map<int,int> * vertexMap = NULL); 
 
-  int save(char * filename, elementType elementType_) const;
+  int saveToAscii(const char * filename, elementType elementType_) const;
+  int saveToBinary(const char * filename, unsigned int * bytesWritten, elementType elementType_) const;
+  int saveToBinary(FILE * binaryOutputStream, unsigned int * bytesWritten, elementType elementType_, bool countBytesOnly = false) const;
+
+  void loadFromAscii(const char * filename, elementType * elementType_, int verbose = 0);
+  void loadFromBinary(const char * filename, elementType * elementType_);
+  void loadFromBinary(FILE * binaryInputStream, elementType * elementType_);
+  void loadFromMemory(unsigned char * binaryInputStream, elementType * elementType_);
+  void assignMaterialsToElements(int verbose);
+
+  static elementType getElementTypeASCII(const char * filename); 
+  static elementType getElementTypeBinary(const char * filename);
 
   elementType temp; // auxiliary
 
   friend class VolumetricMeshExtensions;
+  friend class VolumetricMeshLoader;
 
-  static void nop(); // no operation
+  static unsigned int readFromFile(void * buf, unsigned int elementSize, unsigned int numElements, void * fin);
+  static unsigned int readFromMemory(void * buf, unsigned int elementSize, unsigned int numElements, void * memoryLocation);
 };
 
 inline VolumetricMesh::Set::Set(const std::string name_) { name = name_; }

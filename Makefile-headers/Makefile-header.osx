@@ -3,10 +3,13 @@
 OPTIMIZATIONFLAG=-O2
 #OPTIMIZATIONFLAG=-g
 
-CXX=g++
-CXXFLAGS=-Wall -Wno-write-strings $(OPTIMIZATIONFLAG)
+OPENMPFLAG=
+#OPENMPFLAG=-fopenmp -DUSE_OPENMP
+
+CXX=g++ 
+CXXFLAGS=-Wall -Wno-write-strings $(OPTIMIZATIONFLAG) $(OPENMPFLAG)
 CXXLD=$(CXX)
-LDFLAGS=$(OPTIMIZATIONFLAG)
+LDFLAGS=$(OPTIMIZATIONFLAG) $(OPENMPFLAG)
 
 RM=rm -f
 DYLIB_FLAG=-dynamiclib
@@ -97,7 +100,7 @@ CG_LIBS_DIR=
 CG_LIBS=-framework Cg
 CG_INCLUDE=
 
-# === needed only for the LargeModalDeformationFactory ===
+# === needed for large sparse eigenvalue analysis and the LargeModalDeformationFactory ===
 
 # fortran compiler
 FXX=
@@ -114,6 +117,8 @@ ARPACK_LIB=
 #ARPACK_DIR=/Users/barbic/software/ARPACK
 #ARPACK_INCLUDE=-I$(ARPACK_DIR)/arpack++/include
 #ARPACK_LIB=$(ARPACK_DIR)/libarpack_SUN4.a
+
+# === needed only for the LargeModalDeformationFactory ===
 
 # wxWidgets
 WX_DIR=

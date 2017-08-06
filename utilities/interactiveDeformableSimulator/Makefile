@@ -12,7 +12,7 @@ R ?= ../..
 SIMULATOR_OBJECTS=interactiveDeformableSimulator.o initGraphics.o
 
 # the libraries this utility depends on
-SIMULATOR_LIBS=sceneObject integratorSparse integrator elasticForceModel forceModel sparseMatrix loadList insertRows lighting configFile volumetricMesh getopts camera graph isotropicHyperelasticFEM minivector stvk corotationalLinearFEM polarDecomposition matrixIO massSpringSystem objMesh imageIO sparseSolver
+SIMULATOR_LIBS=sceneObject integratorSparse integrator elasticForceModel forceModel sparseMatrix loadList insertRows lighting configFile volumetricMesh getopts camera graph isotropicHyperelasticFEM stvk corotationalLinearFEM polarDecomposition minivector matrixIO massSpringSystem objMesh imageIO sparseSolver matrix
 
 # the headers in this library
 SIMULATOR_HEADERS=initGraphics.h
@@ -28,8 +28,9 @@ include $(SIMULATOR_LIB_MAKEFILES) ../../libraries/glui/Makefile
 
 all: $(R)/utilities/interactiveDeformableSimulator/interactiveDeformableSimulator
 
+CURRENT_DIR = $(shell pwd)
 $(R)/utilities/interactiveDeformableSimulator/interactiveDeformableSimulator: $(SIMULATOR_OBJECTS_FILENAMES)
-	$(CXXLD) $(LDFLAGS) $(SIMULATOR_OBJECTS) $(SIMULATOR_LINK) -Wl,-rpath,$(GLUI_DIR)/lib -o $@; cp $@ $(R)/utilities/bin/
+	$(CXXLD) $(LDFLAGS) $(SIMULATOR_OBJECTS) $(SIMULATOR_LINK) -Wl,-rpath,$(CURRENT_DIR)/$(GLUI_DIR)/lib -o $@; cp $@ $(R)/utilities/bin/
 
 $(SIMULATOR_OBJECTS_FILENAMES): %.o: %.cpp $(SIMULATOR_LIB_FILENAMES) $(SIMULATOR_HEADER_FILENAMES)
 	$(CXX) $(CXXFLAGS) -c $(INCLUDE) $(GLUI_INCLUDE) $< -o $@

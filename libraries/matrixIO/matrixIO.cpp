@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "matrix" library , Copyright (C) 2007 CMU, 2009 MIT                   *
  * All rights reserved.                                                  *
@@ -27,7 +27,6 @@
 #include <ctype.h>
 #include "matrixMacros.h"
 #include "matrixIO.h"
-
 
 // writes out the m x n matrix onto the stream, in binary format
 // LAPACK column-major order
@@ -182,7 +181,7 @@ int ReadMatrixFromDiskListOfFiles(const char * fileList, int * m, int * n, real 
     while (matrixFilename[k] != '\0')
       k++;
 
-    if (matrixFilename[k-1] == '\n')
+    if ((k > 0) && (matrixFilename[k-1] == '\n'))
       matrixFilename[k-1] = '\0';
      
     if (k <= 1) // blank line, ignore it
@@ -241,7 +240,7 @@ int ReadMatrixFromDiskListOfFiles(const char * fileList, int * m, int * n, real 
     {
       k++;
     }
-    if (matrixFilename[k-1] == '\n')
+    if ((k > 0) && (matrixFilename[k-1] == '\n'))
       matrixFilename[k-1] = '\0';
      
     if (k <= 1) // blank line, ignore it
@@ -341,7 +340,7 @@ int ReadMatrixSizeFromStream(FILE * file, int * m, int * n)
   return 0;
 }
 
-int OpenFile_(const char * filename, FILE ** fin, char * mode)
+int OpenFile_(const char * filename, FILE ** fin, const char * mode)
 {
   *fin = fopen(filename, mode);
   if (!(*fin))

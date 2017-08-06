@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder      *
@@ -36,7 +36,6 @@
   #include <windows.h>
 #endif
 
-#include "openGL-headers.h"
 #include <vector>
 #include <assert.h>
 #include "objMesh.h"
@@ -48,15 +47,16 @@
 #define OBJMESHRENDER_VERTICES (1 << 2)
 
 //rendering mode
-#define OBJMESHRENDER_NONE           (0)            /* render with only vertices */
-#define OBJMESHRENDER_FLAT           (1 << 0)       /* render with facet normals */
-#define OBJMESHRENDER_SMOOTH         (1 << 1)       /* render with vertex normals */
-#define OBJMESHRENDER_TEXTURE        (1 << 2)       /* render with texture coords */
-#define OBJMESHRENDER_COLOR          (1 << 3)       /* render with color materials */
-#define OBJMESHRENDER_MATERIAL       (1 << 4)       /* render with materials */
-#define OBJMESHRENDER_SELECTION      (1 << 5)       /* render with OpenGL selection (only applies to vertices, otherwise ignored) */
-#define OBJMESHRENDER_CUSTOMCOLOR    (1 << 6)       /* render with custom color (only applies to faces) */
-#define OBJMESHRENDER_TRANSPARENCY   (1 << 7)       /* render in two passes, to handle transparencies */
+#define OBJMESHRENDER_NONE                (0)            /* render with only vertices */
+#define OBJMESHRENDER_FLAT                (1 << 0)       /* render with facet normals */
+#define OBJMESHRENDER_SMOOTH              (1 << 1)       /* render with vertex normals */
+#define OBJMESHRENDER_TEXTURE             (1 << 2)       /* render with texture coords */
+#define OBJMESHRENDER_COLOR               (1 << 3)       /* render with color materials */
+#define OBJMESHRENDER_MATERIAL            (1 << 4)       /* render with materials */
+#define OBJMESHRENDER_SELECTION           (1 << 5)       /* render with OpenGL selection (only applies to vertices, otherwise ignored) */
+#define OBJMESHRENDER_CUSTOMCOLOR         (1 << 6)       /* render with custom vertex colors */
+#define OBJMESHRENDER_TRANSPARENCY        (1 << 7)       /* render in two passes, to handle transparencies */
+#define OBJMESHRENDER_CUSTOMCOLORFACES    (1 << 8)       /* render with custom face colors */
 
 //texture mode: replace vs modulate
 #define OBJMESHRENDER_LIGHTINGMODULATIONBIT 1
@@ -73,6 +73,9 @@
 #define OBJMESHRENDER_GL_NOANISOTROPICFILTERING 0
 #define OBJMESHRENDER_GL_USEANISOTROPICFILTERING 4
 
+//default alpha blending threshold for 2-pass rendering (for transparent textures)
+#define OBJMESHRENDER_DEFAULT_ALPHA_BLENDING_THRESHOLD 0.5f
+
 class ObjMeshRender
 {
 public:
@@ -81,7 +84,7 @@ public:
   {
   public:
     Texture() : fullPath(std::string("__none")), texture(std::make_pair(false, 0)), textureMode(OBJMESHRENDER_GL_NOMIPMAP | OBJMESHRENDER_GL_MODULATE), bytesPerPixel(3) {}
-    virtual ~Texture() { if (texture.first) glDeleteTextures(1, &(texture.second)); }
+    virtual ~Texture();
 
     static void loadTextureImage(std::string fullPath, int * width, int * height, int * bpp, unsigned char ** texData);
 
@@ -113,13 +116,17 @@ public:
   void setCustomColors(Vec3d color); // constant color for each mesh vertex
   void setCustomColors(std::vector<Vec3d> colors); // specific color for every mesh vertex
 
+  // set custom colors, for OBJMESHRENDER_CUSTOMCOLORFACES mode
+  void setCustomColorsFaces(Vec3d color); // constant color for each mesh face
+  void setCustomColorsFaces(std::vector<Vec3d> colors); // specific color for every mesh face
+
   void renderSpecifiedVertices(int * specifiedVertices, int numSpecifiedVertices);
   void renderVertex(int index);
 
   // the more specific rendering versions for various SceneObject functions
   void renderGroup(unsigned int groupIndex, int geometryMode, int renderMode);
-  void renderGroup(char * groupName, int geometryMode, int renderMode);
-  void renderGroupEdges(char * groupName);
+  void renderGroup(const char * groupName, int geometryMode, int renderMode);
+  void renderGroupEdges(const char * groupName);
 
   int numTextures();
   int maxBytesPerPixelInTextures();
@@ -131,11 +138,17 @@ public:
   // outputs OpenGL code to render faces
   void outputOpenGLRenderCode();
 
+  // get/set alpha blending value, for OBJMESHRENDER_TRANSPARENCY mode
+  double getAlphaBlendingThreshold() const { return alphaBlendingThreshold; }
+  void setAlphaBlendingThreshold(double threshold) { alphaBlendingThreshold = threshold; }
+
 protected:
   ObjMesh * mesh;
   std::vector<Vec3d> customColors;
+  std::vector<Vec3d> customColorsFaces;
   std::vector< Texture* > textures;
   std::vector<int> ownTexture;
+  double alphaBlendingThreshold;
 };
 
 #endif

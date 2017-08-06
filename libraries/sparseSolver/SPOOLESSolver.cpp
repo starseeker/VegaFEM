@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "sparseSolver" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC   *
+ * "sparseSolver" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC   *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -163,7 +163,7 @@ int SPOOLESSolver::SolveLinearSystem(double * x, const double * rhs)
   if (rc != 1)
   {
     printf("Error: linear system solve failed. Bridge_solve exit code: %d.\n", rc);
-    return rc;
+    return (rc == 0) ? 1 : rc;
   }
 
   if (verbose >= 2)
@@ -179,7 +179,7 @@ int SPOOLESSolver::SolveLinearSystem(double * x, const double * rhs)
     fclose(fout);
   */
 
-  return (rc != 1);
+  return 0;
 }
 
 #else

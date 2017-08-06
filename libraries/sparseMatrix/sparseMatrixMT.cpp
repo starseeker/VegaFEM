@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "sparseMatrixMT" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC *
+ * "sparseMatrixMT" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -35,8 +35,7 @@
 #include "sparseMatrixMT.h"
 using namespace std;
 
-// to use the parallel version, enable this flag, and compile code with the flag -fopenmp
-//#define USE_OPENMP
+// for faster computation, enable the -fopenmp -DUSE_OPENMP macro line in the Makefile-header file (see also documentation)
 
 #ifdef USE_OPENMP
   #include <omp.h>

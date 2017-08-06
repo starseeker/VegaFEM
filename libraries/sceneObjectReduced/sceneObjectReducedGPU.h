@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC    *
+ * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -46,8 +46,12 @@ public:
   // GPUMethod: 
   // 0: framebuffer object
   // 1: pbuffer (Windows only)
-  SceneObjectReducedGPU(char * filenameOBJ, ModalMatrix * modalMatrix, int GPUMethod = 0);
-  SceneObjectReducedGPU(char * filenameOBJ, ModalMatrix * modalMatrix, SceneObjectReducedGPU * cloningSource, int GPUMethod = 0);
+  SceneObjectReducedGPU(const char * filenameOBJ, ModalMatrix * modalMatrix, int GPUMethod = 0);
+  SceneObjectReducedGPU(ObjMesh * objMesh, ModalMatrix * modalMatrix, int GPUMethod = 0, bool deepCopy = true);
+
+  SceneObjectReducedGPU(const char * filenameOBJ, ModalMatrix * modalMatrix, SceneObjectReducedGPU * cloningSource, int GPUMethod = 0);
+  SceneObjectReducedGPU(ObjMesh * objMesh, ModalMatrix * modalMatrix, SceneObjectReducedGPU * cloningSource, int GPUMethod = 0, bool deepCopy = true);
+
   virtual ~SceneObjectReducedGPU();
 
   void Getq(double * q);
@@ -70,6 +74,8 @@ public:
   virtual int GetClosestVertex(Vec3d & queryPos, double * distance, double * auxVertexBuffer);
 
 protected:
+  void Construct(int GPUMethod);
+  void Construct(SceneObjectReducedGPU * cloningSource, int GPUMethod);
 
   ObjMeshGPUDeformer_uUq * render_uUq;
   ObjMeshGPUDeformer_uUq_setLighting setGPULighting;

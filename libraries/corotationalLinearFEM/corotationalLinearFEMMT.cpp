@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "corotational linear FEM" library , Copyright (C) 2013 USC            *
+ * "corotational linear FEM" library , Copyright (C) 2014 USC            *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -161,16 +161,24 @@ void CorotationalLinearFEMMT::ComputeForceAndStiffnessMatrix(double * u, double 
   free(threadArgv);
   free(tid);
 
-  memset(f, 0, sizeof(double) * numVertices3);
-  stiffnessMatrix->ResetToZero();
+  if (f != NULL) 
+    memset(f, 0, sizeof(double) * numVertices3);
 
-  for(int i=0; i<numThreads; i++)
+  if (stiffnessMatrix != NULL) 
   {
-     double * source = &internalForceBuffer[i * numVertices3];
-     for(int j=0; j<numVertices3; j++)
-       f[j] += source[j];
+    stiffnessMatrix->ResetToZero();
 
-     *stiffnessMatrix += *(stiffnessMatrixBuffer[i]);
+    for(int i=0; i<numThreads; i++)
+    {
+       double * source = &internalForceBuffer[i * numVertices3];
+       if (f != NULL) 
+       {
+         for(int j=0; j<numVertices3; j++)
+           f[j] += source[j];
+       }
+
+       *stiffnessMatrix += *(stiffnessMatrixBuffer[i]);
+    }
   }
 }
 

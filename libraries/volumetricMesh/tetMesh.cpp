@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -31,7 +31,7 @@
 
 const VolumetricMesh::elementType TetMesh::elementType_ = TET;
 
-TetMesh::TetMesh(char * filename, int verbose) : VolumetricMesh(filename, 4, verbose, &temp)
+TetMesh::TetMesh(const char * filename, fileFormatType fileFormat, int verbose) : VolumetricMesh(filename, fileFormat, 4, &temp, verbose)
 {
   if (temp != elementType_)
   {
@@ -40,7 +40,16 @@ TetMesh::TetMesh(char * filename, int verbose) : VolumetricMesh(filename, 4, ver
   }
 }
 
-TetMesh::TetMesh(char * filename, int specialFileType, int verbose): VolumetricMesh(4)
+TetMesh::TetMesh(void * binaryStream, int memoryLoad) : VolumetricMesh(binaryStream, 4, &temp, memoryLoad)
+{
+  if (temp != elementType_)
+  {
+    printf("Error: mesh is not a tet mesh.\n");
+    throw 11;
+  }
+}
+
+TetMesh::TetMesh(const char * filename, int specialFileType, int verbose): VolumetricMesh(4)
 {
   double E = 1E8;
   double nu = 0.45;
@@ -149,9 +158,19 @@ TetMesh::TetMesh(const TetMesh & tetMesh, int numElements_, int * elements_, map
 
 TetMesh::~TetMesh() {}
 
-int TetMesh::save(char * filename) const
+int TetMesh::saveToAscii(const char * filename) const
 {
-  return VolumetricMesh::save(filename, elementType_);
+  return VolumetricMesh::saveToAscii(filename, elementType_);
+}
+
+int TetMesh::saveToBinary(const char * filename, unsigned int * bytesWritten) const
+{
+  return VolumetricMesh::saveToBinary(filename, bytesWritten, elementType_);
+}
+
+int TetMesh::saveToBinary(FILE * binaryOutputStream, unsigned int * bytesWritten, bool countBytesOnly) const
+{
+  return VolumetricMesh::saveToBinary(binaryOutputStream, bytesWritten, elementType_, countBytesOnly);
 }
 
 void TetMesh::computeElementMassMatrix(int el, double * massMatrix) const

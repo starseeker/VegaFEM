@@ -59,7 +59,7 @@ public:
   inline Mat3d(double x0, double x1, double x2,
                double x3, double x4, double x5,
                double x6, double x7, double x8);
-  inline Mat3d(double mat[9]); // "mat" must be given in row-major order
+  inline Mat3d(const double mat[9]); // "mat" must be given in row-major order
   inline Mat3d(Vec3d rows[3]); 
   inline Mat3d(Vec3d row0, Vec3d row1, Vec3d row2);
   inline Mat3d(double diag); // create a diagonal matrix with all entries "diag" (can create zero matrix by passing 0.0)
@@ -107,27 +107,63 @@ public:
   // matrix-matrix multiply
   inline const Mat3d operator* (const Mat3d & mat2) const;
 
-  // Computes eigenvalues and eigenvectors of a 3x3 matrix
-  // Assumes symmetric matrix; contents of matrix "a" are not modified by the routine
-  // Eigenvalues are sorted in decreasing order (not decreasing absolute order)
+  // Computes eigenvalues and eigenvectors of a 3x3 matrix M
+  // Assumes symmetric matrix; contents of matrix "M" are not modified by the routine
+  // Eigenvalues are sorted in decreasing order (not decreasing absolute-value order)
   // Returned eigenvectors are unit length
-  friend void eigen_sym(Mat3d & a, Vec3d & eig_val, Vec3d eig_vec[3]);
+  friend void eigen_sym(Mat3d & M, Vec3d & eig_val, Vec3d eig_vec[3]);
 
   // NOTE: This particular routine is not publicly released, as its implementation
   // was taken from Numerical Recipes, which is not free software.
   // (you can use the eigen_sym routine above which is public domain)
   // Computes eigenvalues and eigenvectors of a 3x3 matrix, using Jacobi Iteration
-  // Assumes symmetric matrix; contents of matrix "a" are overwritten (destroyed)
+  // Assumes symmetric matrix; contents of matrix "M" are overwritten (destroyed)
   // Returns true if iteration succeeded in making the sum of abs values of non-diagonal values below epsilon, and false otherwise
   // Default epsilon is machine precision (which always converged with our matrices)
   // Eigenvalues are sorted in decreasing absolute order
   // Returned eigenvectors are unit length
-  friend bool eigen_sym_NR(Mat3d & a, Vec3d & eig_val, Vec3d eig_vec[3],
-                           int maxIterations=50, double epsilon=0.0);
+  friend bool eigen_sym_NR(Mat3d & M, Vec3d & eig_val, Vec3d eig_vec[3], int maxIterations, double epsilon);
+
+  /*
+    Standard SVD (modifiedSVD == 0):
+
+    Given a 3x3 matrix M, decomposes it using SVD so
+    that M = U Sigma V^T where U is a 3x3 rotation, 
+    V is 3x3 orthonormal (V^T V = V V^T = I), and
+    Sigma is a diagonal matrix with non-negative entries,
+    in descending order, Sigma[0] >= Sigma[1] >= Sigma[2] >= 0.
+    Note that the matrix V may have a determinant equaling 
+    to -1 (i.e., reflection).
+
+    singularValue_eps is a threshold to determine
+    when a singular value is deemed zero, and special handling is then invoked
+    to improve numerical robustness.
+
+    Modified SVD (modifiedSVD == 1):
+
+    The SVD is modified so that it gives the 
+    following properties (useful in solid mechanics applications) :
+
+    1) Not just the determinant of U, but also the determinant of V is 1 
+      (i.e., both U and V are rotations, not reflections). 
+
+    2) The smallest diagonal value Sigma[2] may be negative. We have:
+       Sigma[0] >= Sigma[1] >= abs(Sigma[2]) >= 0 .
+  */
+  friend int SVD(Mat3d & M, Mat3d & U, Vec3d & Sigma, Mat3d & V, double singularValue_eps, int modifiedSVD);
 
 protected:
   Vec3d elt[3]; // the three rows of the matrix
 };
+
+// inverse of a 3x3 matrix (suitable when A is given by a pointer to the 9 entries)
+// input: A (row-major)
+// output: AInv
+void inverse3x3(const double * A, double * AInv);
+
+// these two declarations are repeated here, with default arguments, to conform to the C++ standard; this makes it possible to compile the code on Apple's clang compiler
+bool eigen_sym_NR(Mat3d & M, Vec3d & eig_val, Vec3d eig_vec[3], int maxIterations=50, double epsilon=0.0);
+int SVD(Mat3d & M, Mat3d & U, Vec3d & Sigma, Mat3d & V, double singularValue_eps=1e-8, int modifiedSVD=0);
 
 // ===== below is the implementation =====
 
@@ -140,7 +176,7 @@ inline Mat3d::Mat3d(double x0_g, double x1_g, double x2_g,
   elt[2] = Vec3d(x6_g,x7_g,x8_g);
 }
 
-inline Mat3d::Mat3d(double mat[9])
+inline Mat3d::Mat3d(const double mat[9])
 {
   elt[0] = Vec3d(mat[0],mat[1],mat[2]);
   elt[1] = Vec3d(mat[3],mat[4],mat[5]);
@@ -347,25 +383,33 @@ inline const Mat3d Mat3d::operator* (const Mat3d & mat2) const
 
 inline Mat3d inv(const Mat3d & mat)
 {
-  double invDeterminant = 1.0 / 
-    (-mat[0][2] * mat[1][1] * mat[2][0] + 
-      mat[0][1] * mat[1][2] * mat[2][0] + 
-      mat[0][2] * mat[1][0] * mat[2][1] - 
-      mat[0][0] * mat[1][2] * mat[2][1] - 
-      mat[0][1] * mat[1][0] * mat[2][2] + 
-      mat[0][0] * mat[1][1] * mat[2][2] );
+  double A[9];
+  mat.convertToArray(A);
+  double AInv[9];
+  inverse3x3(A, AInv);
 
-  return Mat3d(
-    invDeterminant * (-mat[1][2] * mat[2][1] + mat[1][1] * mat[2][2]),
-    invDeterminant * (mat[0][2] * mat[2][1] - mat[0][1] * mat[2][2]),
-    invDeterminant * (-mat[0][2] * mat[1][1] + mat[0][1] * mat[1][2]),
-    invDeterminant * (mat[1][2] * mat[2][0] - mat[1][0] * mat[2][2]),
-    invDeterminant * (-mat[0][2] * mat[2][0] + mat[0][0] * mat[2][2]),
-    invDeterminant * (mat[0][2] * mat[1][0] - mat[0][0] * mat[1][2]),
-    invDeterminant * (-mat[1][1] * mat[2][0] + mat[1][0] * mat[2][1]),
-    invDeterminant * (mat[0][1] * mat[2][0] - mat[0][0] * mat[2][1]),
-    invDeterminant * (-mat[0][1] * mat[1][0] + mat[0][0] * mat[1][1])
-  );
+  return Mat3d(AInv);
+}
+
+// inverse of a 3x3 matrix
+// row-major format
+inline void inverse3x3(const double * A, double * AInv)
+{
+  // converted to C from Mathematica output   
+  AInv[0] = -A[5] * A[7] + A[4] * A[8];
+  AInv[1] = A[2] * A[7] - A[1] * A[8];
+  AInv[2] = -A[2] * A[4] + A[1] * A[5];
+  AInv[3] = A[5] * A[6] - A[3] * A[8];
+  AInv[4] = -A[2] * A[6] + A[0] * A[8];
+  AInv[5] = A[2] * A[3] - A[0] * A[5];
+  AInv[6] = -A[4] * A[6] + A[3] * A[7];
+  AInv[7] = A[1] * A[6] - A[0] * A[7];
+  AInv[8] = -A[1] * A[3] + A[0] * A[4];
+
+  double invDet = 1.0 / (A[0] * AInv[0] + A[1] * AInv[3] + A[2] * AInv[6]);
+
+  for(int i=0; i<9; i++)
+    AInv[i] *= invDet;
 }
 
 inline double det(const Mat3d & mat) 
@@ -401,9 +445,9 @@ inline std::ostream &operator << (std::ostream &s, const Mat3d &v)
   double a20 = v.elt[2][0]; double a21 = v.elt[2][1]; double a22 = v.elt[2][2];
 
   return(
-    s << '[' << a00 << ' ' << a01 << ' ' << a02 << ']' << std::endl <<
-    s << '[' << a10 << ' ' << a11 << ' ' << a12 << ']' << std::endl <<
-    s << '[' << a20 << ' ' << a21 << ' ' << a22 << ']'
+    s << '[' << a00 << ' ' << a01 << ' ' << a02 << ']' << '\n'
+      << '[' << a10 << ' ' << a11 << ' ' << a12 << ']' << '\n'
+      << '[' << a20 << ' ' << a21 << ' ' << a22 << ']'
   );
 }
 

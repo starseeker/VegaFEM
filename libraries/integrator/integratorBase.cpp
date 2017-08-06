@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC     *
+ * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -127,5 +127,26 @@ void IntegratorBase::ResetToRest()
   memset(q_1,0,sizeof(double)*r);
   memset(qvel_1,0,sizeof(double)*r);
   memset(qaccel_1,0,sizeof(double)*r);
+}
+
+void IntegratorBase::ConstrainToSphere(double R2)
+{
+  double norm2 = 0;
+  for(int i=0; i<r; i++)
+    norm2 += q[i] * q[i];
+
+  if (norm2 > R2)
+  {
+    double beta = sqrt(R2 / norm2);
+    for(int dim=0; dim<r; dim++)
+    {
+      q[dim] *= beta;
+      q_1[dim] = q[dim];
+      qvel[dim] = 0;
+      qvel_1[dim] = 0;
+      qaccel[dim] = 0;
+      qaccel_1[dim] = 0;
+    }
+  }
 }
 

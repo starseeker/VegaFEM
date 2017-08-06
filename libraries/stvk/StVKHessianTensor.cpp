@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "StVK" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC           *
+ * "StVK" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC           *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -255,7 +255,7 @@ void StVKHessianTensor::EvaluateHessianQuadraticForm(double * phir, double * phi
   }
 }
 
-int StVKHessianTensor::SaveHessianAtZeroToFile(char * filename)
+int StVKHessianTensor::SaveHessianAtZeroToFile(const char * filename)
 {
   FILE * fout = fopen(filename,"wb");
 
@@ -398,7 +398,7 @@ void StVKHessianTensor::EvaluateHessianQuadraticFormDirect(double * phir, double
   printf("\n");
 }
 
-void StVKHessianTensor::EvaluateHessianQuadraticFormDirectAll(double * Ulin, int k, double * result, int numRigidModes)
+void StVKHessianTensor::EvaluateHessianQuadraticFormDirectAll(double * Ulin, int k, double * result, int numRigidModes, int verbose)
 {
   double entry[27];
   double * hijk0 = &entry[0];
@@ -421,17 +421,20 @@ void StVKHessianTensor::EvaluateHessianQuadraticFormDirectAll(double * Ulin, int
   void * elIter;
   precomputedIntegrals->AllocateElementIterator(&elIter);
 
-  printf("Evaluating the Hessian quadratic form (rhs matrix)...\n");
-  printf("  Total num elements: %d \n",numElements_);
-  printf("  Total num DOFs: %d \n",m3);
-  printf("  Total num linear modes: %d \n",k);
-  printf("  Total num rigid modes: %d \n",numRigidModes);
-  printf("  Total num derivatives: %d \n",numDeriv);
+  if (verbose)
+  {
+    printf("Evaluating the Hessian quadratic form (rhs matrix)...\n");
+    printf("  Total num elements: %d \n",numElements_);
+    printf("  Total num DOFs: %d \n",m3);
+    printf("  Total num linear modes: %d \n",k);
+    printf("  Total num rigid modes: %d \n",numRigidModes);
+    printf("  Total num derivatives: %d \n",numDeriv);
+  }
 
   for(int el=0; el < numElements_; el++)
   {
     precomputedIntegrals->PrepareElement(el, elIter);
-    if (el % 200 == 0)
+    if ((el % 200 == 0) && (verbose))
     {
       printf("%d ",el);
       fflush(NULL);
@@ -499,7 +502,8 @@ void StVKHessianTensor::EvaluateHessianQuadraticFormDirectAll(double * Ulin, int
 
   precomputedIntegrals->ReleaseElementIterator(elIter);
 
-  printf("\n");
+  if (verbose)
+    printf("\n");
 }
 
 void StVKHessianTensor::ComputeStiffnessMatrixCorrection(double * u, double * du, SparseMatrix * dK)

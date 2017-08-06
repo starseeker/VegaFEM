@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "imageIO" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC        *
+ * "imageIO" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Yili Zhao, Jernej Barbic                                 *
@@ -64,6 +64,7 @@ extern "C"
 #endif
 
 #include "imageIO.h"
+#include "vegalong.h"
 
 #define BITS_PER_CHANNEL_8 8
 #define BITS_PER_CHANNEL_16 16
@@ -111,7 +112,7 @@ ImageIO::errorType ImageIO::loadPPM(const char * filename)
 
   char buf[4096];
   char * result = fgets(buf, 4096, file);
-  result = result; // to avoid a compiler warning
+  result = result + 1; // to avoid a compiler warning
   if(strncmp(buf, "P6", 2))
   {
     printf("Error in loadPPM: File is not a raw RGB ppm.\n");
@@ -124,7 +125,8 @@ ImageIO::errorType ImageIO::loadPPM(const char * filename)
   int maxval;
   while(i < 3)
   {
-    result = fgets(buf, 4096, file);
+    char * dummy = fgets(buf, 4096, file);
+    dummy = dummy + 1; // to suppress compiler warning
     if(buf[0] == '#') // ignore comments
       continue;
     if(i == 0)
@@ -245,7 +247,7 @@ ImageIO::errorType ImageIO::loadTGA(const char * filename)
     return INVALID_FILE_FORMAT;
   }
 
-  long int imageSize = width * height * bytesPerPixel;
+  vegalong imageSize = width * height * bytesPerPixel;
 
   // allocate memory for image data
   free(pixels);

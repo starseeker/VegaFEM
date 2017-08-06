@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Somya Sharma, Jernej Barbic                             *
@@ -144,23 +144,25 @@ bool triBoxOverlap(double boxcenter[3], double boxhalfsize[3], double triverts[3
   // 1 test
 
   // triangle normal
-  double n[3];
-  VECTOR_CROSS_PRODUCT(f0, f1, n);
-  double len2 = n[0] * n[0] + n[1] * n[1] + n[2] * n[2];
-  double invlen = 1.0 / sqrt(len2);
-  n[0] *= invlen;
-  n[1] *= invlen;
-  n[2] *= invlen;
+  double normal[3];
+  VECTOR_CROSS_PRODUCT(f0, f1, normal);
+  // no need to normalize the normal as we only check the sign of expressions in the calculations that depend on normal
+  // this also makes the code robust against degenerate triangles with zero-length normals
+  //double len2 = normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2];
+  //double invlen = 1.0 / sqrt(len2);
+  //normal[0] *= invlen;
+  //normal[1] *= invlen;
+  //normal[2] *= invlen;
 
   // distance of plane from the origin
-  double planeDist = -VECTOR_DOT_PRODUCT3(n, triverts[0]);
+  double planeDist = -VECTOR_DOT_PRODUCT3(normal, triverts[0]);
 
   // get nearest and farthest corners
   double nearestPoint[3];
   double farthestPoint[3];
 
   #define LOOP2(i)\
-    if ( n[i] < 0 )\
+    if ( normal[i] < 0 )\
     {\
       nearestPoint[i] = boxhalfsize[i];\
       farthestPoint[i] = - boxhalfsize[i];\
@@ -192,13 +194,13 @@ bool triBoxOverlap(double boxcenter[3], double boxhalfsize[3], double triverts[3
   }
 */
   
-  if ( VECTOR_DOT_PRODUCT3(n, nearestPoint) + planeDist > 0 )
+  if ( VECTOR_DOT_PRODUCT3(normal, nearestPoint) + planeDist > 0 )
   {
     overlap = false;
     return overlap;
   }
   
-  overlap = ( VECTOR_DOT_PRODUCT3(n, farthestPoint) + planeDist >= 0 );
+  overlap = ( VECTOR_DOT_PRODUCT3(normal, farthestPoint) + planeDist >= 0 );
   
   return overlap;
 }

@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "matrix" library , Copyright (C) 2007 CMU, 2009 MIT                   *
  * All rights reserved.                                                  *
@@ -65,7 +65,7 @@ class Matrix
 {
 public:
   // load matrix from a file (see matrixIO.h for the binary file format)
-  Matrix(char * filename); 
+  Matrix(const char * filename); 
 
   // create a m x n matrix; "data" must an array of length m*n, giving the matrix entries in column-major order
   // if "makeInternalDataCopy" is true (default), the class will internally make a copy of the data; otherwise, it will only direct its internal pointer to the user-provided array data
@@ -119,7 +119,7 @@ public:
   real MaxAbsEntry() const;
 
   void Print(int numDigits=-1) const; // if numDigits=-1: use %G flag
-  int Save(char * filename) const; // returns 0 on success, 1 on failure
+  int Save(const char * filename) const; // returns 0 on success, 1 on failure
 
   // factor <this matrix> = Q * Lambda * Q^T
   // matrix must be symmetric (no checks performed)

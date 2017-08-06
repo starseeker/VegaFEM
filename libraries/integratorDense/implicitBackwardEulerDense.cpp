@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC     *
+ * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -70,6 +70,10 @@ int ImplicitBackwardEulerDense::DoTimestep()
     reducedForceModel->GetForceAndMatrix(q, internalForces, tangentStiffnessMatrix);
     counterForceAssemblyTime.StopCounter();
     forceAssemblyTime = counterForceAssemblyTime.GetElapsedTime();
+
+    if (plasticfq != NULL)
+      for(int i=0; i<r; i++)
+        internalForces[i] -= plasticfq[i];
 
     // scale internal forces
     for(int i=0; i<r; i++)
@@ -355,6 +359,8 @@ int ImplicitBackwardEulerDense::DoTimestep()
     numIter++;
   }
   while (numIter < maxIterations);
+
+  ProcessPlasticDeformations();
 
 /*
   printf("Num iterations performed: %d (maxIterations=%d)\n", numIter, maxIterations);

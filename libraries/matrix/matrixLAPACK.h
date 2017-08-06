@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "matrix" library , Copyright (C) 2007 CMU, 2009 MIT                   *
  * All rights reserved.                                                  *
@@ -48,6 +48,7 @@ template<class real>
 void SymmetricMatrixEigenDecomposition(int m, real * mtx, real * Q, real * Lambda);
 
 // mtx * x = lambda * mtx2 * x
+// Warning: mtx2 will be modified after this function call.
 template<class real>
 void SymmetricMatrixGeneralEigenDecomposition(int m, real * mtx, real * mtx2, real * Q, real * Lambda);
 

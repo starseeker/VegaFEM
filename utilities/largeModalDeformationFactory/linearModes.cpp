@@ -1,12 +1,12 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "Large Modal Deformation Factory",                                    *
  * a pre-processing utility for model reduction of                       *
  * deformable objects undergoing large deformations.                     *
  *                                                                       *
- *  Copyright (C) 2007 CMU, 2009 MIT, 2013 USC                           *
+ *  Copyright (C) 2007 CMU, 2009 MIT, 2014 USC                           *
  *                                                                       *
  * All rights reserved.                                                  *
  *                                                                       *
@@ -641,7 +641,7 @@ void MyFrame::ExportMassMatrix(bool fullMatrix)
     return;
   }
 
-  wxFileDialog *dlg = new wxFileDialog(this, _T("Export stiffness matrix"), uiState.currentWorkingDirectory, _T(""), _T("Mass Matrix Files(*.M)|*.M|All files(*.*)|*.*"), wxFD_SAVE /*| wxHIDE_READONLY*/, wxDefaultPosition);
+  wxFileDialog *dlg = new wxFileDialog(this, _T("Export mass matrix"), uiState.currentWorkingDirectory, _T(""), _T("Mass Matrix Files(*.M)|*.M|All files(*.*)|*.*"), wxFD_SAVE /*| wxHIDE_READONLY*/, wxDefaultPosition);
   if ( dlg->ShowModal() == wxID_OK )
   {
     wxString massMatrixFilename( dlg->GetPath() );

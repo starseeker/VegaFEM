@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC     *
+ * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -42,7 +42,7 @@ values of r, there will be a computational slowdown.
 
 #include "integratorBaseDense.h"
 
-class ImplicitNewmarkDense : public IntegratorBaseDense
+class ImplicitNewmarkDense : public virtual IntegratorBaseDense
 {
 public:
 
@@ -56,16 +56,18 @@ public:
 
   inline virtual void SetTimestep(double timestep) { this->timestep = timestep; UpdateAlphas(); }
 
-  // performs one timestep of simulation (returns 0 on sucess, and 1 on failure)
+  // performs one timestep of simulation (returns 0 on success, and 1 on failure)
   // failure can occur, for example, if you are using the positive definite solver and the system matrix has negative eigenvalues
   virtual int DoTimestep(); 
 
-  inline void SetNewmarkBeta(double NewmarkBeta) { this->NewmarkBeta = NewmarkBeta; UpdateAlphas(); }
-  inline void SetNewmarkGamma(double NewmarkGamma) { this->NewmarkGamma = NewmarkGamma; UpdateAlphas(); }
+  inline virtual void SetNewmarkBeta(double NewmarkBeta) { this->NewmarkBeta = NewmarkBeta; UpdateAlphas(); }
+  inline virtual void SetNewmarkGamma(double NewmarkGamma) { this->NewmarkGamma = NewmarkGamma; UpdateAlphas(); }
   inline void SetMaxIterations(int maxIterations) { this->maxIterations = maxIterations; }
   inline void SetEpsilon(double epsilon) { this->epsilon = epsilon; }
 
 protected:
+
+  ImplicitNewmarkDense(int r, double timestep, double dampingMassCoef=0.0, double dampingStiffnessCoef=0.0, double NewmarkBeta=0.25, double NewmarkGamma=0.5);
 
   int symmetricSolver_lwork;
   double * symmetricSolver_work;

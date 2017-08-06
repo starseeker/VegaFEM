@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC    *
+ * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -36,7 +36,8 @@ class SceneObjectDeformable6DOF : public virtual SceneObjectDeformable, public S
 {
 public:
 
-  SceneObjectDeformable6DOF(char * filenameOBJ); 
+  SceneObjectDeformable6DOF(const char * filenameOBJ); 
+  SceneObjectDeformable6DOF(ObjMesh * objMesh, bool deepCopy = true); 
   virtual ~SceneObjectDeformable6DOF();
 
   virtual void GetSingleVertexPosition(int vertex, double * x, double * y, double * z);

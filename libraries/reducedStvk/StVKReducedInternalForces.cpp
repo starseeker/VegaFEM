@@ -62,6 +62,210 @@ StVKReducedInternalForces::StVKReducedInternalForces(int r, double * U, Volumetr
   InitGravity();
 }
 
+StVKReducedInternalForces::StVKReducedInternalForces(const char * filename, int rTarget, int bigEndianMachine, int verbose_) : verbose(verbose_)
+{
+  FILE * fin = fopen(filename, "rb");
+  if (!fin)
+  {
+    printf("Error: could not read from the input cubic polynomial file.\n");
+    throw 1;
+  }
+
+  LoadFromStream(fin, rTarget, bigEndianMachine);
+  fclose(fin);
+}
+
+StVKReducedInternalForces::StVKReducedInternalForces(FILE * fin, int rTarget, int bigEndianMachine, int verbose_) : verbose(verbose_)
+{
+  LoadFromStream(fin, rTarget, bigEndianMachine); 
+}
+
+int StVKReducedInternalForces::LoadFromStream(FILE * fin, int rTarget, int bigEndianMachine) 
+{
+  if (verbose)
+    printf("Loading polynomials assuming little endian machine: %s.", (!bigEndianMachine) ? "TRUE" : "FALSE");
+
+  int header[4];
+
+  if ((int)(fread(header, sizeof(int), 4, fin)) < 4)
+  {
+    printf("Error: couldn't read from input cubic polynomial file.\n");
+    throw 1;
+  }
+  
+  r = header[0];
+
+  int buffer;
+  if (bigEndianMachine)
+  {
+    little2big(&r, &buffer, sizeof(int));
+    r = buffer;
+  }
+
+  if (rTarget > r)
+  {
+    printf("Error: the input cubic polynomial file has r=%d, but you requested %d > %d.\n", r, rTarget, r);
+    throw 2;
+  }
+
+  // first read in the coefficients as if all modes requested
+  if (verbose)
+    printf(" r=%d\n", r);
+  
+  r2 = r * r;
+
+  linearSize = header[1];
+
+  if (bigEndianMachine)
+  {
+    little2big(&linearSize, &buffer, sizeof(int));
+    linearSize = buffer;
+  }
+
+  quadraticSize = header[2];
+
+  if (bigEndianMachine)
+  {
+    little2big(&quadraticSize, &buffer, sizeof(int));
+    quadraticSize = buffer;
+  }
+
+  cubicSize = header[3];
+
+  if (bigEndianMachine)
+  {
+    little2big(&cubicSize, &buffer, sizeof(int));
+    cubicSize = buffer;
+  }
+
+  linearCoef_ = (double*) malloc (sizeof(double) * r * linearSize);
+
+  if ((int)(fread(linearCoef_,sizeof(double),r*linearSize,fin)) < r*linearSize)
+  {
+    printf("Error: couldn't read from input cubic polynomial file.\n");
+    throw 1;
+  }
+
+  double bufferd;
+  if (bigEndianMachine)
+  {
+    for(int i=0; i<r*linearSize; i++)
+    {
+      little2big(&linearCoef_[i], &bufferd, sizeof(double));
+      linearCoef_[i] = bufferd;
+    }
+  }
+
+  quadraticCoef_ = (double*) malloc (sizeof(double) * r * quadraticSize);
+
+  if ((int)(fread(quadraticCoef_,sizeof(double),r*quadraticSize,fin)) < r*quadraticSize)
+  {
+    printf("Error: couldn't read from input cubic polynomial file.\n");
+    throw 1;
+  }
+
+  if (bigEndianMachine)
+  {
+    for(int i=0; i<r*quadraticSize; i++)
+    {
+      little2big(&quadraticCoef_[i], &bufferd, sizeof(double));
+      quadraticCoef_[i] = bufferd;
+    }
+  }
+
+  cubicCoef_ = (double*) malloc (sizeof(double) * r * cubicSize);
+
+  if ((int)(fread(cubicCoef_,sizeof(double),r*cubicSize,fin)) < r*cubicSize)
+  {
+    printf("Error: couldn't read from input cubic polynomial file.\n");
+    throw 1;
+  }
+
+  if (bigEndianMachine)
+  {
+    for(int i=0; i<r*cubicSize; i++)
+    {
+      little2big(&cubicCoef_[i], &bufferd, sizeof(double));
+      cubicCoef_[i] = bufferd;
+    }
+  }
+
+  if (rTarget >= 0)
+  {
+    int linearSizeTarget, quadraticSizeTarget, cubicSizeTarget;
+    GetSizes(rTarget, &linearSizeTarget, &quadraticSizeTarget, &cubicSizeTarget);
+
+    double * linearCoefTemp_ = 
+      (double*) malloc (sizeof(double) * rTarget * linearSizeTarget);
+
+    double * quadraticCoefTemp_ = 
+      (double*) malloc (sizeof(double) * rTarget * quadraticSizeTarget);
+
+    double * cubicCoefTemp_ = 
+      (double*) malloc (sizeof(double) * rTarget * cubicSizeTarget);
+
+    for(int output=0; output<rTarget; output++)
+      for(int i=0; i<rTarget; i++)
+      {
+        SetSizes(rTarget);
+        int positionTarget = linearCoefPos(output, i); 
+        SetSizes(r);
+        int position = linearCoefPos(output, i); 
+        linearCoefTemp_[positionTarget] = linearCoef_[position];
+      }
+ 
+    for(int output=0; output<rTarget; output++)
+      for(int i=0; i<rTarget; i++)
+        for(int j=i; j<rTarget; j++)
+        {
+          SetSizes(rTarget);
+          int positionTarget = quadraticCoefPos(output, i, j); 
+          SetSizes(r);
+          int position = quadraticCoefPos(output, i, j); 
+          quadraticCoefTemp_[positionTarget] = quadraticCoef_[position];
+        }
+
+    for(int output=0; output<rTarget; output++)
+      for(int i=0; i<rTarget; i++)
+        for(int j=i; j<rTarget; j++)
+          for(int k=j; k<rTarget; k++)
+          {
+            SetSizes(rTarget);
+            int positionTarget = cubicCoefPos(output, i, j, k); 
+            SetSizes(r);
+            int position = cubicCoefPos(output, i, j, k); 
+            cubicCoefTemp_[positionTarget] = cubicCoef_[position];
+          }
+
+    r = rTarget;
+    SetSizes(r);
+
+    free(linearCoef_);
+    free(quadraticCoef_);
+    free(cubicCoef_);
+
+    linearCoef_ = linearCoefTemp_;
+    quadraticCoef_ = quadraticCoefTemp_;
+    cubicCoef_ = cubicCoefTemp_;
+  }
+
+  volumetricMesh = NULL;
+  U = NULL;
+  reducedGravityForce = NULL;
+  precomputedIntegrals = NULL;
+  numElementVertices = 0;
+
+  InitBuffers();
+
+  addGravity = false;
+
+  useSingleThread = 0;
+  shallowCopy = 0;
+  g=9.81; 
+
+  return 0;
+}
+
 StVKReducedInternalForces::~StVKReducedInternalForces()
 {
   if (!shallowCopy)
@@ -441,7 +645,7 @@ void StVKReducedInternalForces::ProcessElements(int startElement, int endElement
   precomputedIntegrals->ReleaseElementIterator(elIter);
 }
 
-void StVKReducedInternalForces::TestPolynomial(double * q, StVKInternalForces * stVKInternalForces, char * filenameU)
+void StVKReducedInternalForces::TestPolynomial(double * q, StVKInternalForces * stVKInternalForces, const char * filenameU)
 {
   double * fqPoly = (double*) malloc (sizeof(double) * r);
   double * fqDirect = (double*) malloc (sizeof(double) * r);
@@ -497,13 +701,21 @@ void StVKReducedInternalForces::TestPolynomial(double * q, StVKInternalForces * 
   free(fqPoly);
 }
 
-int StVKReducedInternalForces::Save(char * filename)
+int StVKReducedInternalForces::Save(const char * filename)
 {
   FILE * fout = fopen(filename,"wb");
-
   if (!fout)
     return 1;
 
+  Save(fout);
+
+  fclose(fout);
+
+  return 0;
+}
+
+int StVKReducedInternalForces::Save(FILE * fout)
+{
   if ((int)(fwrite(&r,sizeof(int),1,fout)) < 1)
     return 1;
 
@@ -525,8 +737,6 @@ int StVKReducedInternalForces::Save(char * filename)
   if ((int)(fwrite(cubicCoef_,sizeof(double),r*cubicSize,fout)) < r*cubicSize)
     return 1;
 
-  fclose(fout);
-
   return 0;
 }
 
@@ -537,7 +747,7 @@ void StVKReducedInternalForces::SetSizes(int rTarget)
   GetSizes(r, &linearSize, &quadraticSize, &cubicSize);
 }
 
-int StVKReducedInternalForces::GetrFromFile(char * filename)
+int StVKReducedInternalForces::GetrFromFile(const char * filename)
 {
   FILE * fin = fopen(filename,"rb");
 
@@ -572,202 +782,6 @@ void StVKReducedInternalForces::little2big(void * input, void * output, int numB
   }
 }
 
-StVKReducedInternalForces::StVKReducedInternalForces(char * filename, int rTarget, int bigEndianMachine, int verbose_) : verbose(verbose_)
-{
-  if (verbose)
-    printf("Loading polynomials assuming little endian machine: %s.", (!bigEndianMachine) ? "TRUE" : "FALSE");
-
-  FILE * fin = fopen(filename,"rb");
-
-  if (!fin)
-  {
-    printf("Error: couldn't read from input cubic polynomial file.\n");
-    throw 1;
-  }
-
-  if ((int)(fread(&r,sizeof(int),1,fin)) < 1)
-  {
-    printf("Error: couldn't read from input cubic polynomial file.\n");
-    throw 1;
-  }
-  int buffer;
-  if (bigEndianMachine)
-  {
-    little2big(&r, &buffer, sizeof(int));
-    r = buffer;
-  }
-
-  if (rTarget > r)
-  {
-    printf("Error: the input cubic polynomial file has r=%d, but you requested %d > %d.\n", r, rTarget, r);
-    throw 2;
-  }
-
-  // first read in the coefficients as if all modes requested
-  if (verbose)
-    printf(" r=%d\n", r);
-  
-  r2 = r * r;
-
-  if ((int)(fread(&linearSize,sizeof(int),1,fin)) < 1)
-  {
-    printf("Error: couldn't read from input cubic polynomial file.\n");
-    throw 1;
-  }
-
-  if (bigEndianMachine)
-  {
-    little2big(&linearSize, &buffer, sizeof(int));
-    linearSize = buffer;
-  }
-
-  if ((int)(fread(&quadraticSize,sizeof(int),1,fin)) < 1)
-  {
-    printf("Error: couldn't read from input cubic polynomial file.\n");
-    throw 1;
-  }
-
-  if (bigEndianMachine)
-  {
-    little2big(&quadraticSize, &buffer, sizeof(int));
-    quadraticSize = buffer;
-  }
-
-  if ((int)(fread(&cubicSize,sizeof(int),1,fin)) < 1)
-  {
-    printf("Error: couldn't read from input cubic polynomial file.\n");
-    throw 1;
-  }
-
-  if (bigEndianMachine)
-  {
-    little2big(&cubicSize, &buffer, sizeof(int));
-    cubicSize = buffer;
-  }
-
-  linearCoef_ = (double*) malloc (sizeof(double) * r * linearSize);
-
-  if ((int)(fread(linearCoef_,sizeof(double),r*linearSize,fin)) < r*linearSize)
-  {
-    printf("Error: couldn't read from input cubic polynomial file.\n");
-    throw 1;
-  }
-
-  double bufferd;
-  if (bigEndianMachine)
-  {
-    for(int i=0; i<r*linearSize; i++)
-    {
-      little2big(&linearCoef_[i], &bufferd, sizeof(double));
-      linearCoef_[i] = bufferd;
-    }
-  }
-
-  quadraticCoef_ = (double*) malloc (sizeof(double) * r * quadraticSize);
-
-  if ((int)(fread(quadraticCoef_,sizeof(double),r*quadraticSize,fin)) < r*quadraticSize)
-  {
-    printf("Error: couldn't read from input cubic polynomial file.\n");
-    throw 1;
-  }
-
-  if (bigEndianMachine)
-  {
-    for(int i=0; i<r*quadraticSize; i++)
-    {
-      little2big(&quadraticCoef_[i], &bufferd, sizeof(double));
-      quadraticCoef_[i] = bufferd;
-    }
-  }
-
-  cubicCoef_ = (double*) malloc (sizeof(double) * r * cubicSize);
-
-  if ((int)(fread(cubicCoef_,sizeof(double),r*cubicSize,fin)) < r*cubicSize)
-  {
-    printf("Error: couldn't read from input cubic polynomial file.\n");
-    throw 1;
-  }
-
-  if (bigEndianMachine)
-  {
-    for(int i=0; i<r*cubicSize; i++)
-    {
-      little2big(&cubicCoef_[i], &bufferd, sizeof(double));
-      cubicCoef_[i] = bufferd;
-    }
-  }
-
-  fclose(fin);
-
-  if (rTarget >= 0)
-  {
-    int linearSizeTarget, quadraticSizeTarget, cubicSizeTarget;
-    GetSizes(rTarget, &linearSizeTarget, &quadraticSizeTarget, &cubicSizeTarget);
-
-    double * linearCoefTemp_ = 
-      (double*) malloc (sizeof(double) * rTarget * linearSizeTarget);
-
-    double * quadraticCoefTemp_ = 
-      (double*) malloc (sizeof(double) * rTarget * quadraticSizeTarget);
-
-    double * cubicCoefTemp_ = 
-      (double*) malloc (sizeof(double) * rTarget * cubicSizeTarget);
-
-    for(int output=0; output<rTarget; output++)
-      for(int i=0; i<rTarget; i++)
-      {
-        SetSizes(rTarget);
-        int positionTarget = linearCoefPos(output, i); 
-        SetSizes(r);
-        int position = linearCoefPos(output, i); 
-        linearCoefTemp_[positionTarget] = linearCoef_[position];
-      }
- 
-    for(int output=0; output<rTarget; output++)
-      for(int i=0; i<rTarget; i++)
-        for(int j=i; j<rTarget; j++)
-        {
-          SetSizes(rTarget);
-          int positionTarget = quadraticCoefPos(output, i, j); 
-          SetSizes(r);
-          int position = quadraticCoefPos(output, i, j); 
-          quadraticCoefTemp_[positionTarget] = quadraticCoef_[position];
-        }
-
-    for(int output=0; output<rTarget; output++)
-      for(int i=0; i<rTarget; i++)
-        for(int j=i; j<rTarget; j++)
-          for(int k=j; k<rTarget; k++)
-          {
-            SetSizes(rTarget);
-            int positionTarget = cubicCoefPos(output, i, j, k); 
-            SetSizes(r);
-            int position = cubicCoefPos(output, i, j, k); 
-            cubicCoefTemp_[positionTarget] = cubicCoef_[position];
-          }
-
-    r = rTarget;
-    SetSizes(r);
-
-    free(linearCoef_);
-    free(quadraticCoef_);
-    free(cubicCoef_);
-
-    linearCoef_ = linearCoefTemp_;
-    quadraticCoef_ = quadraticCoefTemp_;
-    cubicCoef_ = cubicCoefTemp_;
-  }
-
-  volumetricMesh = NULL;
-  U = NULL;
-  reducedGravityForce = NULL;
-  precomputedIntegrals = NULL;
-  numElementVertices = 0;
-
-  InitBuffers();
-
-  addGravity = false;
-}
 
 void StVKReducedInternalForces::Evaluate(double * q, double * fq)
 {
@@ -1292,6 +1306,39 @@ StVKReducedInternalForces * StVKReducedInternalForces::ShallowClone()
   output->shallowCopy = 1;
   output->InitBuffers();
   return output;
+}
+
+int StVKReducedInternalForces::SaveEmptyCub(const char * filename)
+{
+  FILE * fout = fopen(filename, "wb");
+  if (!fout)
+    return 1;
+
+  SaveEmptyCub(fout);
+
+  fclose(fout);
+  return 0;
+}
+
+int StVKReducedInternalForces::SaveEmptyCub(FILE * fout)
+{
+  int r = 0;
+  if ((int)(fwrite(&r,sizeof(int),1,fout)) < 1)
+    return 1;
+
+  int linearSize = 0;
+  if ((int)(fwrite(&linearSize,sizeof(int),1,fout)) < 1)
+    return 1;
+
+  int quadraticSize = 0;
+  if ((int)(fwrite(&quadraticSize,sizeof(int),1,fout)) < 1)
+    return 1;
+
+  int cubicSize = 0;
+  if ((int)(fwrite(&cubicSize,sizeof(int),1,fout)) < 1)
+    return 1;
+
+  return 0;
 }
 
 /*

@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC    *
+ * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -35,11 +35,11 @@
 #include "objMeshRender.h"
 #include "objMeshEncode.h"
 
-SceneObject::SceneObject(char * filename):
+SceneObject::SceneObject(const char * filename):
   mesh(NULL), meshRender(NULL), displayList(0), displayListExists(false), displayListEdges(0), displayListEdgesExists(false)
 { 
   int verbose = 0;
-  mesh = new ObjMesh(filename, verbose);
+  mesh = new ObjMesh(std::string(filename), ObjMesh::ASCII, verbose);
 
   int encStart = strlen(filename) - 4;
   if ((encStart > 0) && (strcmp(&filename[encStart], ".enc") == 0))
@@ -50,6 +50,22 @@ SceneObject::SceneObject(char * filename):
     printf("Decoded mesh.\n");
   }
 
+  Construct();
+}
+
+SceneObject::SceneObject(ObjMesh * objMesh, bool deepCopy_):
+  deepCopy(deepCopy_), mesh(NULL), meshRender(NULL), displayList(0), displayListExists(false), displayListEdges(0), displayListEdgesExists(false)
+{ 
+  if (deepCopy)
+    mesh = new ObjMesh(*objMesh);
+  else
+    mesh = objMesh;
+
+  Construct();
+}
+
+void SceneObject::Construct()
+{
   meshRender = new ObjMeshRender(mesh);
   if (meshRender->numTextures() > 0)
     hasTextures_ = true;
@@ -65,8 +81,9 @@ SceneObject::SceneObject(char * filename):
 SceneObject::~SceneObject()
 {
   PurgeDisplayList();
-  delete mesh;
-  delete meshRender;
+  if (deepCopy)
+    delete(mesh);
+  delete(meshRender);
 }
 
 void SceneObject::SetMaterialAlpha(double alpha)
@@ -229,7 +246,7 @@ void SceneObject::RenderFacesAndEdges()
   meshRender->render(OBJMESHRENDER_TRIANGLES | OBJMESHRENDER_EDGES, renderMode);
 }
 
-void SceneObject::RenderEdgesInGroup(char * groupName)
+void SceneObject::RenderEdgesInGroup(const char * groupName)
 {
   meshRender->renderGroupEdges(groupName);
 }
@@ -284,7 +301,7 @@ void SceneObject::HighlightVertex(int i)
 
 bool SceneObject::AreTexturesEnabled()
 {
-  return ((renderMode && OBJMESHRENDER_TEXTURE) != 0);
+  return ((renderMode & OBJMESHRENDER_TEXTURE) != 0);
 }
 
 void SceneObject::EnableTextures()
@@ -378,7 +395,7 @@ void SceneObject::ExportMeshGeometry(int * numVertices, double ** vertices, int 
   mesh->exportGeometry(numVertices, vertices, numTriangles, triangles, NULL, NULL);
 }
 
-void SceneObject::PrintBitmapString(float x, float y, float z, char* s)
+void SceneObject::PrintBitmapString(float x, float y, float z, const char* s)
 {
   glRasterPos3f(x,y,z);
   if (s && strlen(s)) 
@@ -391,10 +408,10 @@ void SceneObject::PrintBitmapString(float x, float y, float z, char* s)
   }
 }
 
-void SceneObject::PrintBitmapInteger(float x, float y, float z, long i)
+void SceneObject::PrintBitmapInteger(float x, float y, float z, int i)
 {
   char s[200];
-  sprintf(s,"%ld",i);
+  sprintf(s,"%d",i);
   PrintBitmapString(x,y,z,s);
 }
 

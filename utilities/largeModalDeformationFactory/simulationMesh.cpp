@@ -1,12 +1,12 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "Large Modal Deformation Factory",                                    *
  * a pre-processing utility for model reduction of                       *
  * deformable objects undergoing large deformations.                     *
  *                                                                       *
- *  Copyright (C) 2007 CMU, 2009 MIT, 2013 USC                           *
+ *  Copyright (C) 2007 CMU, 2009 MIT, 2014 USC                           *
  *                                                                       *
  * All rights reserved.                                                  *
  *                                                                       *
@@ -209,7 +209,7 @@ void MyFrame::OnSaveSimulationMesh(wxCommandEvent& event)
     if( !meshFilename.empty() )
     {
       const char * filename = meshFilename.mb_str();
-      int code = precomputationState.simulationMesh->save((char*)filename);
+      int code = precomputationState.simulationMesh->saveToAscii((char*)filename);
       if (code != 0)
         this->errMsg( _T("Saving error"), 
           _T("Unable to save simulation mesh to ") +  meshFilename );

@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "renderVolumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT,    *
- *                                                          2013 USC     *
+ *                                                          2014 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -28,7 +28,6 @@
  *************************************************************************/
 
 #include <float.h>
-using namespace std;
 
 #ifdef WIN32
   #include <windows.h>
@@ -39,6 +38,7 @@ using namespace std;
 #include "volumetricMeshENuMaterial.h"
 #include "cubicMesh.h"
 #include "tetMesh.h"
+using namespace std;
 
 // controls how material groups are rendered
 #define RENDERVOLUMETRICMESH_RENDERINGMODE_FLAT 0

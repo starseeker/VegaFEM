@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include "polarDecomposition.h"
+#include "mat3d.h"
 
 /*
   See polarDecomposition.h for license information.
@@ -34,11 +35,12 @@ double PolarDecomposition::infNorm(const double * A)
 
 // Input: M (3x3 mtx)
 // Output: Q (3x3 rotation mtx), S (3x3 symmetric mtx)
-double PolarDecomposition::Compute(const double * M, double * Q, double * S, double tolerance)
+double PolarDecomposition::Compute(const double * M, double * Q, double * S, double tolerance, int forceRotation)
 {
   double Mk[9];
   double Ek[9];
   double det, M_oneNorm, M_infNorm, E_oneNorm;
+  int useSVD = 0;
 
   // Mk = M^T
   for(int i=0; i<3; i++)
@@ -60,6 +62,13 @@ double PolarDecomposition::Compute(const double * M, double * Q, double * S, dou
     crossProduct(&(Mk[0]), &(Mk[3]), &(MadjTk[6]));
 
     det = Mk[0] * MadjTk[0] + Mk[1] * MadjTk[1] + Mk[2] * MadjTk[2];
+
+    if ((det <= 1e-6) && forceRotation)
+    {
+      useSVD = 1;
+      break;
+    }
+
     if (det == 0.0) 
     {
       printf("Warning (polarDecomposition) : zero determinant encountered.\n");
@@ -69,7 +78,7 @@ double PolarDecomposition::Compute(const double * M, double * Q, double * S, dou
     double MadjT_one = oneNorm(MadjTk); 
     double MadjT_inf = infNorm(MadjTk);
 
-    double gamma = sqrt(sqrt((MadjT_one * MadjT_inf) / (M_oneNorm * M_infNorm)) / fabs(det));
+    double gamma = sqrt(sqrt((MadjT_one * MadjT_inf) / (M_oneNorm * M_infNorm * det * det)));
     double g1 = gamma * 0.5;
     double g2 = 0.5 / (gamma * det);
 
@@ -86,10 +95,27 @@ double PolarDecomposition::Compute(const double * M, double * Q, double * S, dou
   }
   while ( E_oneNorm > M_oneNorm * tolerance );
 
-  // Q = Mk^T 
-  for(int i=0; i<3; i++)
-    for(int j=0; j<3; j++)
-      Q[3*i+j] = Mk[3*j+i];
+  if (useSVD)
+  {
+    // use the SVD algorithm to compute Q
+    Mat3d Mm(M);
+    double modifiedSVD_singularValue_eps = tolerance;
+    Mat3d Um, Vm;
+    Vec3d Lambda;
+    int modifiedSVD = 1;
+    int code = SVD(Mm, Um, Lambda, Vm, modifiedSVD_singularValue_eps, modifiedSVD);
+    code = code + 1; // just to ignore compiler warning
+
+    Mat3d Qm = Um * trans(Vm);
+    Qm.convertToArray(Q);
+  }
+  else
+  {
+    // Q = Mk^T 
+    for(int i=0; i<3; i++)
+      for(int j=0; j<3; j++)
+        Q[3*i+j] = Mk[3*j+i];
+  }
 
   for(int i=0; i<3; i++)
     for(int j=0; j<3; j++)
@@ -100,10 +126,10 @@ double PolarDecomposition::Compute(const double * M, double * Q, double * S, dou
     }
     
   // S must be symmetric; enforce the symmetry
-  for (int i=0; i<3; i++) 
-    for (int j=i; j<3; j++)
-      S[3 * i + j] = S[3 * j + i] = 0.5 * (S[3 * i + j] + S[3 * j + i]);
+  S[1] = S[3] = 0.5 * (S[1] + S[3]);
+  S[2] = S[6] = 0.5 * (S[2] + S[6]);
+  S[5] = S[7] = 0.5 * (S[5] + S[7]);
 
-  return (det);
+  return det;
 }
 

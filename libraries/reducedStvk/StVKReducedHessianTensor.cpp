@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "reducedStvk" library , Copyright (C) 2007 CMU, 2009 MIT              *
  * All rights reserved.                                                  *
@@ -352,7 +352,7 @@ double *Y, const int incY);
       dfq, 1);
 }
 
-int StVKReducedHessianTensor::Save(char * filename)
+int StVKReducedHessianTensor::Save(const char * filename)
 {
   FILE * fout = fopen(filename,"wb");
 
@@ -380,7 +380,7 @@ int StVKReducedHessianTensor::Save(char * filename)
 }
 
 
-StVKReducedHessianTensor::StVKReducedHessianTensor(char * filename)
+StVKReducedHessianTensor::StVKReducedHessianTensor(const char * filename)
 {
   FILE * fin = fopen(filename,"rb");
 

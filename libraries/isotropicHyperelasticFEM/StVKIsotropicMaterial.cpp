@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "isotropic hyperelastic FEM" library , Copyright (C) 2013 USC         *
+ * "isotropic hyperelastic FEM" library , Copyright (C) 2014 USC         *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Fun Shing Sin                            *

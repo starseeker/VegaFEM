@@ -24,7 +24,7 @@ MATRIX_LIB_FILENAMES=$(call GET_LIB_FILENAMES, $(MATRIX_LIBS))
 
 include $(MATRIX_LIB_MAKEFILES)
 
-all: $(L)/matrix/libmatrix.a $(L)/matrix/example
+all: $(L)/matrix/libmatrix.a
 
 $(L)/matrix/libmatrix.a: $(MATRIX_OBJECTS_FILENAMES)
 	ar r $@ $^; cp $@ $(L)/lib; cp $(L)/matrix/*.h $(L)/include

@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "reducedStVK" library , Copyright (C) 2007 CMU, 2009 MIT              *
  * All rights reserved.                                                  *
@@ -48,12 +48,12 @@ public:
   StVKReducedHessianTensor(StVKReducedStiffnessMatrix * stVKReducedStiffnessMatrix);
 
   // load the coefficients from file
-  StVKReducedHessianTensor(char * filename);
+  StVKReducedHessianTensor(const char * filename);
 
   ~StVKReducedHessianTensor();
 
   // saves coefficients out, in binary format
-  int Save(char * filename);
+  int Save(const char * filename);
 
   // make a buffer that you can then pass it to the "Evaluate" routine
   void MakeRoomForTensor(double ** Hq);

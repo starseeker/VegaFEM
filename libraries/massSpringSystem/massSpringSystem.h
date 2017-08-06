@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "massSpringSystem" library, Copyright (C) 2007 CMU, 2009 MIT,         *
- *                                           2013 USC                    *
+ *                                           2014 USC                    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -110,7 +110,7 @@ public:
   // creates a 3D triangle mesh, where each mass-spring system edge is one (degenerate) triangle
   // useful to visualize the mass-spring system
   // u is the deformation
-  void CreateObjMesh(char * filename, double * u = NULL); // if NULL, assumes zero deformation 
+  void CreateObjMesh(const char * filename, double * u = NULL); // if NULL, assumes zero deformation 
 
   // == advanced routines below ===
 

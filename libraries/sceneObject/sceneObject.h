@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC    *
+ * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -38,6 +38,8 @@
   #include <windows.h>
 #endif
 
+#include "openGL-headers.h"
+
 #include "macros.h"
 #include "objMesh.h"
 #include "objMeshRender.h"
@@ -53,7 +55,8 @@ public:
   enum TextureTransparencyType {USETEXTURETRANSPARENCY, NOTEXTURETRANSPARENCY}; // enables 2-pass rendering for textures with transparencies
 
   // create a static scene object, by loading it from an Alias Wavefront OBJ file
-  SceneObject(char * filename);
+  SceneObject(const char * filename);
+  SceneObject(ObjMesh * objMesh, bool deepCopy = true);
   virtual ~SceneObject();
 
   // ==== render ====
@@ -69,7 +72,7 @@ public:
   virtual void RenderVertices_Selection();
 
   virtual void RenderShadow(double ground[4], double light[4]);
-  void RenderEdgesInGroup(char * groupName); // renders only the edges in the given group
+  void RenderEdgesInGroup(const char * groupName); // renders only the edges in the given group
 
   // ==== display lists ====
 
@@ -137,10 +140,12 @@ public:
   virtual void TransformRigidly(double * centerOfMass, double * R);
 
 protected:
+  void Construct();
   int n;
   unsigned int renderMode;
   TextureTransparencyType textureTransparency;
 
+  bool deepCopy;
   ObjMesh * mesh;
   ObjMeshRender * meshRender;
   GLuint displayList;
@@ -149,8 +154,8 @@ protected:
   GLuint displayListEdges;
   bool displayListEdgesExists;
 
-  void PrintBitmapString(float x,float y, float z, char* s);
-  void PrintBitmapInteger(float x,float y, float z,long i);
+  void PrintBitmapString(float x,float y, float z, const char* s);
+  void PrintBitmapInteger(float x,float y, float z, int i);
 
   bool hasTextures_;
 };

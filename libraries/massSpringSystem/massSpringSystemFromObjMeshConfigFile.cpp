@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "massSpringSystem" library, Copyright (C) 2007 CMU, 2009 MIT,         *
- *                                           2013 USC                    *
+ *                                           2014 USC                    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -33,7 +33,7 @@
 #include "massSpringSystemFromObjMeshConfigFile.h"
 #include <string.h>
 
-char * MassSpringSystemFromObjMeshConfigFile::DuplicateString(char * s)
+char * MassSpringSystemFromObjMeshConfigFile::DuplicateString(const char * s)
 {
   // strdup sometimes causes problems, so we use this
   char * p = (char*) malloc (sizeof(char) * (strlen(s) + 1));
@@ -41,7 +41,7 @@ char * MassSpringSystemFromObjMeshConfigFile::DuplicateString(char * s)
   return p;
 }
 
-int MassSpringSystemFromObjMeshConfigFile::GenerateMassSpringSystem(char * configFilename, MassSpringSystem ** massSpringSystem, MassSpringSystemObjMeshConfiguration * massSpringSystemObjConfiguration)
+int MassSpringSystemFromObjMeshConfigFile::GenerateMassSpringSystem(const char * configFilename, MassSpringSystem ** massSpringSystem, MassSpringSystemObjMeshConfiguration * massSpringSystemObjConfiguration)
 {
   char massSpringMeshFilename[4096];
   double surfaceDensity, tensileStiffness, shearStiffness, bendStiffness, damping;

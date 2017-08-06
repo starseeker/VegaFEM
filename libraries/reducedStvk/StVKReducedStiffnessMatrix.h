@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "reducedStvk" library , Copyright (C) 2007 CMU, 2009 MIT              *
  * All rights reserved.                                                  *
@@ -58,12 +58,12 @@ public:
   StVKReducedStiffnessMatrix(StVKReducedInternalForces * stVKReducedInternalForces, int verbose=1);
 
   // load the coefficients from a file
-  StVKReducedStiffnessMatrix(char * filename);
+  StVKReducedStiffnessMatrix(const char * filename);
 
   ~StVKReducedStiffnessMatrix();
 
   // saves coefficients (in binary format; the convention is to use the .sti file extension)
-  int Save(char * filename);
+  int Save(const char * filename);
 
   // evaluates the stiffness matrix for the given configuration q, result is written into Kq (must be a pre-allocated r x r matrix)
   // Kq will be symmetric; the routine returns all the r*r entries of the matrix, as opposed to just the upper triangle

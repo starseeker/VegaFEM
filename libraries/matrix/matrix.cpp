@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "matrix" library , Copyright (C) 2007 CMU, 2009 MIT                   *
  * All rights reserved.                                                  *
@@ -27,7 +27,7 @@
 #include "matrixExp.h"
 
 template<class real>
-Matrix<real>::Matrix(char * filename)
+Matrix<real>::Matrix(const char * filename)
 {
   if (ReadMatrixFromDisk(filename, &m, &n, &data) != 0)
   {
@@ -380,7 +380,7 @@ void Matrix<real>::MExpv(real t, const Matrix<real> & v, Matrix<real> & w)
 
 
 template<class real>
-int Matrix<real>::Save(char * filename) const
+int Matrix<real>::Save(const char * filename) const
 {
   if (WriteMatrixToDisk(filename, m, n, data) != 0)
   {
@@ -518,7 +518,7 @@ void Matrix<real>::AppendRowsColumns(const Matrix<real> & bottomLeftBlock, const
 }
 
 // === float ===
-template Matrix<float>::Matrix(char * filename);
+template Matrix<float>::Matrix(const char * filename);
 template Matrix<float>::Matrix(int m, int n, const float * data,
                      bool makeInternalDataCopy, bool freeDataInDestructor);
 template Matrix<float>::Matrix(int m, int n, bool freeDataInDestructor);
@@ -547,7 +547,7 @@ template int Matrix<float>::LUSolve(const Matrix<float> & x, const Matrix<float>
   template void Matrix<float>::MExpv(float t, const Matrix<float> & v, Matrix<float> & w);
 #endif
 template void Matrix<float>::Print(int numDigits) const; 
-template int Matrix<float>::Save(char * filename) const;
+template int Matrix<float>::Save(const char * filename) const;
 template void Matrix<float>::SetSubmatrix(int I, int J, const Matrix<float> & submatrix);
 template void Matrix<float>::RemoveColumns(int columnStart, int columnEnd);
 template void Matrix<float>::RemoveRows(int rowStart, int rowEnd);
@@ -557,7 +557,7 @@ template void Matrix<float>::AppendColumns(const Matrix<float> & columns);
 template void Matrix<float>::AppendRowsColumns(const Matrix<float> & bottomLeftBlock, const Matrix<float> & topRightBlock, const Matrix<float> & bottomRightBlock);
 
 // === double ===
-template Matrix<double>::Matrix(char * filename);
+template Matrix<double>::Matrix(const char * filename);
 template Matrix<double>::Matrix(int m, int n, const double * data,
                      bool makeInternalDataCopy, bool freeDataInDestructor);
 template Matrix<double>::Matrix(int m, int n, bool freeDataInDestructor);
@@ -586,7 +586,7 @@ template int Matrix<double>::LUSolve(const Matrix<double> & x, const Matrix<doub
   template void Matrix<double>::MExpv(double t, const Matrix<double> & v, Matrix<double> & w);
 #endif
 template void Matrix<double>::Print(int numDigits) const;
-template int Matrix<double>::Save(char * filename) const;
+template int Matrix<double>::Save(const char * filename) const;
 template void Matrix<double>::SetSubmatrix(int I, int J, const Matrix<double> & submatrix);
 template void Matrix<double>::RemoveColumns(int columnStart, int columnEnd);
 template void Matrix<double>::RemoveRows(int rowStart, int rowEnd);

@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * OBJ mesh visualization utility                                        *
- * Copyright (C) 2007 CMU, 2009 MIT, 2013 USC                            *
+ * Copyright (C) 2007 CMU, 2009 MIT, 2014 USC                            *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -106,7 +106,7 @@ int renderObject = 1;
 int renderLights = 1;
 int enableGLSLPhong = 1;
 int showAxes = 1;
-int lightOn[8] = {1, 1, 1, 1, 1, 1, 1, 1 };
+int lightOn[8] = {1, 0, 0, 0, 0, 1, 0, 1 };
 int showNormals = 0;
 float lightIntensity = 0.5;
 double lastPrintOuttime = 0.0;

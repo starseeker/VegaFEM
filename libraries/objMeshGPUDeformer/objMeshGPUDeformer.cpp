@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "objMeshGPUDeformer" library , Copyright (C) 2007 CMU, 2009 MIT,      *
- *                                                        2013 USC       *
+ *                                                        2014 USC       *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -364,16 +364,16 @@ void ObjMeshGPUDeformer::RenderMaster(int masterMode, void * data)
     int materialIndex = groupHandle->getMaterialIndex();
     const ObjMesh::Material * materialHandle = mesh->getMaterialHandle(materialIndex);
 
-    double alpha = materialHandle->getAlpha();
+    float alpha = (float)(materialHandle->getAlpha());
 
     Vec3d Ka = materialHandle->getKa();
-    float Kav[4] = { Ka[0], Ka[1], Ka[2], alpha };
+    float Kav[4] = { (float)Ka[0], (float)Ka[1], (float)Ka[2], alpha };
 
     Vec3d Kd = materialHandle->getKd();
-    float Kdv[4] = { Kd[0], Kd[1], Kd[2], alpha };
+    float Kdv[4] = { (float)Kd[0], (float)Kd[1], (float)Kd[2], alpha };
 
     Vec3d Ks = materialHandle->getKs();
-    float Ksv[4] = { Ks[0], Ks[1], Ks[2], alpha };
+    float Ksv[4] = { (float)Ks[0], (float)Ks[1], (float)Ks[2], alpha };
 
     float shininess = materialHandle->getShininess();
 
@@ -618,7 +618,7 @@ void ObjMeshGPUDeformer::MakeDisplayListsTriangles(int mode)
       // triangulate the face on the fly
       for(unsigned int iVtx = 0; iVtx < faceHandle->getNumVertices() - 2; iVtx++)
       {
-        int triangleVertex[3] = { 0, iVtx + 1, iVtx + 2 };
+        unsigned int triangleVertex[3] = { 0, iVtx + 1, iVtx + 2 };
 
         for (int vtx=0; vtx<3; vtx++)
         {
@@ -778,7 +778,7 @@ void ObjMeshGPUDeformer::MakeDisplayListsEdges()
 
       for(unsigned int iVtx = 0; iVtx < faceHandle->getNumVertices() - 1; iVtx++)
       {
-        int edgeVertex[2] = { iVtx, iVtx + 1 };
+        unsigned int edgeVertex[2] = { iVtx, iVtx + 1 };
 
         for (int vtx=0; vtx<2; vtx++)
         {
@@ -943,7 +943,7 @@ void ObjMeshGPUDeformer::cgErrorCallback(void)
   }
 }
 
-void ObjMeshGPUDeformer::PrintGLerror( char *msg )
+void ObjMeshGPUDeformer::PrintGLerror( const char *msg )
 {
   GLenum errCode;
   const GLubyte *errStr;

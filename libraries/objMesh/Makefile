@@ -9,13 +9,13 @@ include ../../Makefile-headers/Makefile-header
 R ?= ../..
 
 # the object files to be compiled for this library
-OBJMESH_OBJECTS=objMeshBinaryLoader.o objMesh.o objMesh-disjointSet.o objMeshRender.o objMeshEncode.o objMeshOctree.o objMeshOffsetVoxels.o objMeshOrientable.o octree.o boundingBox.o simpleSphere.o triangle.o tribox3.o objMeshGraph.o 
+OBJMESH_OBJECTS=objMeshBinaryLoader.o objMesh.o objMesh-disjointSet.o objMeshRender.o objMeshEncode.o objMeshOctree.o objMeshOffsetVoxels.o objMeshOrientable.o octree.o boundingBox.o simpleSphere.o triangle.o tribox3.o objMeshGraph.o objMeshClose.o
 
 # the libraries this library depends on
 OBJMESH_LIBS=minivector matrixIO graph imageIO
 
 # the headers in this library
-OBJMESH_HEADERS=objMeshBinaryLoader.h objMesh.h objMesh-disjointSet.h objMeshRender.h objMeshEncode.h objMeshOctree.h objMeshOffsetVoxels.h objMeshOrientable.h octree.h boundingBox.h simpleSphere.h triangle.h tribox3.h objMeshGraph.h 
+OBJMESH_HEADERS=objMeshBinaryLoader.h objMesh.h objMesh-disjointSet.h objMeshRender.h objMeshEncode.h objMeshOctree.h objMeshOffsetVoxels.h objMeshOrientable.h octree.h boundingBox.h simpleSphere.h triangle.h tribox3.h objMeshGraph.h objMeshClose.h
 
 OBJMESH_OBJECTS_FILENAMES=$(addprefix $(L)/objMesh/, $(OBJMESH_OBJECTS))
 OBJMESH_HEADER_FILENAMES=$(addprefix $(L)/objMesh/, $(OBJMESH_HEADERS))

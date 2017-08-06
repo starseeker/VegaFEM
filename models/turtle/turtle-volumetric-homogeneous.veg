@@ -1541,7 +1541,7 @@ TET
 1185 75 313 206 315
 
 *MATERIAL defaultMaterial
-ENU, 1000, 1000000, 0.45
+ENU, 1000, 250000, 0.45
 
 *REGION
 allElements, defaultMaterial

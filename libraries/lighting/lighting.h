@@ -71,12 +71,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-
-#ifdef WIN32
-  #include <windows.h>
-#endif
-
-#include "openGL-headers.h"
 #include "macros.h"
 
 class Lighting
@@ -84,7 +78,7 @@ class Lighting
 public:
 
   // read OpenGL lighting parameters from a configuration file
-  Lighting(char * configFilename);
+  Lighting(const char * configFilename);
 
   // call this inside your OpenGL display routine, after setting up the modelview and projection matrices
   void LightScene(); 

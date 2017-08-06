@@ -78,6 +78,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
+#include "vegalong.h"
 
 int getopts(int argc, char **argv, opt_t opttable[])
 {
@@ -157,7 +158,7 @@ int getopts(int argc, char **argv, opt_t opttable[])
 	               	*((bool *)opttable[j].var) = bool_;
 	               	break;
 	            case OPTLONG :
-	                *((long *)opttable[j].var) = strtol(arg+l,NULL,10);
+	                *((vegalong *)opttable[j].var) = strtol(arg+l,NULL,10);
 	                if (errno == ERANGE)
 	                    return (i);
 	                break;

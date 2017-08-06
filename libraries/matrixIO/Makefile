@@ -9,13 +9,13 @@ include ../../Makefile-headers/Makefile-header
 R ?= ../..
 
 # the object files to be compiled for this library
-MATRIXIO_OBJECTS=matrixIO.o
+MATRIXIO_OBJECTS=matrixIO.o multiMatrixIO.o
 
 # the libraries this library depends on
 MATRIXIO_LIBS=
 
 # the headers in this library
-MATRIXIO_HEADERS=matrixIO.h matrixMacros.h
+MATRIXIO_HEADERS=matrixIO.h multiMatrixIO.h matrixMacros.h
 
 MATRIXIO_OBJECTS_FILENAMES=$(addprefix $(L)/matrixIO/, $(MATRIXIO_OBJECTS))
 MATRIXIO_HEADER_FILENAMES=$(addprefix $(L)/matrixIO/, $(MATRIXIO_HEADERS))

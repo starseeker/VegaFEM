@@ -1,12 +1,12 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "Large Modal Deformation Factory",                                    *
  * a pre-processing utility for model reduction of                       *
  * deformable objects undergoing large deformations.                     *
  *                                                                       *
- *  Copyright (C) 2007 CMU, 2009 MIT, 2013 USC                           *
+ *  Copyright (C) 2007 CMU, 2009 MIT, 2014 USC                           *
  *                                                                       *
  * All rights reserved.                                                  *
  *                                                                       *
@@ -45,8 +45,8 @@
 #include "sparseSolverAvailability.h"
 #include "sparseSolvers.h"
 
-// for faster computation, uncomment the following line (enable USE_OPENMP macro) if you want to use OpenMP (and add -fopenmp to the compiler line)
-//#define USE_OPENMP
+// for faster computation, enable the -fopenmp -DUSE_OPENMP macro line in the Makefile-header file (see also documentation)
+
 #ifdef USE_OPENMP
   #include <omp.h>
 #endif
@@ -421,7 +421,7 @@ void MyFrame::ComputeModalDerivatives(int * code, double ** modalDerivatives)
     PardisoSolver * pardisoSolver = new PardisoSolver(stiffnessMatrix, numThreads, positiveDefinite, directIterative);
     pardisoSolver->ComputeCholeskyDecomposition(stiffnessMatrix);
     solver = pardisoSolver;
-  #elif SPOOLES_SOLVER_IS_AVAILABLE
+  #elif defined(SPOOLES_SOLVER_IS_AVAILABLE)
     int numThreads = wxThread::GetCPUCount();
     if (numThreads > 1)
       solver = new SPOOLESSolverMT(stiffnessMatrix, numThreads);

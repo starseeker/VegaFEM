@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC    *
+ * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -40,7 +40,8 @@ class SceneObjectReducedCPU : virtual public SceneObjectReduced
 {
 public:
 
-  SceneObjectReducedCPU(char * filenameOBJ, ModalMatrix * modalMatrix);
+  SceneObjectReducedCPU(const char * filenameOBJ, ModalMatrix * modalMatrix);
+  SceneObjectReducedCPU(ObjMesh * objMesh, ModalMatrix * modalMatrix, bool deepCopy = true);
 
   void Getq(double * q);
   void Setq(double * q);
@@ -52,6 +53,7 @@ public:
   virtual int GetClosestVertex(Vec3d & queryPos, double * distance=NULL, double * auxVertexBuffer=NULL);
 
 protected:
+  void Construct(ModalMatrix * modalMatrix);
   double * u;
 };
 

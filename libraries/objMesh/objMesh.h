@@ -1,11 +1,12 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
- * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder      *
+ * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder,     *
+ *               Yili Zhao                                               *
  * http://www.jernejbarbic.com/code                                      *
  *                                                                       *
  * Research: Jernej Barbic, Fun Shing Sin, Daniel Schroeder,             *
@@ -88,6 +89,9 @@ class ObjMesh
 {
 public:
 
+  typedef enum {ASCII, BINARY, NUM_FILE_FORMATS} fileFormatType;
+  typedef enum {FILE_STREAM, MEMORY_STREAM} streamType;
+
   // ======= member classes =======
 
   class Vertex
@@ -132,8 +136,7 @@ public:
       explicit Material(const std::string name_, const Vec3d & Ka_, const Vec3d & Kd_, const Vec3d & Ks_, double shininess_=0, const std::string textureFilename_=std::string()): 
         Ka(Ka_), Kd(Kd_), Ks(Ks_), shininess(shininess_), alpha(1.0), name(name_), textureFilename(textureFilename_) {}
 
-      explicit Material(): 
-        Ka(Vec3d(1,1,1)), Kd(Vec3d(1,1,1)), Ks(Vec3d(1,1,1)), shininess(0), alpha(1.0), name(std::string("default")) {}
+      explicit Material(): Ka(Vec3d(1,1,1)), Kd(Vec3d(1,1,1)), Ks(Vec3d(1,1,1)), shininess(0), alpha(1.0), name(std::string("default")), textureFilename(std::string()) {}
 
       inline std::string getName() const { return name; }
       inline Vec3d getKa() const { return Ka; }
@@ -148,6 +151,8 @@ public:
       inline void setKs(Vec3d & Ks_) { Ks = Ks_; }
       inline void setShininess(double shininess_) { shininess = shininess_; }
       inline void setAlpha(double alpha_) { alpha = alpha_; }
+      inline void setTextureFilename(const std::string & textureFilename_) { textureFilename = textureFilename_; }
+      inline void setTextureFilename(const char * textureFilename_) { textureFilename = std::string(textureFilename_); }
 
       inline bool hasTextureFilename() const { return (textureFilename.size() > 0); }
       inline std::string getTextureFilename() const { return textureFilename; }
@@ -217,16 +222,25 @@ public:
 
   // ======= constructors =======
 
-  // Constructs the OBJ file and reads it in.  Throws an ObjMeshException if
-  // it fails for any reason (e.g., file not there, etc.).
-  explicit ObjMesh(const std::string & filename, int verbose=1);
+  // Constructs the OBJ file and reads it in.  Throws an ObjMeshException if it fails for any reason (file not there, etc.).
+  explicit ObjMesh(const std::string & filename, fileFormatType fileFormat = ASCII, int verbose = 0);
 
   // makes an empty structure
   explicit ObjMesh() {}
 
-  // creates a mesh with a single group
+  // creates a triangle mesh with a single group
   explicit ObjMesh(int numVertices, double * vertices, int numTriangles, int * triangles);
 
+  // creates a mesh with a single group
+  explicit ObjMesh(int numVertices, double * vertices, int numFaces, int* faceVertexCounts, int * faces);
+
+  // copy constructor
+  explicit ObjMesh(const ObjMesh & objMesh);
+
+  // advanced usage:
+  // stream is usually FILE_STREAM
+  explicit ObjMesh(void * binaryInputStream, streamType stream, int verbose = 0);
+ 
   // ======= basic mesh info / stats =======
 
   inline size_t getNumVertices() const { return vertexPositions.size(); }
@@ -267,6 +281,7 @@ public:
   inline const Group * getGroupHandle(unsigned int groupIndex) const { return &(groups[groupIndex]); }
 
   inline Material getMaterial(unsigned int materialIndex) const { return materials[materialIndex]; }
+  unsigned int getMaterialIndex(const std::string name) const; // obtain a material index by its name
   inline const Material * getMaterialHandle(unsigned int materialIndex) { return &materials[materialIndex]; }
   void setMaterialAlpha(double alpha);
   void setSingleMaterial(const Material & material); // erases all materials and sets a single material for the entire mesh
@@ -274,6 +289,7 @@ public:
 
   // ======= member data adders =======
 
+  void addDefaultMaterial();
   inline void addMaterial(const Material & material) { materials.push_back(material); }
   inline void addMaterial(const std::string name, const Vec3d & Ka, const Vec3d & Kd, const Vec3d & Ks, double shininess, const std::string textureFilename=std::string()) { materials.push_back(Material(name, Ka, Kd, Ks, shininess, textureFilename));}
   inline void addGroup(const Group & group) { groups.push_back(group);}
@@ -424,8 +440,10 @@ public:
 
   // ======= file output =======
 
-  // saves to an obj file (including saving materials to filename.mtl if so requested)
-  void save(const std::string & filename, int outputMaterials=0, int verbose=1) const;
+  // saves to an obj file (including saving materials to filename.mtl if outputMaterials=1)
+  void save(const std::string & filename, int outputMaterials=0, fileFormatType fileFormat = ASCII, int verbose=1) const;
+
+  static int saveObjMeshesToBinary(const std::string & binaryFilename, int numObjMeshes, ObjMesh ** objMeshes, int * saveObjMeshesFlag, int outputMaterials = 0, int verbose = 0);
 
   // saves to a stl file (only saves geometry (not materials))
   void saveToStl(const std::string & filename) const;
@@ -440,14 +458,38 @@ public:
   // extracts directory name from a given path
   static void dirname(const char * path, char * result);
 
-  inline static bool isNaN(double x) { return (x != x); }
+  // ======= multifile input ========
+
+  // 0: succeeded
+  // 1: failed
+  static int loadObjMeshesFromBinary(const std::string & binaryFilename, int * numObjMeshes, ObjMesh *** objMeshes, int verbose = 0);
 
   // ======= advanced usage =======
  
   // computes internal axis-aligned bounding box
   void computeBoundingBox(); // sets diameter, bmin, bmax, center, cubeHalf
 
+  inline static bool isNaN(double x) { return (x != x); }
+
 protected:
+
+  static int loadObjMeshesFromBinary(FILE * fin, int * numObjMeshes, ObjMesh *** objMeshes, int verbose = 0);
+
+  // ======= file load =======
+  // return number of elments read from the memoryLocation
+  static unsigned int readFromMemory(void * buf, unsigned int elementSize, unsigned int numElements, void * memoryLocation);
+  static unsigned int readFromFile(void * buf, unsigned int elementSize, unsigned int numElements, void * fin);
+  int loadFromAscii(const std::string & filename, int verbose = 0);
+  int loadFromBinary(const std::string & filename, int verbose = 0);
+  int loadFromBinary(void * binaryInputStream, streamType stream = FILE_STREAM, int verbose = 0);
+
+  // ======= file save =======
+  void saveToAscii(const std::string & filename, int outputMaterials=0, int verbose=1) const;
+  // saves obj and mtl together to a binary file
+  // return 0 if succeeded
+  int saveToBinary(const std::string & filename, int outputMaterials = 0, int verbose = 0) const;
+  int saveToBinary(FILE * binaryOutputStream, int outputMaterials = 0, unsigned int * bytesWritten = NULL, bool countBytesOnly = false, int verbose = 0) const;
+
   std::vector< Material > materials;
   std::vector< Group > groups;
   std::vector< Vec3d > vertexPositions;
@@ -492,7 +534,7 @@ protected:
   // inertia tensor around the origin, assuming the triangle has mass 1
   void computeSpecificInertiaTensor(Vec3d & v0, Vec3d & v1, Vec3d & v2, double t[6]) const;
 
-  void parseMaterials(const char * objMeshname, const char * materialFilename, int verbose=1);
+  void parseMaterials(const std::string & objMeshname, const std::string & materialFilename, int verbose=1);
 
   std::vector<std::pair<double, const Face*> > surfaceSamplingAreas;
 

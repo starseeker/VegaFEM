@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -50,9 +50,14 @@
 class CubicMesh : public VolumetricMesh
 {
 public:
-  
-  // loads the mesh from a text file (.veg format; see documentation and examples)
-  CubicMesh(char * filename, int verbose=1); 
+  // loads the mesh from a file 
+  // ASCII: .veg text input formut, see documentation and the provided examples
+  // BINARY: .vegb binary input format
+  CubicMesh(const char * filename, fileFormatType fileFormat = ASCII, int verbose=1); 
+
+  // load from a stream
+  // if memoryLoad is 0, binaryStream is FILE* (load from a file), otherwise, it is char* (load from a memory buffer)
+  CubicMesh(void * binaryStream, int memoryLoad = 0);
 
   // constructs a mesh from the given vertices and elements, with a single region and material
   // "vertices" is double-precision array of length 3 x numVertices 
@@ -86,7 +91,13 @@ public:
   virtual ~CubicMesh();
 
   // saves the mesh to a text file (.veg format, see examples and documentation)
-  virtual int save(char * filename) const;
+  virtual int saveToAscii(const char * filename) const;
+
+  // saves the mesh to binary format
+  // returns: 0 = success, non-zero = error
+  // output: if bytesWritten is non-NULL, it will contain the number of bytes written 
+  virtual int saveToBinary(const char * filename, unsigned int * bytesWritten = NULL) const;
+  virtual int saveToBinary(FILE * binaryOutputStream, unsigned int * bytesWritten = NULL, bool countBytesOnly = false) const;
 
   // === misc queries ===
 
@@ -124,10 +135,23 @@ public:
 
   virtual void interpolateGradient(int element, const double * U, int numFields, Vec3d pos, double * grad) const;
 
+  // advanced, to ensure computeBarycentricWeights, containsVertex, generateInterpolationWeights, generateContainingElements work even when elements are cubes, transformed via a general linear transformation
+  // parallelepiped=1 : the elements are cubes transformed via a linear transformation (i.e., they are parallelepipeds)
+  // parallelepiped=0 : (default) the elements are axis-aligned cubes 
+  void setParallelepipedMode(int parallelepipedMode);
+
 protected:
   double cubeSize;
+  double invCubeSize;
   static const VolumetricMesh::elementType elementType_;
   CubicMesh(int numElementVertices): VolumetricMesh(numElementVertices) {}
+  void SetInverseCubeSize();
+  int parallelepipedMode; // normally this is 0; in advanced usage, it can be 1 (see above)
+
+  // computes the normalized location of "pos" inside el
+  // when inside the element, one has 0 <= alpha <= 1, 0 <= beta <= 1, 0 <= gamma <= 1
+  void computeAlphaBetaGamma(int el, Vec3d pos, double * alpha, double * beta, double * gamma) const;
+  void inverse3x3(double * A, double * AInv) const;
 
   friend class VolumetricMeshExtensions;
 };

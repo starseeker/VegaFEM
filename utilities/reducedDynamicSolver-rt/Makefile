@@ -12,8 +12,8 @@ R ?= ../..
 REDUCEDDYNAMICSOLVERRT_OBJECTS=reducedDynamicSolver-rt.o initGraphics.o
 
 # the libraries this utility depends on
-
-REDUCEDDYNAMICSOLVERRT_LIBS=objMeshGPUDeformer objMesh imageIO modalMatrix sceneObjectReduced sceneObject objMeshGPUDeformer objMesh imageIO integratorSparse integratorDense integrator reducedStvk stvk reducedElasticForceModel reducedForceModel forceModel matrix matrixIO lighting configFile volumetricMesh loadList getopts camera minivector openGLHelper
+# note: hashTable and rigidBody are not needed for this utility; they are included on this list so that they are compiled 
+REDUCEDDYNAMICSOLVERRT_LIBS=objMeshGPUDeformer objMesh imageIO modalMatrix sceneObjectReduced sceneObject objMeshGPUDeformer objMesh imageIO integratorSparse integratorDense integrator reducedStvk stvk reducedElasticForceModel reducedForceModel forceModel matrix matrixIO lighting configFile volumetricMesh loadList getopts camera minivector openGLHelper hashTable rigidBodyDynamics
 
 # the headers in this library
 REDUCEDDYNAMICSOLVERRT_HEADERS=initGraphics.h
@@ -29,8 +29,9 @@ include $(REDUCEDDYNAMICSOLVERRT_LIB_MAKEFILES) ../../libraries/glui/Makefile
 
 all: $(R)/utilities/reducedDynamicSolver-rt/reducedDynamicSolver-rt
 
+CURRENT_DIR = $(shell pwd)
 $(R)/utilities/reducedDynamicSolver-rt/reducedDynamicSolver-rt: $(REDUCEDDYNAMICSOLVERRT_OBJECTS_FILENAMES)
-	$(CXXLD) $(LDFLAGS) $(REDUCEDDYNAMICSOLVERRT_OBJECTS) $(REDUCEDDYNAMICSOLVERRT_LINK) -Wl,-rpath,$(GLUI_DIR)/lib -o $@; cp $@ $(R)/utilities/bin/
+	$(CXXLD) $(LDFLAGS) $(REDUCEDDYNAMICSOLVERRT_OBJECTS) $(REDUCEDDYNAMICSOLVERRT_LINK) -Wl,-rpath,$(CURRENT_DIR)/$(GLUI_DIR)/lib -o $@; cp $@ $(R)/utilities/bin/
 
 $(REDUCEDDYNAMICSOLVERRT_OBJECTS_FILENAMES): %.o: %.cpp $(REDUCEDDYNAMICSOLVERRT_LIB_FILENAMES) $(REDUCEDDYNAMICSOLVERRT_HEADER_FILENAMES)
 	$(CXX) $(CXXFLAGS) -c $(INCLUDE) $(CG_INCLUDE) $(GLUI_INCLUDE) $< -o $@

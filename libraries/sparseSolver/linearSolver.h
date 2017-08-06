@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "sparseSolver" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC   *
+ * "sparseSolver" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC   *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -45,6 +45,7 @@ public:
   virtual ~LinearSolver();
 
   // solve: A * x = rhs
+  // return: 0 on success, error code otherwise
   virtual int SolveLinearSystem(double * x, const double * rhs) = 0;
 
 protected:

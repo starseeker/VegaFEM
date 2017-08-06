@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -44,10 +44,10 @@ class VolumetricMeshParser
 {
 public:
 
-  VolumetricMeshParser(char * includeToken = NULL); // pass NULL for normal usage
+  VolumetricMeshParser(const char * includeToken = NULL); // pass NULL for normal usage
   ~VolumetricMeshParser();
 
-  int open(char * filename);
+  int open(const char * filename);
 
   // return the next line, s must be externally allocated string
   // if last line, return will be NULL

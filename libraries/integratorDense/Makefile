@@ -11,13 +11,13 @@ R ?= ../..
 # NOTE: unlike the other library makefiles, this makefile adds $(PARDISO_INCLUDE) to the compiler invocation
 
 # the object files to be compiled for this library
-INTEGRATORDENSE_OBJECTS=centralDifferencesDense.o implicitBackwardEulerDense.o implicitNewmarkDense.o integratorBaseDense.o
+INTEGRATORDENSE_OBJECTS=implicitNewmarkDenseMulti1D.o integratorMulti1D.o centralDifferencesDense.o implicitBackwardEulerDense.o implicitNewmarkDense.o integratorBaseDense.o
 
 # the libraries this library depends on
 INTEGRATORDENSE_LIBS=matrix integrator performanceCounter reducedForceModel
 
 # the headers in this library
-INTEGRATORDENSE_HEADERS=centralDifferencesDense.h implicitBackwardEulerDense.h implicitNewmarkDense.h integratorBaseDense.h
+INTEGRATORDENSE_HEADERS=implicitNewmarkDenseMulti1D.h integratorMulti1D.h centralDifferencesDense.h implicitBackwardEulerDense.h implicitNewmarkDense.h integratorBaseDense.h
 
 INTEGRATORDENSE_OBJECTS_FILENAMES=$(addprefix $(L)/integratorDense/, $(INTEGRATORDENSE_OBJECTS))
 INTEGRATORDENSE_HEADER_FILENAMES=$(addprefix $(L)/integratorDense/, $(INTEGRATORDENSE_HEADERS))

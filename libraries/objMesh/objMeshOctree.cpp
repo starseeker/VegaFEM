@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder      *
@@ -31,8 +31,8 @@
 //  Can be intersected with a sphere or a line segment. 
 
 #include "triple.h"
-using namespace std;
 #include "objMeshOctree.h"
+using namespace std;
 
 template<class TriangleClass>
 const double ObjMeshOctree<TriangleClass>::bboxExpansionRatio = 1.05;

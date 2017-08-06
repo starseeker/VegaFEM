@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -27,7 +27,7 @@
  *************************************************************************/
 
 /*
-  Loads a volumetric mesh from a text file. It automatically determines 
+  Loads a volumetric mesh from a text file or a binary file. It automatically determines 
   the type of the mesh (tet mesh, cube mesh).
 */
 
@@ -39,7 +39,25 @@
 class VolumetricMeshLoader
 {
 public:
-  static VolumetricMesh * load(char * filename, int verbose=1);
+  // loads a volumetric mesh (ASCII (.veg format), or BINARY)
+  static VolumetricMesh * load(const char * filename, VolumetricMesh::fileFormatType fileFormat = VolumetricMesh::ASCII, int verbose=1);
+
+  // loads several volumetric meshes from a single binary file
+  static int load(const char * filename, int * numVolumetricMeshes, VolumetricMesh *** volumetricMeshes, int verbose=1);
+
+  // saves several volumetric meshes to a single binary file
+  // if you do not want to use "saveVolumetricMeshFlag", set it to NULL
+  // if saveVolumetricMeshFlag is not NULL, then:
+  // saveVolumetricMeshFlag[i] = 0: skip (do not save) volumetric mesh i
+  // saveVolumetricMeshFlag[i] != 0: save volumetric mesh i to disk
+  static int save(const char * filename, int numVolumetricMeshes, VolumetricMesh ** volumetricMeshes, int * saveVolumetricMeshFlag, int verbose=0);
+
+  // advanced usage: loads a volumetric mesh from the current position of the file stream (binary mode).
+  // if memoryLoad is 0, binaryStream is FILE* (load from a file), otherwise, it is char* (load from a memory buffer)
+  static VolumetricMesh * load(void * fin, int memoryLoad = 0);
+
+protected:
+  static int load(FILE * fin, int * numVolumetricMeshes, VolumetricMesh *** volumetricMeshes, int verbose=1);
 };
 
 #endif

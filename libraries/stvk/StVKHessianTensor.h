@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "StVK" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC           *
+ * "StVK" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC           *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -57,7 +57,7 @@ public:
   // compute the vector result=(H:u)v, where H is the Hessian in the zero deformation configuration
   // high-memory version; must call ComputeHessianAtZero before calling EvaluateHessianQuadraticForm
   int ComputeHessianAtZero(int verbose=1); 
-  int SaveHessianAtZeroToFile(char * filename);
+  int SaveHessianAtZeroToFile(const char * filename);
   void EvaluateHessianQuadraticForm(double * u, double * v, double * result); 
 
   // compute the vector result=(H:u)v, where H is the Hessian in the zero deformation configuration
@@ -68,7 +68,7 @@ public:
   // the first numRigidModes columns will not be used for this computation
   // result is the output matrix; must be pre-allocated with (k-numRigidModes) * (k-numRigidModes+1) / 2 columns
   // low-memory version; no need to call ComputeHessianAtZero
-  void EvaluateHessianQuadraticFormDirectAll(double * Ulin, int k, double * result, int numRigidModes=0);
+  void EvaluateHessianQuadraticFormDirectAll(double * Ulin, int k, double * result, int numRigidModes=0, int verbose=1);
   
   // low-level routines (advanced use)
   void AddQuadraticTermsContribution(double * u, double * du, SparseMatrix * dK, int elementLow=-1, int elementHigh=-1);

@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -29,24 +29,128 @@
 #include <float.h>
 #include <string.h>
 #include <assert.h>
+#include <iostream>
+#include <map>
 #include "volumetricMeshParser.h"
 #include "volumetricMesh.h"
 #include "volumetricMeshENuMaterial.h"
+#include "volumetricMeshOrthotropicMaterial.h"
 #include "volumetricMeshMooneyRivlinMaterial.h"
 using namespace std;
 
+double VolumetricMesh::density_default = 1000;
 double VolumetricMesh::E_default = 1E9;
 double VolumetricMesh::nu_default = 0.45;
-double VolumetricMesh::density_default = 1000;
 
 // parses the mesh, and returns the string corresponding to the element type
-VolumetricMesh::VolumetricMesh(char * filename, int numElementVertices_, int verbose, elementType * elementType_): numElementVertices(numElementVertices_)
+VolumetricMesh::VolumetricMesh(const char * filename, fileFormatType fileFormat, int numElementVertices_, elementType * elementType_, int verbose): numElementVertices(numElementVertices_)
 {
   if (verbose)
+  {
     printf("Opening file %s.\n", filename); fflush(NULL);
+  }
 
+  switch (fileFormat)
+  {
+    case ASCII:
+      loadFromAscii(filename, elementType_);
+    break;
+
+    case BINARY:
+      loadFromBinary(filename, elementType_);
+    break;
+
+    default:
+      printf("Error in VolumetricMesh::VolumetricMesh: file format is unknown.\n");
+    break;
+  } 
+}
+
+// parses the mesh, and returns the string corresponding to the element type
+VolumetricMesh::VolumetricMesh(void * binaryInputStream, int numElementVertices_, elementType * elementType_, int memoryLoad): numElementVertices(numElementVertices_)
+{
+  if (memoryLoad)
+    loadFromMemory((unsigned char *)binaryInputStream, elementType_);
+  else
+    loadFromBinary((FILE *)binaryInputStream, elementType_);
+}
+
+VolumetricMesh::~VolumetricMesh()
+{
+  for(int i=0; i<numVertices; i++)
+    delete(vertices[i]);
+  free(vertices);
+
+  for(int i=0; i<numElements; i++)
+    free(elements[i]);
+  free(elements);
+
+  for(int i=0; i<numMaterials; i++)
+    delete(materials[i]);
+  free(materials);
+  
+  for(int i=0; i<numSets; i++)
+    delete(sets[i]);
+  free(sets);
+
+  for(int i=0; i<numRegions; i++)
+    delete(regions[i]);
+  free(regions);
+}
+
+void VolumetricMesh::assignMaterialsToElements(int verbose)
+{
+  elementMaterial = (int*) malloc (sizeof(int) * numElements);
+  for(int el=0; el<numElements; el++)
+    elementMaterial[el] = numMaterials;
+
+  propagateRegionsToElements();
+
+  // seek for unassigned elements
+  set<int> unassignedElements;
+  for(int el=0; el<numElements; el++)
+  {
+    if (elementMaterial[el] == numMaterials)
+      unassignedElements.insert(el);
+  }
+
+  if (unassignedElements.size() > 0)
+  {
+    // assign set and region to the unassigned elements
+
+    // create a material if none exists
+    if (numMaterials == 0)
+    {
+      numMaterials++;
+      materials = (Material**) realloc (materials, sizeof(Material*) * numMaterials);
+      materials[numMaterials - 1] = new ENuMaterial("defaultMaterial", density_default, E_default, nu_default);
+    }
+
+    numSets++;
+    sets = (Set**) realloc (sets, sizeof(Set*) * numSets);
+    sets[numSets-1] = new Set("unassignedSet"); 
+    for(set<int>::iterator iter = unassignedElements.begin(); iter != unassignedElements.end(); iter++)
+      sets[numSets-1]->insert(*iter); // elements in sets are 0-indexed
+
+    // create a new region for the unassigned elements
+    numRegions++;
+    regions = (Region**) realloc (regions, sizeof(Region*) * numRegions);
+    regions[numRegions - 1] = new Region(numMaterials - 1, numSets - 1);
+
+    for(set<int>::iterator iter = unassignedElements.begin(); iter != unassignedElements.end(); iter++)
+      elementMaterial[*iter] = numMaterials - 1;
+
+    if (verbose)
+      printf("Warning: %d elements were not found in any of the regions. Using default material parameters for these elements.\n", (int)unassignedElements.size());
+  }
+}
+
+void VolumetricMesh::loadFromAscii(const char * filename, elementType * elementType_, int verbose)
+{
   // create buffer for element vertices
-  int * v = (int*) malloc (sizeof(int) * numElementVertices);
+  vector<int> elementVerticesBuffer(numElementVertices);
+  int * v = &elementVerticesBuffer[0];
+
 
   // parse the .veg file
   VolumetricMeshParser volumetricMeshParser;
@@ -54,7 +158,6 @@ VolumetricMesh::VolumetricMesh(char * filename, int numElementVertices_, int ver
   if (volumetricMeshParser.open(filename) != 0)
   {
     printf("Error: could not open file %s.\n",filename);
-    free(v);
     throw 1;
   }
 
@@ -92,7 +195,6 @@ VolumetricMesh::VolumetricMesh(char * filename, int numElementVertices_, int ver
       else
       {
         printf("Error: file %s is not in the .veg format. Offending line:\n%s\n", filename, lineBuffer);
-        free(v);
         throw 2;
       }
   
@@ -116,14 +218,12 @@ VolumetricMesh::VolumetricMesh(char * filename, int numElementVertices_, int ver
         else
         {
           printf("Error: unknown mesh type %s in file %s\n", lineBuffer, filename);
-          free(v);
           throw 3;
         }
       }
       else
       {
         printf("Error: file %s is not in the .veg format. Offending line:\n%s\n", filename, lineBuffer);
-        free(v);
         throw 4;
       }
 
@@ -137,7 +237,6 @@ VolumetricMesh::VolumetricMesh(char * filename, int numElementVertices_, int ver
       else
       {
         printf("Error: file %s is not in the .veg format. Offending line:\n%s\n", filename, lineBuffer);
-        free(v);
         throw 5;
       }
 
@@ -155,7 +254,6 @@ VolumetricMesh::VolumetricMesh(char * filename, int numElementVertices_, int ver
       if (countNumVertices >= numVertices)
       {
         printf("Error: mismatch in the number of vertices in %s.\n", filename);
-        free(v);
         throw 6;
       }
 
@@ -183,7 +281,6 @@ VolumetricMesh::VolumetricMesh(char * filename, int numElementVertices_, int ver
         if (*ch == 0)
         {
           printf("Error parsing line %s in file %s.\n", lineBuffer, filename);
-          free(v);
           throw 7;
         }
 
@@ -231,7 +328,6 @@ VolumetricMesh::VolumetricMesh(char * filename, int numElementVertices_, int ver
         if (*ch == 0)
         {
           printf("Error parsing line %s in file %s.\n", lineBuffer, filename);
-          free(v);
           throw 9;
         }
 
@@ -303,13 +399,18 @@ VolumetricMesh::VolumetricMesh(char * filename, int numElementVertices_, int ver
   int countNumMaterials = 0;
   int countNumSets = 1; // set 0 is "allElements"
   int countNumRegions = 0;
+
+  map<string,int> materialMap; // establishes a relationship between material's string name and its index in the "materials" array
+  map<string,int> setMap; // establishes a relationship between set's string name and its index in the "sets" array
+  setMap.insert(pair<string,int>(string("allElements"), 0));
+
   parseState = 0;
 
   while (volumetricMeshParser.getNextLine(lineBuffer, 0, 0) != NULL)
   {
     //printf("%s\n", lineBuffer);
 
-     // exit comma separated set parseState upon the new command
+    // exit parsing of comma-separated set elements upon the new * command
     if ((parseState == 11) && (lineBuffer[0] == '*'))
       parseState = 0;
 
@@ -324,35 +425,42 @@ VolumetricMesh::VolumetricMesh(char * filename, int numElementVertices_, int ver
       strcpy(materialNameC, &lineBuffer[9]);
 
       // read the material type
-      char materialType[4096];
+      char materialSpecification[4096];
       if (volumetricMeshParser.getNextLine(lineBuffer) != NULL)
       {
         volumetricMeshParser.removeWhitespace(lineBuffer);
-        sscanf(lineBuffer, "%s", materialType);
+        sscanf(lineBuffer, "%s", materialSpecification);
       }
       else
       {
         printf("Error: incorrect material in file %s. Offending line:\n%s\n", filename, lineBuffer);
-        free(v);
         throw 11;
       }
 
-      if (strncmp(materialType, "ENU", 3) == 0)
-      {
-        // seek for first comma
-        char * ch = lineBuffer;
-        while((*ch != ',') && (*ch != 0))
-          ch++;
-
-        if (*ch == 0)
-        {
-          printf("Error parsing file %s. Offending line: %s.\n", filename, lineBuffer);
-          free(v);
-          throw 12;
-        }
-
+      // seek for first comma in the material type specification
+      char * ch = materialSpecification; 
+      while((*ch != ',') && (*ch != 0)) 
         ch++;
 
+      if (*ch == 0)
+      {
+        printf("Error parsing file %s. Offending line: %s.\n", filename, lineBuffer);
+        throw 12;
+      }
+
+      // ch now points to the first comma
+      // set the materialType (the string up to the first comma)
+      char materialType[4096];
+      unsigned int materialTypeLength = ch - materialSpecification;
+      memcpy(materialType, materialSpecification, sizeof(unsigned char) * materialTypeLength);
+      *(materialType + materialTypeLength) = 0;
+      // materialType is now set
+
+      ch++;
+      // now, ch points to the first character after the comma
+
+      if (strcmp(materialType, "ENU") == 0)
+      {
         // material specified by E, nu, density
         double density, E, nu;
         sscanf(ch, "%lf,%lf,%lf", &density, &E, &nu);
@@ -360,31 +468,143 @@ VolumetricMesh::VolumetricMesh(char * filename, int numElementVertices_, int ver
         if ((E > 0) && (nu > -1.0) && (nu < 0.5) && (density > 0))
         {
           // create new material
-          materials[countNumMaterials] = new ENuMaterial(string(materialNameC), density, E, nu);
+          string name(materialNameC);
+          materials[countNumMaterials] = new ENuMaterial(name, density, E, nu);
+          materialMap.insert(pair<string,int>(name, countNumMaterials));
         }
         else
         {
           printf("Error: incorrect material specification in file %s. Offending line: %s\n", filename, lineBuffer);
-          free(v);
           throw 13;
+        }
+      }
+      else if (strncmp(materialType, "ORTHOTROPIC", 11) == 0)
+      {
+        // orthotropic material 
+        double density = 0.0, E1 = 0.0, E2 = 0.0, E3 = 0.0, nu12 = 0.0, nu23 = 0.0, nu31 = 0.0, G12 = 0.0, G23 = 0.0, G31 = 0.0;
+        double nu = 0.0, G = 1.0;
+        bool useNuAndG = false;
+        double R[9]; // rotation matrix, stored in row-major format
+        memset(R, 0, sizeof(R));
+        R[0] = R[4] = R[8] = 1.0; // default to identity
+
+        // find subtype
+        char * subType = materialType + 11;
+        bool enoughParameters = false;
+
+        if ((sscanf(ch,"%lf,%lf,%lf,%lf", &density, &E1, &E2, &E3) == 4)
+            && ((E1 > 0) && (E2 > 0) && (E3 > 0) && (density > 0)))
+        {
+          // move ch to the next parameters (skip over the four ones that were just read)
+          for(int i = 0; i < 4; i++)
+          {
+            while ((*ch != ',') && (*ch != 0)) 
+              ch++;
+            if (*ch == 0) 
+              break;
+            ch++;
+          }
+          // ch now points to the first character of the fifth parameter, or \0 if there is no fifth parameter
+          // subtype points to the fitst character of the subtype suffix, or \0 if there is no suffix
+
+          if ((*subType == 0) || (strcmp(subType, "_N3G3R9") == 0))
+          {
+            // there is no suffix (*ORTHOTROPIC), or suffix is *ORTHOTROPIC_N3G3R9
+            // parse nu12,nu23,nu31,G12,G23,G31,R0,R1,R2,R3,R4,R5,R6,R7,R8
+            if (sscanf(ch, "%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf",
+                &nu12, &nu23, &nu31, &G12, &G23, &G31,
+                &R[0], &R[1], &R[2], &R[3], &R[4], &R[5], &R[6], &R[7], &R[8]) == 15)
+              enoughParameters = true;
+          }
+          else if(strcmp(subType,"_N3G3") == 0)
+          {
+            // *ORTHOTROPIC_N3G3
+            // parse nu12,nu23,nu31,G12,G23,G31
+            // R is default (identity)
+            if (sscanf(ch, "%lf,%lf,%lf,%lf,%lf,%lf", &nu12, &nu23, &nu31, &G12, &G23, &G31) == 6)
+              enoughParameters = true;
+          }
+          else if(strcmp(subType,"_N1G1R9") == 0)
+          {
+            // *ORTHOTROPIC_N1G1R9
+            // parse nu,G,R0,R1,R2,R3,R4,R5,R6,R7,R8
+            if (sscanf(ch, "%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf",
+              &nu, &G, &R[0], &R[1], &R[2], &R[3], &R[4], &R[5], &R[6], &R[7], &R[8]) == 11)
+            {
+              useNuAndG = true;
+              enoughParameters = true;
+            }
+          }
+          else if(strcmp(subType, "_N1G1") == 0)
+          {
+            // *ORTHOTROPIC_N1G1
+            // parse nu,G
+            // R is default (identity)
+            if(sscanf(ch, "%lf,%lf",&nu,&G) == 2)
+            {
+              useNuAndG = true;
+              enoughParameters = true;
+            }
+          }
+          else if(strcmp(subType,"_N1R9") == 0)
+          {
+            // *ORTHOTROPIC_N1R9
+            // parse nu,R0,R1,R2,R3,R4,R5,R6,R7,R8
+            // G is default (1.0)
+            if(sscanf(ch,"%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf",
+                &nu, &R[0], &R[1], &R[2], &R[3], &R[4], &R[5], &R[6], &R[7], &R[8]) == 10)
+            {
+              useNuAndG = true;
+              enoughParameters = true;
+            }
+          }
+          else if(strcmp(subType,"_N1") == 0)
+          {
+            // *ORTHOTROPIC_N1
+            // parse nu
+            // G is default (1.0)
+            // R is default (identity)
+            if(sscanf(ch,"%lf", &nu) == 1)
+            {
+              useNuAndG = true;
+              enoughParameters = true;
+            }
+          }
+          else
+          {
+            printf("Error: incorrect orthortropic material type \"%s\" in file %s. Offending line: %s\n", subType, filename, lineBuffer);
+            throw 14;
+          }
+
+          if(useNuAndG && (nu > -1.0) && (nu < 0.5)) // if nu is not in this range, then G_ij is still 0, finally produce an error
+          {
+            // formulas from:
+            // Yijing Li, Jernej Barbic: Stable Corotational Materials, Symposium on Computer Animation 2014
+            nu12 = nu * sqrt(E1 / E2);
+            nu23 = nu * sqrt(E2 / E3);
+            nu31 = nu * sqrt(E3 / E1);
+            G12 = G * sqrt(E1 * E2) / (2.0 * (1.0 + nu));
+            G23 = G * sqrt(E2 * E3) / (2.0 * (1.0 + nu));
+            G31 = G * sqrt(E3 * E1) / (2.0 * (1.0 + nu));
+          }
+        } //end if (sscanf(ch,"%lf,%lf,%lf,%lf", &density, &E1, &E2, &E3) == 4 && (E1 > 0 && E2 > 0 && E3 > 0) )
+        // if the if clause failed, enoughParameters is now false
+
+        if (enoughParameters && (G12 > 0) && (G23 > 0) && (G31 > 0))
+        {
+          // create new material
+          string name(materialNameC);
+          materials[countNumMaterials] = new OrthotropicMaterial(string(materialNameC), density, E1, E2, E3, nu12, nu23, nu31, G12, G23, G31, R);
+          materialMap.insert(pair<string,int>(name,countNumMaterials));
+        }
+        else
+        {
+          printf("Error: incorrect material specification in file %s. Offending line: %s\n", filename, lineBuffer);
+          throw 14;
         }
       }
       else if (strncmp(materialType, "MOONEYRIVLIN", 12) == 0)
       {
-        // seek for first comma
-        char * ch = lineBuffer;
-        while((*ch != ',') && (*ch != 0))
-          ch++;
-
-        if (*ch == 0)
-        {
-          printf("Error parsing file %s. Offending line: %s.\n", filename, lineBuffer);
-          free(v);
-          throw 14;
-        }
-
-        ch++;
-
         // mu01, m10, v1, density
         double density, mu01, mu10, v1;
         sscanf(ch, "%lf,%lf,%lf,%lf", &density, &mu01, &mu10, &v1);
@@ -392,19 +612,19 @@ VolumetricMesh::VolumetricMesh(char * filename, int numElementVertices_, int ver
         if (density > 0)
         {
           // create new material
-          materials[countNumMaterials] = new MooneyRivlinMaterial(string(materialNameC), density, mu01, mu10, v1);
+          string name(materialNameC);
+          materials[countNumMaterials] = new MooneyRivlinMaterial(name, density, mu01, mu10, v1);
+          materialMap.insert(pair<string,int>(name, countNumMaterials));
         }
         else
         {
           printf("Error: incorrect material specification in file %s. Offending line:\n%s\n", filename, lineBuffer);
-          free(v);
           throw 15;
         }
       }
       else
       {
         printf("Error: incorrect material specification in file %s. Offending line:\n%s\n", filename, lineBuffer);
-        free(v);
         throw 16;
       }
 
@@ -412,7 +632,6 @@ VolumetricMesh::VolumetricMesh(char * filename, int numElementVertices_, int ver
     }
 
     // parse region
-
     if ((parseState == 0) && (strncmp(lineBuffer, "*REGION,", 7) == 0))
     {
       volumetricMeshParser.removeWhitespace(lineBuffer);
@@ -425,8 +644,6 @@ VolumetricMesh::VolumetricMesh(char * filename, int numElementVertices_, int ver
         volumetricMeshParser.removeWhitespace(lineBuffer);
 
         // format is set, material
-        sscanf(lineBuffer, "%s,%s", setNameC, materialNameC);
-
         // seek for first comma
         char * ch = lineBuffer;
         while((*ch != ',') && (*ch != 0))
@@ -435,139 +652,90 @@ VolumetricMesh::VolumetricMesh(char * filename, int numElementVertices_, int ver
         if (*ch == 0)
         {
           printf("Error parsing file %s. Offending line: %s.\n", filename, lineBuffer);
-          free(v);
           throw 17;
         }
 
+        // now, ch points to the comma
         *ch = 0;
         strcpy(setNameC, lineBuffer);
+        *ch = ','; // restore the lineBuffer
         ch++;
         strcpy(materialNameC, ch);
       }
       else
       {
         printf("Error: file %s is not in the .veg format. Offending line:\n%s\n", filename, lineBuffer);
-        free(v);
         throw 18;
       }
 
-      // seek for setName
+      // seek for setNameC
       int setNum = -1;
-      for(int set=0; set < numSets; set++)
+      map<string,int>::iterator it = setMap.find(string(setNameC));
+      if(it != setMap.end()) 
       {
-        string name = sets[set]->getName();
-        if (name == string(setNameC))
-        {
-          setNum = set;
-          break;
-        }
+      	setNum = it->second;
       }
-      if (setNum == -1)
+      else 
       {
         printf("Error: set %s not found among the sets.\n", setNameC);
-        free(v);
         throw 19;
       }
 
-      // seek for materialName
+      // seek for materialNameC
       int materialNum = -1;
-      for(int material=0; material < numMaterials; material++)
+      it = materialMap.find(string(materialNameC));
+      if(it != materialMap.end()) 
       {
-        string name = materials[material]->getName();
-        if (name == string(materialNameC))
-        {
-          materialNum = material;
-          break;
-        }
+      	materialNum = it->second;
       }
-      if (materialNum == -1)
+      else 
       {
-        printf("Error: material %s not found among the materials.\n", materialNameC);
-        free(v);
-        throw 20;
+      	printf("Error: material %s not found among the materials.\n", materialNameC);
+      	throw 20;
       }
 
+      // create a new region
       regions[countNumRegions] = new Region(materialNum, setNum);
       countNumRegions++;
     }
    
-    // parse set
-
-    if ((parseState == 0) && (strncmp(lineBuffer, "*SET", 4) == 0))
-    {
-      volumetricMeshParser.removeWhitespace(lineBuffer);
-
-      char setNameC[4096];
-      strcpy(setNameC, &lineBuffer[4]);
-      sets[countNumSets] = new Set(string(setNameC));
-      countNumSets++;
-      parseState = 11;
-    }
-
+    // parse set elements
     if (parseState == 11)
     {
-      // we know that lineBuffer[0] != '*' (i.e., not end of the list) as that case was already previously handled
+      // parse the next line of the comma-separated elements in the set
+      // we know that lineBuffer[0] != '*' (i.e., not the end of the list), as that case was already previously handled
 
       volumetricMeshParser.removeWhitespace(lineBuffer);
       //printf("%s\n", lineBuffer);
 
-      // parse the comma separated line
+      // parse the comma-separated line
       char * pch;
       pch = strtok(lineBuffer, ",");
       while ((pch != NULL) && (isdigit(*pch)))
       {
         int newElement = atoi(pch);
         sets[countNumSets-1]->insert(newElement-oneIndexedElements); // sets are 0-indexed, but .veg files may be 1-indexed (oneIndexedElements == 1)
-        pch = strtok (NULL, ",");
+        pch = strtok(NULL, ",");
       }
     }
-  }
 
-  // === assign materials to elements ===
-
-  elementMaterial = (int*) malloc (sizeof(int) * numElements);
-  for(int el=0; el<numElements; el++)
-    elementMaterial[el] = numMaterials;
-
-  PropagateRegionsToElements();
-
-  // seek for unassigned elements
-  set<int> unassignedElements;
-  for(int el=0; el<numElements; el++)
-  {
-    if (elementMaterial[el] == numMaterials)
-      unassignedElements.insert(el);
-  }
-
-  if (unassignedElements.size() > 0)
-  {
-    // assign set and region for the unnassigned elements
-
-    // create a material if none exists
-    if (numMaterials == 0)
+    // parse set
+    if ((parseState == 0) && (strncmp(lineBuffer, "*SET", 4) == 0))
     {
-      numMaterials++;
-      materials = (Material**) realloc (materials, sizeof(Material*) * numMaterials);
-      materials[numMaterials - 1] = new ENuMaterial("defaultMaterial", E_default, nu_default, density_default);
+      volumetricMeshParser.removeWhitespace(lineBuffer);
+
+      string name(&lineBuffer[4]);
+      sets[countNumSets] = new Set(name);
+      setMap.insert(pair<string,int>(name, countNumSets));
+      countNumSets++;
+      parseState = 11;
     }
-
-    numSets++;
-    sets = (Set**) realloc (sets, sizeof(Set*) * numSets);
-    sets[numSets-1] = new Set("defaultSet"); 
-    for(set<int>::iterator iter = unassignedElements.begin(); iter != unassignedElements.end(); iter++)
-      sets[numSets-1]->insert(*iter); 
-
-    numRegions++;
-    regions = (Region**) realloc (regions, sizeof(Region*) * numRegions);
-    regions[numRegions - 1] = new Region(numMaterials - 1, numSets - 1);
-
-    if (verbose)
-      printf("Warning: %d elements were not found in any of the regions. Using default material parameters for these elements.\n", (int)unassignedElements.size());
   }
+
+  // === assign materials to elements and seek for unassigned elements ===
+  assignMaterialsToElements(verbose);
 
   volumetricMeshParser.close();
-
-  free(v);
 }
 
 VolumetricMesh::VolumetricMesh(int numVertices_, double * vertices_,
@@ -660,7 +828,337 @@ VolumetricMesh::VolumetricMesh(int numVertices_, double * vertices_,
     regions[i] = new Region(*(regions_[i]));
 
   // set elementMaterial:
-  PropagateRegionsToElements();
+  propagateRegionsToElements();
+}
+
+void VolumetricMesh::loadFromMemory(unsigned char * binaryInputStream, elementType * elementType_)
+{
+  int memoryLoad = 1;
+  loadFromBinaryGeneric((void*)binaryInputStream, elementType_, memoryLoad);
+}
+
+void VolumetricMesh::loadFromBinary(FILE * binaryInputStream, elementType * elementType_)
+{
+  int memoryLoad = 0;
+  loadFromBinaryGeneric((void*)binaryInputStream, elementType_, memoryLoad);
+}
+
+void VolumetricMesh::loadFromBinaryGeneric(void * binaryInputStream_, elementType * elementType_, int memoryLoad)
+{
+  unsigned int (*genericRead)(void *, unsigned int, unsigned int, void *);
+
+  void * binaryInputStream;
+  if (memoryLoad)
+  {
+    genericRead = &VolumetricMesh::readFromMemory;
+    binaryInputStream = &(binaryInputStream_);
+  }
+  else
+  {
+    genericRead = &VolumetricMesh::readFromFile;
+    binaryInputStream = binaryInputStream_;
+  }
+
+  double version;
+  if ((int)genericRead(&version, sizeof(double), 1, binaryInputStream) != 1)
+  {
+    printf("Error in VolumetricMesh::loadFromBinaryGeneric: cannot read version.\n");
+    throw 0;
+  };
+
+  int eleType;
+  if ((int)genericRead(&eleType, sizeof(int), 1, binaryInputStream) != 1)
+  {
+    printf("Error in VolumetricMesh::loadFromBinaryGeneric: cannot read element type.\n");
+    throw 0;
+  };
+
+  switch (eleType)
+  {
+    case TET:
+      *elementType_ = TET;
+      break;
+    case CUBIC:
+      *elementType_ = CUBIC;
+      break;
+    default:
+      printf("Error in VolumetricMesh::loadFromBinaryGeneric: unknown mesh type %d in file stream\n", eleType);
+      throw 2;
+      break;
+  }
+
+  // input the number of vertices
+  if ((int)genericRead(&numVertices, sizeof(int), 1, binaryInputStream) != 1)
+  {
+    printf("Error in VolumetricMesh::loadFromBinaryGeneric: cannot read numVertices.\n");
+    throw 0;
+  }
+
+  if (numVertices < 0)
+  {
+    printf("Error in VolumetricMesh::loadFromBinaryGeneric: incorrect number of vertices.\n");
+    throw 3; 
+  }
+
+  vertices = (Vec3d**) malloc (sizeof(Vec3d*) * numVertices);
+
+  // input all the vertices
+  double * doubleTempVec = (double *) malloc (sizeof(double) * 3 * numVertices);
+  if ((int)genericRead(doubleTempVec, sizeof(double), 3 * numVertices, binaryInputStream) != 3 * numVertices)
+  {
+    printf("Error in VolumetricMesh::loadFromBinaryGeneric: cannot read vertex coordinates.\n");
+    throw 0;
+  }
+
+  for(int vertexIndex=0; vertexIndex<numVertices; vertexIndex++)
+  {
+    vertices[vertexIndex] = new Vec3d(&doubleTempVec[vertexIndex*3]);
+  }
+  free(doubleTempVec);
+
+  // input the number of elements
+  if ((int)genericRead(&numElements, sizeof(int), 1, binaryInputStream) != 1)
+  {
+    printf("Error in VolumetricMesh::loadFromBinaryGeneric: cannot read numElements.\n");
+    throw 0;
+  }
+
+  if (numElements < 0)
+  {
+    printf("Error in VolumetricMesh::loadFromBinaryGeneric: incorrect number of elements.\n");
+    throw 4; 
+  }
+  // input the number of vertices of every element
+  int numEleVer;
+  if ((int)genericRead(&numEleVer, sizeof(int), 1, binaryInputStream) != 1)
+  {
+    printf("Error in VolumetricMesh::loadFromBinaryGeneric: cannot read number of vertices in every element.\n");
+    throw 0;
+  }
+
+  if (numElementVertices > 0 && numEleVer != numElementVertices)
+  {
+    printf("Error in VolumetricMesh::loadFromBinaryGeneric: mismatch in the number of vertices of every element from file stream.\n");
+    throw 5;
+  }
+
+  // input all elements
+  elements = (int**) malloc (sizeof(int*) * numElements);
+  int * intTempVec = (int *) malloc (sizeof(int) * numElementVertices * numElements);
+  if ((int)genericRead(intTempVec, sizeof(int), numElementVertices * numElements, binaryInputStream) != numElementVertices * numElements)
+  {
+    printf("Error in VolumetricMesh::loadFromBinaryGeneric: cannot read the elements.\n");
+    throw 0;
+  }
+
+  for(int elementIndex=0; elementIndex<numElements; elementIndex++)
+  {
+    elements[elementIndex] = (int*) malloc (sizeof(int) * numElementVertices);
+    memcpy(elements[elementIndex], &intTempVec[elementIndex * numElementVertices], sizeof(int) * numElementVertices);
+  }
+  free(intTempVec);
+
+  // input number of materials
+  if ((int)genericRead(&numMaterials, sizeof(int), 1, binaryInputStream) != 1)
+  {
+    printf("Error in VolumetricMesh::loadFromBinaryGeneric: cannot read the numMaterials.\n");
+    throw 0;
+  }
+
+  if (numMaterials < 0)
+  {
+    printf("Error in VolumetricMesh::loadFromBinaryGeneric: incorrect number of materials.\n");
+    throw 6; 
+  }
+  // input all the materials
+  materials = (Material**) malloc (sizeof(Material*) * numMaterials);
+  for(int materialIndex=0; materialIndex<numMaterials; materialIndex++)
+  {
+    // input material name
+    char materialName[4096];
+    int length;
+    if ((int)genericRead(&length, sizeof(int), 1, binaryInputStream) != 1)
+    {
+      printf("Error in VolumetricMesh::loadFromBinaryGeneric: cannot read the length of material name.\n");
+      throw 0;
+    }
+    if ((int)genericRead(materialName, sizeof(char), length, binaryInputStream) != length)
+    {
+      printf("Error in VolumetricMesh::loadFromBinaryGeneric: cannot read the material name.\n");
+      throw 0;
+    }
+    materialName[length] = '\0';
+
+    // input material type
+    int matType;
+    if ((int)genericRead(&matType, sizeof(int), 1, binaryInputStream) != 1)
+    {
+      printf("Error in VolumetricMesh::loadFromBinaryGeneric: cannot read the length of material type.\n");
+      throw 0;
+    }
+
+    switch (matType)
+    {
+      case Material::ENU:
+      {
+        double materialProperty[Material::ENU_NUM_PROPERTIES];
+        if ((int)genericRead(materialProperty, sizeof(double), Material::ENU_NUM_PROPERTIES, binaryInputStream) != Material::ENU_NUM_PROPERTIES)
+        {
+          printf("Error in VolumetricMesh::loadFromBinaryGeneric: cannot read the material properties (ENU).\n");
+          throw 0;
+        }
+
+        if ((materialProperty[Material::ENU_E] > 0) && (materialProperty[Material::ENU_NU] > -1.0) && (materialProperty[Material::ENU_NU] < 0.5) && (materialProperty[Material::ENU_DENSITY] > 0))
+        {
+          // create new material
+          materials[materialIndex] = new ENuMaterial(materialName, materialProperty[Material::ENU_DENSITY], materialProperty[Material::ENU_E], materialProperty[Material::ENU_NU]);
+        }
+        else
+        {
+          printf("Error in VolumetricMesh::loadFromBinaryGeneric: incorrect material specification in file stream.\n");
+          throw 7;
+        }
+      }
+      break;
+
+      case Material::ORTHOTROPIC:
+      {
+        double materialProperty[Material::ORTHOTROPIC_NUM_PROPERTIES];
+        if ((int)genericRead(materialProperty, sizeof(double), Material::ORTHOTROPIC_NUM_PROPERTIES, binaryInputStream) != Material::ORTHOTROPIC_NUM_PROPERTIES)
+        {
+          printf("Error in VolumetricMesh::loadFromBinaryGeneric: cannot read the material properties (ORTHOTROPIC).\n");
+          throw 0;
+        }
+        double R[9];
+        if ((int)genericRead(R, sizeof(double), 9, binaryInputStream) != 9)
+        {
+          printf("Error in VolumetricMesh::loadFromBinaryGeneric: cannot read the material properties (ORTHOTROPIC).\n");
+          throw 0;
+        }
+        if ((materialProperty[Material::ORTHOTROPIC_E1] > 0) && (materialProperty[Material::ORTHOTROPIC_E2] > 0) && (materialProperty[Material::ORTHOTROPIC_E3] > 0) && (materialProperty[Material::ORTHOTROPIC_G12] > 0) && (materialProperty[Material::ORTHOTROPIC_G23] > 0) && (materialProperty[Material::ORTHOTROPIC_G31] > 0) && (materialProperty[Material::ORTHOTROPIC_DENSITY] > 0))
+        {
+          // create new material
+          materials[materialIndex] = new OrthotropicMaterial(materialName, materialProperty[Material::ORTHOTROPIC_DENSITY], materialProperty[Material::ORTHOTROPIC_E1], materialProperty[Material::ORTHOTROPIC_E2], materialProperty[Material::ORTHOTROPIC_E3], materialProperty[Material::ORTHOTROPIC_NU12], materialProperty[Material::ORTHOTROPIC_NU23], materialProperty[Material::ORTHOTROPIC_NU31], materialProperty[Material::ORTHOTROPIC_G12], materialProperty[Material::ORTHOTROPIC_G23], materialProperty[Material::ORTHOTROPIC_G31], R);
+        }
+        else
+        {
+          printf("Error in VolumetricMesh::loadFromBinaryGeneric: cannot read the material properties (ORTHOTROPIC).\n");
+          throw 14;
+        }
+      }
+      break;
+
+      case Material::MOONEYRIVLIN:
+      {
+        double materialProperty[Material::MOONEYRIVLIN_NUM_PROPERTIES];
+        if ((int)genericRead(materialProperty, sizeof(double), Material::MOONEYRIVLIN_NUM_PROPERTIES, binaryInputStream) != Material::MOONEYRIVLIN_NUM_PROPERTIES)
+        {
+          printf("Error in VolumetricMesh::loadFromBinaryGeneric: cannot read the material properties (MOONEYRIVLIN).\n");
+          throw 0;
+        }
+        if (materialProperty[Material::MOONEYRIVLIN_DENSITY] > 0)
+        {
+          // create new material
+          materials[materialIndex] = new MooneyRivlinMaterial(materialName, materialProperty[Material::MOONEYRIVLIN_DENSITY], materialProperty[Material::MOONEYRIVLIN_MU01], materialProperty[Material::MOONEYRIVLIN_MU10], materialProperty[Material::MOONEYRIVLIN_V1]);
+        }
+        else
+        {
+          printf("Error in VolumetricMesh::loadFromBinaryGeneric: incorrect material specification in file stream. \n");
+          throw 8;
+        }
+      }
+      break;
+
+      default:
+        printf("Error in VolumetricMesh::loadFromBinaryGeneric: material type %d is unknown.\n", matType);
+        throw 9;
+      break;
+    }
+  }  // for materialIndex
+
+  // input the number of sets
+  if ((int)genericRead(&numSets, sizeof(int), 1, binaryInputStream) != 1)
+  {
+    printf("Error in VolumetricMesh::loadFromBinaryGeneric: cannot read the numSets.\n");
+    throw 0;
+  }
+
+  sets = (Set**) malloc (sizeof(Set*) * numSets);
+
+  // create the "allElements" set, containing all the elements
+  sets[0] = new Set("allElements");
+  for(int elementIndex=0; elementIndex<numElements; elementIndex++)
+    sets[0]->insert(elementIndex);
+
+  // input all the other sets (must start from set 1)
+  for(int setIndex = 1; setIndex < numSets; setIndex++)
+  {
+    // input the name of the set
+    char setName[4096];
+    int length;
+    if ((int)genericRead(&length, sizeof(int), 1, binaryInputStream) != 1)
+    {
+      printf("Error in VolumetricMesh::loadFromBinaryGeneric: cannot read the length of the set name.\n");
+      throw 0;
+    }
+
+    if ((int)genericRead(setName, sizeof(char), length, binaryInputStream) != length)
+    {
+      printf("Error in VolumetricMesh::loadFromBinaryGeneric: cannot read the set name.\n");
+      throw 0;
+    }
+    setName[length] = '\0';
+    sets[setIndex] = new Set(setName);
+
+    // input number of elements in the current set
+    int cardinality;
+    if ((int)genericRead(&cardinality, sizeof(int), 1, binaryInputStream) != 1)
+    {
+      printf("Error in VolumetricMesh::loadFromBinaryGeneric: cannot read the number of elements in current set.\n");
+      throw 0;
+    }
+    intTempVec = (int *) malloc (sizeof(int) * cardinality);
+
+    // input all the elements in the current set
+    if ((int)genericRead(intTempVec, sizeof(int), cardinality, binaryInputStream) != cardinality)
+    {
+      printf("Error in VolumetricMesh::loadFromBinaryGeneric: cannot read the elements in current set.\n"); throw 0;
+    }
+
+    for(int setElementIndex=0; setElementIndex < cardinality; setElementIndex++)
+      sets[setIndex]->insert(intTempVec[setElementIndex]);
+    free(intTempVec);
+  }
+
+  // input the number of regions
+  if ((int)genericRead(&numRegions, sizeof(int), 1, binaryInputStream) != 1)
+  {
+    printf("Error in VolumetricMesh::loadFromBinaryGeneric: cannot read the numRegions.\n");
+    throw 0;
+  }
+
+  // input all the regions, for each region (material, set)
+  regions = (Region**) malloc (sizeof(Region*) * numRegions);
+  for(int regionIndex=0; regionIndex < numRegions; regionIndex++)
+  {
+    int materialIndex;
+    if ((int)genericRead(&materialIndex, sizeof(int), 1, binaryInputStream) != 1)
+    {
+      printf("Error in VolumetricMesh::loadFromBinaryGeneric: cannot read the materialIndex.\n");
+      throw 0;
+    }
+    int setIndex;
+    if ((int)genericRead(&setIndex, sizeof(int), 1, binaryInputStream) != 1)
+    {
+      printf("Error in VolumetricMesh::loadFromBinaryGeneric: cannot read the setIndex.\n");
+      throw 0;
+    }
+    regions[regionIndex] = new Region(materialIndex, setIndex);
+  } // for regionIndex
+
+  // === assign materials to elements and handle the unassigned elements ===
+  int verbose = 0;
+  assignMaterialsToElements(verbose);
 }
 
 VolumetricMesh::VolumetricMesh(const VolumetricMesh & volumetricMesh)
@@ -701,30 +1199,21 @@ VolumetricMesh::VolumetricMesh(const VolumetricMesh & volumetricMesh)
     elementMaterial[i] = (volumetricMesh.elementMaterial)[i];
 }
 
-VolumetricMesh::~VolumetricMesh()
+void VolumetricMesh::loadFromBinary(const char * filename, elementType * elementType_)
 {
-  for(int i=0; i< numVertices; i++)
-    delete(vertices[i]);
-  free(vertices);
+  FILE * fin = fopen(filename, "rb");
 
-  for(int i=0; i< numElements; i++)
-    free(elements[i]);
-  free(elements);
-
-  for(int i=0; i< numMaterials; i++)
-    delete(materials[i]);
-  free(materials);
+  if (fin == NULL)
+  {
+    printf("Error in VolumetricMesh::loadFromBinary: could not open file %s.\n",filename);
+    throw 1;
+  }
+  loadFromBinary(fin, elementType_);
   
-  for(int i=0; i< numSets; i++)
-    delete(sets[i]);
-  free(sets);
-
-  for(int i=0; i< numRegions; i++)
-    delete(regions[i]);
-  free(regions);
+  fclose(fin);
 }
 
-int VolumetricMesh::save(char * filename, elementType elementType_) const // saves the mesh to a .veg file
+int VolumetricMesh::saveToAscii(const char * filename, elementType elementType_) const // saves the mesh to a .veg file
 {       
   FILE * fout = fopen(filename, "w");
   if (!fout)
@@ -788,6 +1277,26 @@ int VolumetricMesh::save(char * filename, elementType elementType_) const // sav
       fprintf(fout, "ENU, %.15G, %.15G, %.15G\n", density, E, nu);
     }
 
+    if (materials[materialIndex]->getType() == Material::ORTHOTROPIC)
+    {
+      OrthotropicMaterial * material = downcastOrthotropicMaterial(materials[materialIndex]);
+      double density = material->getDensity();
+
+      double E1 = material->getE1();
+      double E2 = material->getE2();
+      double E3 = material->getE3();
+      double nu12 = material->getNu12();
+      double nu23 = material->getNu23();
+      double nu31 = material->getNu31();
+      double G12 = material->getG12();
+      double G23 = material->getG23();
+      double G31 = material->getG31();
+      double R[9];
+      material->getR(R);
+
+      fprintf(fout, "ORTHOTROPIC, %.15G, %.15G, %.15G, %.15G, %.15G, %.15G, %.15G, %.15G, %.15G, %.15G, %.15G, %.15G, %.15G, %.15G, %.15G, %.15G, %.15G, %.15G, %.15G\n", density, E1, E2, E3, nu12, nu23, nu31, G12, G23, G31, R[0], R[1], R[2], R[3], R[4], R[5], R[6], R[7], R[8]);
+    }
+
     if (materials[materialIndex]->getType() == Material::MOONEYRIVLIN)
     {
       MooneyRivlinMaterial * material = downcastMooneyRivlinMaterial(materials[materialIndex]);
@@ -838,7 +1347,331 @@ int VolumetricMesh::save(char * filename, elementType elementType_) const // sav
   return 0;
 }   
 
-VolumetricMesh::elementType VolumetricMesh::getElementType(char * filename) 
+int VolumetricMesh::save(const char * filename) const //  for backward compatibility
+{
+  return saveToAscii(filename);
+}
+
+int VolumetricMesh::saveToBinary(const char * filename, unsigned int * bytesWritten, elementType elementType_) const
+{
+  FILE * fout = fopen(filename, "wb");
+  if (!fout)
+  {       
+    printf("Error: could not write to %s.\n", filename);
+    return 1;
+  }         
+  int code = saveToBinary(fout, bytesWritten, elementType_);
+  fclose(fout);
+  return code;
+}
+
+unsigned int VolumetricMesh::readFromFile(void * buf, unsigned int elementSize, unsigned int numElements, void * fin)
+{
+  return fread(buf, elementSize, numElements, (FILE*)fin);
+}
+
+unsigned int VolumetricMesh::readFromMemory(void * buf, unsigned int elementSize, unsigned int numElements, void * memoryLocation_)
+{
+  unsigned char * memoryLocation = (unsigned char *)(*(void **)(memoryLocation_));
+  unsigned int numBytes = elementSize * numElements;
+  memcpy(buf, memoryLocation, numBytes);
+  (*(void **)(memoryLocation_)) = (void *)((unsigned char *)(*(void **)(memoryLocation_)) + numBytes);
+  return numElements;
+}
+
+int VolumetricMesh::saveToBinary(FILE * binaryOutputStream, unsigned int * bytesWritten, elementType elementType_, bool countBytesOnly) const
+{
+  unsigned int totalBytesWritten = 0;
+  unsigned int itemsWritten;
+
+  // output the binary file version (1x double)
+  const double version = 1.0;
+  itemsWritten = 1;
+  if (!countBytesOnly)
+    itemsWritten = fwrite(&version, sizeof(double), 1, binaryOutputStream);
+  if (itemsWritten < 1)
+    return 1;
+  totalBytesWritten += itemsWritten * sizeof(double);
+
+  // output the element type (1x int)
+  int eleType = elementType_;
+  itemsWritten = 1;
+  if (!countBytesOnly)
+    itemsWritten = fwrite(&eleType, sizeof(int), 1, binaryOutputStream);
+  if (itemsWritten < 1)
+    return 1;
+  totalBytesWritten += itemsWritten * sizeof(int);
+
+  // output the number of vertices (1x int)
+  itemsWritten = 1;
+  if (!countBytesOnly)
+    itemsWritten = fwrite(&numVertices, sizeof(int), 1, binaryOutputStream);
+  if (itemsWritten < 1)
+    return 1;
+  totalBytesWritten += itemsWritten * sizeof(int);
+
+  // output the vertices (3 doubles x numVertices)
+  for(int vertexIndex = 0; vertexIndex < numVertices; vertexIndex++)
+  {
+    Vec3d v = *getVertex(vertexIndex);
+    double v_array[3];
+    v.convertToArray(v_array);
+    itemsWritten = 3;
+    if (!countBytesOnly)
+      itemsWritten = fwrite(v_array, sizeof(double), 3, binaryOutputStream); 
+    if (itemsWritten < 3)
+      return 1;
+    totalBytesWritten += itemsWritten * sizeof(double);
+  }
+
+  // output the number of elements (1x int)
+  itemsWritten = 1;
+  if (!countBytesOnly)
+    itemsWritten = fwrite(&numElements, sizeof(int), 1, binaryOutputStream);
+  if (itemsWritten < 1)
+    return 1;
+  totalBytesWritten += itemsWritten * sizeof(int);
+
+  // output the number of vertices of every element (1x int)
+  itemsWritten = 1;
+  if (!countBytesOnly)
+    itemsWritten = fwrite(&numElementVertices, sizeof(int), 1, binaryOutputStream);
+  if (itemsWritten < 1)
+    return 1;
+  totalBytesWritten += itemsWritten * sizeof(int);
+
+  // output the vertex indices of every element
+  for(int elementIndex = 0; elementIndex < numElements; elementIndex++)
+  {
+    for(int vertexIndex = 0; vertexIndex < numElementVertices; vertexIndex++)
+    {
+      int temp = getVertexIndex(elementIndex, vertexIndex);
+      itemsWritten = 1;
+      if (!countBytesOnly)
+        itemsWritten = fwrite(&temp, sizeof(int), 1, binaryOutputStream);
+      if (itemsWritten < 1)
+        return 1;
+      totalBytesWritten += itemsWritten * sizeof(int);
+    } 
+  }
+
+  // output the number of materials
+  itemsWritten = 1;
+  if (!countBytesOnly)
+    itemsWritten = fwrite(&numMaterials, sizeof(int), 1, binaryOutputStream);
+  if (itemsWritten < 1)
+    return 1;
+  totalBytesWritten += itemsWritten * sizeof(int);
+
+  // output materials
+  for(int materialIndex = 0; materialIndex < numMaterials; materialIndex++)
+  {
+    char * name = (char*) malloc (sizeof(char) * (materials[materialIndex]->getName().length()+1));
+    strcpy(name, materials[materialIndex]->getName().c_str());
+    unsigned int length = strlen(name);
+
+    // output material name
+    itemsWritten = 1;
+    if (!countBytesOnly)
+      itemsWritten = fwrite(&length, sizeof(int), 1, binaryOutputStream); // write the length of the material name
+    if (itemsWritten < 1)
+      return 1;
+    totalBytesWritten += itemsWritten * sizeof(int);
+    
+    itemsWritten = length;
+    if (!countBytesOnly)
+      itemsWritten = fwrite(name, sizeof(char), length, binaryOutputStream);
+    if (itemsWritten < length)
+      return 1;
+    totalBytesWritten += itemsWritten * sizeof(char);
+
+    // output material type (1x int)
+    int matType = materials[materialIndex]->getType();
+    
+    itemsWritten = 1;
+    if (!countBytesOnly)
+      itemsWritten = fwrite(&matType, sizeof(int), 1, binaryOutputStream);
+    if (itemsWritten < 1)
+      return 1;
+    totalBytesWritten += itemsWritten * sizeof(int);
+    switch (matType)
+    {
+      case Material::ENU:
+      {
+        ENuMaterial * material = downcastENuMaterial(materials[materialIndex]);
+        double materialProperty[Material::ENU_NUM_PROPERTIES];
+        materialProperty[Material::ENU_DENSITY] = material->getDensity();
+        materialProperty[Material::ENU_E] = material->getE();
+        materialProperty[Material::ENU_NU] = material->getNu();
+
+        itemsWritten = Material::ENU_NUM_PROPERTIES;
+        if (!countBytesOnly)
+          itemsWritten = fwrite(materialProperty, sizeof(double), Material::ENU_NUM_PROPERTIES, binaryOutputStream);
+        if (itemsWritten < Material::ENU_NUM_PROPERTIES)
+          return 1;
+        totalBytesWritten += itemsWritten * sizeof(double);
+      }
+      break;
+
+      case Material::MOONEYRIVLIN:
+      {
+        MooneyRivlinMaterial * material = downcastMooneyRivlinMaterial(materials[materialIndex]);
+        double materialProperty[Material::MOONEYRIVLIN_NUM_PROPERTIES];
+        materialProperty[Material::MOONEYRIVLIN_DENSITY] = material->getDensity();
+        materialProperty[Material::MOONEYRIVLIN_MU01] = material->getmu01();
+        materialProperty[Material::MOONEYRIVLIN_MU10] = material->getmu10();
+        materialProperty[Material::MOONEYRIVLIN_V1] = material->getv1();
+
+        itemsWritten = Material::MOONEYRIVLIN_NUM_PROPERTIES;
+        if (!countBytesOnly)
+          itemsWritten = fwrite(materialProperty, sizeof(double), Material::MOONEYRIVLIN_NUM_PROPERTIES, binaryOutputStream);
+        if (itemsWritten < Material::MOONEYRIVLIN_NUM_PROPERTIES)
+          return 1;
+        totalBytesWritten += itemsWritten * sizeof(double);
+      }
+      break;
+
+      case Material::ORTHOTROPIC:
+      {
+        OrthotropicMaterial * material = downcastOrthotropicMaterial(materials[materialIndex]);
+        double materialProperty[Material::ORTHOTROPIC_NUM_PROPERTIES];
+        materialProperty[Material::ORTHOTROPIC_DENSITY] = material->getDensity();
+        materialProperty[Material::ORTHOTROPIC_E1] = material->getE1();
+        materialProperty[Material::ORTHOTROPIC_E2] = material->getE2();
+        materialProperty[Material::ORTHOTROPIC_E3] = material->getE3();
+        materialProperty[Material::ORTHOTROPIC_NU12] = material->getNu12();
+        materialProperty[Material::ORTHOTROPIC_NU23] = material->getNu23();
+        materialProperty[Material::ORTHOTROPIC_NU31] = material->getNu31();
+        materialProperty[Material::ORTHOTROPIC_G12] = material->getG12();
+        materialProperty[Material::ORTHOTROPIC_G23] = material->getG23();
+        materialProperty[Material::ORTHOTROPIC_G31] = material->getG31();
+
+        itemsWritten = Material::ORTHOTROPIC_NUM_PROPERTIES;
+        if (!countBytesOnly)
+          itemsWritten = fwrite(materialProperty, sizeof(double), Material::ORTHOTROPIC_NUM_PROPERTIES, binaryOutputStream);
+        if (itemsWritten < Material::ORTHOTROPIC_NUM_PROPERTIES)
+          return 1;
+        totalBytesWritten += itemsWritten * sizeof(double);
+
+        double R[9];
+        material->getR(R);
+
+        itemsWritten = 9;
+        if (!countBytesOnly)
+          itemsWritten = fwrite(R, sizeof(double), 9, binaryOutputStream);
+        if (itemsWritten < 9)
+          return 1;
+        totalBytesWritten += itemsWritten * sizeof(double);
+      }
+      break;
+
+      default:
+      {
+        printf("Error: material type %d is unknown.\n", matType);
+        exit(0);
+      }
+      break;
+    }
+
+    free(name);
+  }  // for materialIndex
+
+  // output the number of sets
+  itemsWritten = 1;
+  if (!countBytesOnly)
+    itemsWritten = fwrite(&numSets, sizeof(int), 1, binaryOutputStream);
+  if (itemsWritten < 1)
+    return 1;
+  totalBytesWritten += itemsWritten * sizeof(int);
+
+  // output sets (skip the allElements set whose index is 0)
+  for(int setIndex = 1; setIndex < numSets; setIndex++)
+  {
+    char * name = (char*) malloc (sizeof(char) * (sets[setIndex]->getName().length()+1));
+    strcpy(name, sets[setIndex]->getName().c_str());
+
+    // output the name of the set
+    unsigned int length = strlen(name);
+    itemsWritten = 1;
+    if (!countBytesOnly)
+      itemsWritten = fwrite(&length, sizeof(int), 1, binaryOutputStream);
+    if (itemsWritten < 1)
+      return 1;
+    totalBytesWritten += itemsWritten * sizeof(int);
+
+    itemsWritten = length;
+    if (!countBytesOnly)
+      itemsWritten = fwrite(name, sizeof(char), length, binaryOutputStream);
+    if (itemsWritten < length)
+      return 1;
+    totalBytesWritten += itemsWritten * sizeof(char);
+
+    std::set<int> setElements;
+    sets[setIndex]->getElements(setElements);
+
+    // output the number of elements in the current set
+    unsigned int cardinality = setElements.size();
+    itemsWritten = 1;
+    if (!countBytesOnly)
+      itemsWritten = fwrite(&cardinality, sizeof(int), 1, binaryOutputStream);
+    if (itemsWritten < 1)
+      return 1;
+    totalBytesWritten += itemsWritten * sizeof(int);
+
+    int * elementGroup = (int *) malloc (sizeof(int) * cardinality);
+    int count = 0;
+    for(std::set<int>::iterator iter = setElements.begin(); iter != setElements.end(); iter++)
+    {
+      elementGroup[count] = *iter;
+      count++;
+    }
+    // output the current set
+    itemsWritten = cardinality;
+    if (!countBytesOnly)
+      itemsWritten = fwrite(elementGroup, sizeof(int), cardinality, binaryOutputStream);
+    if (itemsWritten < cardinality)
+      return 1;
+    totalBytesWritten += itemsWritten * sizeof(int);
+    free(elementGroup);
+
+    free(name);
+  }  // for setIndex
+
+  // output the number of regions
+  itemsWritten = 1;
+  if (!countBytesOnly)
+    itemsWritten = fwrite(&numRegions, sizeof(int), 1, binaryOutputStream);
+  if (itemsWritten < 1)
+    return 1;
+  totalBytesWritten += itemsWritten * sizeof(int);
+
+  // output regions (for each region, output material and set)
+  for(int regionIndex=0; regionIndex < numRegions; regionIndex++)
+  {
+    int materialIndex = regions[regionIndex]->getMaterialIndex();
+    itemsWritten = 1;
+    if (!countBytesOnly)
+      itemsWritten = fwrite(&materialIndex, sizeof(int), 1, binaryOutputStream);
+    if (itemsWritten < 1)
+      return 1;
+    totalBytesWritten += itemsWritten * sizeof(int);
+
+    int setIndex = regions[regionIndex]->getSetIndex();
+    itemsWritten = 1;
+    if (!countBytesOnly)
+      itemsWritten = fwrite(&setIndex, sizeof(int), 1, binaryOutputStream);
+    if (itemsWritten < 1)
+      return 1;
+    totalBytesWritten += itemsWritten * sizeof(int);
+  }
+
+  if (bytesWritten != NULL)
+    *bytesWritten = totalBytesWritten;
+
+  return 0;
+}
+
+VolumetricMesh::elementType VolumetricMesh::getElementTypeASCII(const char * filename)
 {
   //printf("Parsing %s... (for element type determination)\n",filename);fflush(NULL);
   elementType elementType_;
@@ -890,6 +1723,99 @@ VolumetricMesh::elementType VolumetricMesh::getElementType(char * filename)
     printf("Error: could not determine the mesh type in file %s. File may not be in .veg format.\n", filename);
 
   return elementType_;
+}
+
+VolumetricMesh::elementType VolumetricMesh::getElementTypeBinary(const char * filename)
+{
+  FILE * fin = fopen(filename, "rb");
+  if (fin == NULL)
+  {
+    printf("Error in VolumetricMesh::getElementTypeBinary: could not open file %s.\n",filename);
+    exit(0);
+  }
+
+  elementType elementType_ = getElementType(fin);
+  fclose(fin);
+
+  return (elementType_);
+}
+
+VolumetricMesh::elementType VolumetricMesh::getElementType(const char * filename, fileFormatType fileFormat) 
+{
+  switch (fileFormat)
+  {
+  case ASCII:
+    return VolumetricMesh::getElementTypeASCII(filename);
+  	break;
+
+  case BINARY:
+    return VolumetricMesh::getElementTypeBinary(filename);
+    break;
+
+  default:
+    printf("Error: the file format %d is unknown. \n", fileFormat);
+    exit(0);
+    break;
+  }
+}
+
+VolumetricMesh::elementType VolumetricMesh::getElementType(void * fin_, int memoryLoad)
+{
+  unsigned int (*genericRead)(void *, unsigned int, unsigned int, void *);
+
+  void * fin;
+  if (memoryLoad)
+  {
+    genericRead = &VolumetricMesh::readFromMemory;
+    fin = &(fin_);
+  }
+  else
+  {
+    genericRead = &VolumetricMesh::readFromFile;
+    fin = fin_;
+  }
+
+  double version;
+  if ((int)genericRead(&version, sizeof(double), 1, fin) != 1)
+  {
+    printf("Error in VolumetricMesh::getElementType: cannot read version.\n");
+    throw 0;
+  };
+
+  int eleType;
+  if ((int)genericRead(&eleType, sizeof(int), 1, fin) != 1)
+  {
+    printf("Error in VolumetricMesh::getElementType: cannot read the element type from the stream\n");
+    exit(0);
+  }
+  
+  // rewind the size of an integer and a double
+  if (memoryLoad)
+  {
+    fin = (void *)((unsigned char *)fin - ((int)sizeof(int)) - ((int)sizeof(double)));
+  }
+  else
+  {
+    int offset = -((int)sizeof(int)) - ((int)sizeof(double));
+    fseek((FILE *)fin, offset, SEEK_CUR);  
+  }
+
+  switch (eleType)
+  {
+    case TET:
+      return TET;
+    break;
+
+    case CUBIC:
+      return CUBIC;
+    break;
+
+    default:
+      printf("Error: could not determine the mesh type from the stream.\n");
+    break;
+  }
+
+  return INVALID;
 }
 
 double VolumetricMesh::getVolume() const
@@ -963,6 +1889,29 @@ void VolumetricMesh::getVertexNeighborhood(vector<int> & vertices_, vector<int> 
   vector<int> elements_;
   getElementsTouchingVertices(vertices_, elements_);
   getVerticesInElements(elements_, neighborhood);
+}
+
+double VolumetricMesh::getMass() const
+{
+  double mass = 0.0;
+  for(int i=0; i< getNumRegions(); i++)
+  {
+    Region * region = getRegion(i);
+    double density = getMaterial(region->getMaterialIndex())->getDensity();
+    set<int> setElements; // elements in the region
+    getSet(region->getSetIndex())->getElements(setElements);
+
+    // over all elements in the region
+    for(set<int> :: iterator iter = setElements.begin(); iter != setElements.end(); iter++)
+    {
+      int element = *iter;
+      double elementVolume = getElementVolume(element);
+      double elementMass = elementVolume * density;
+      mass += elementMass;
+    }
+  }
+
+  return mass;
 }
 
 void VolumetricMesh::getInertiaParameters(double & mass, Vec3d & centerOfMass, Mat3d & inertiaTensor) const
@@ -1146,7 +2095,7 @@ void VolumetricMesh::getDefaultMaterial(double * E, double * nu, double * densit
   *density = density_default;
 }
 
-void VolumetricMesh::PropagateRegionsToElements()
+void VolumetricMesh::propagateRegionsToElements()
 {
   for(int regionIndex=0; regionIndex < numRegions; regionIndex++)
   {
@@ -1154,6 +2103,7 @@ void VolumetricMesh::PropagateRegionsToElements()
     int materialIndex = region->getMaterialIndex();
 
     set<int> setElements;
+
     sets[region->getSetIndex()]->getElements(setElements);
 
     for(set<int> :: iterator iter = setElements.begin(); iter != setElements.end(); iter++)
@@ -1165,19 +2115,14 @@ void VolumetricMesh::PropagateRegionsToElements()
 }
 
 int VolumetricMesh::generateInterpolationWeights(int numTargetLocations, 
-	double * targetLocations, int ** vertices_, double ** weights, 
-	double zeroThreshold, vector<int> * closestElementList, int verbose) const
-{  
+        double * targetLocations, int * elements, int ** vertices_, double ** weights, 
+        double zeroThreshold, int verbose) const
+{
   // allocate interpolation arrays  
   *vertices_ = (int*) malloc (sizeof(int) * numElementVertices * numTargetLocations);
   *weights = (double*) malloc (sizeof(double) * numElementVertices * numTargetLocations);
 
-  double * baryWeights = (double*) malloc (sizeof(double) * numElementVertices);
-
-  int numExternalVertices = 0;
-
-  if (closestElementList != NULL)
-    closestElementList->clear();
+  double * barycentricWeights = (double*) malloc (sizeof(double) * numElementVertices);
 
   for (int i=0; i < numTargetLocations; i++) // over all interpolation locations
   {
@@ -1190,19 +2135,14 @@ int VolumetricMesh::generateInterpolationWeights(int numTargetLocations,
                       targetLocations[3*i+1],
                       targetLocations[3*i+2]);
 
-    // find element containing pos
-    int element = getContainingElement(pos);
-
+    int element = elements[i];
     if (element < 0)
     {
-      element = getClosestElement(pos);
-      numExternalVertices++;
+      printf("Error: invalid element index %d.\n", element);
+      return 1;
     }
 
-    if (closestElementList != NULL)
-      closestElementList->push_back(element);
-
-    computeBarycentricWeights(element, pos, baryWeights);
+    computeBarycentricWeights(element, pos, barycentricWeights);
 
     if (zeroThreshold > 0)
     {
@@ -1223,7 +2163,7 @@ int VolumetricMesh::generateInterpolationWeights(int numTargetLocations,
       {
         // assign zero weights
         for(int ii=0; ii < numElementVertices; ii++)
-          baryWeights[ii] = 0.0;
+          barycentricWeights[ii] = 0.0;
         assignedZero++;
         continue;
       }
@@ -1232,16 +2172,63 @@ int VolumetricMesh::generateInterpolationWeights(int numTargetLocations,
     for(int ii=0; ii<numElementVertices; ii++)
     {
       (*vertices_)[numElementVertices * i + ii] = getVertexIndex(element, ii);
-      (*weights)[numElementVertices * i + ii] = baryWeights[ii];
+      (*weights)[numElementVertices * i + ii] = barycentricWeights[ii];
     }
   }
 
-  free(baryWeights);
+  free(barycentricWeights);
+
+  return 0;
+}
+
+int VolumetricMesh::generateContainingElements(int numTargetLocations, double * targetLocations, int ** elements, int useClosestElementIfOutside, int verbose) const
+{
+  int numExternalVertices = 0;
+
+  (*elements) = (int*) malloc (sizeof(int) * numTargetLocations);
+
+  // determine containing (or closest) elements
+  for (int i=0; i < numTargetLocations; i++) // over all interpolation locations
+  {
+    Vec3d pos = Vec3d(targetLocations[3*i+0], targetLocations[3*i+1], targetLocations[3*i+2]);
+
+    // find element containing pos
+    int element = getContainingElement(pos);
+
+    // use closest element if outside
+    if (useClosestElementIfOutside && (element < 0))
+    {
+      element = getClosestElement(pos);
+      numExternalVertices++;
+    }
+
+    (*elements)[i] = element;
+  }
 
   return numExternalVertices;
 }
 
-int VolumetricMesh::getNumInterpolationElementVertices(char * filename)
+int VolumetricMesh::generateInterpolationWeights(int numTargetLocations, double * targetLocations, int ** vertices_, double ** weights, double zeroThreshold, int ** containingElements, int verbose) const
+{  
+  int * elements = NULL;
+   
+  int useClosestElementIfOutside = 1;
+  int numExternalVertices = generateContainingElements(numTargetLocations, targetLocations, &elements, useClosestElementIfOutside);
+
+  // allocate interpolation arrays  
+  *vertices_ = (int*) malloc (sizeof(int) * numElementVertices * numTargetLocations);
+  *weights = (double*) malloc (sizeof(double) * numElementVertices * numTargetLocations);
+  int code = generateInterpolationWeights(numTargetLocations, targetLocations, elements, vertices_, weights, zeroThreshold, verbose);
+
+  if (containingElements == NULL)
+    free(elements);
+  else
+    *containingElements = elements;
+    
+  return (code == 0) ? numExternalVertices : -1;
+}
+
+int VolumetricMesh::getNumInterpolationElementVertices(const char * filename)
 {
   FILE * fin = fopen(filename, "r");
   if (!fin)
@@ -1275,7 +2262,7 @@ int VolumetricMesh::getNumInterpolationElementVertices(char * filename)
   return count / 2;
 }
 
-int VolumetricMesh::loadInterpolationWeights(char * filename, int numTargetLocations, int numElementVertices_, int ** vertices_, double ** weights)
+int VolumetricMesh::loadInterpolationWeights(const char * filename, int numTargetLocations, int numElementVertices_, int ** vertices_, double ** weights)
 {
   FILE * fin = fopen(filename, "r");
   if (!fin)
@@ -1321,43 +2308,118 @@ int VolumetricMesh::loadInterpolationWeights(char * filename, int numTargetLocat
     {
       //printf("Warning: bad file syntax. Missing end of line in the interpolation file.\n");
       //do nothing
-      nop();
     }
   }
 
   fclose(fin);
+  return 0;
+}
+
+int VolumetricMesh::loadInterpolationWeightsBinary(const char * filename, int * numTargetLocations, int * numElementVertices_, int ** vertices_, double ** weights)
+{
+  FILE * fin = fopen(filename, "rb");
+  if (!fin)
+  {
+    printf("Error: unable to open file %s.\n", filename);
+    return 2;
+  }
+
+  int code = loadInterpolationWeightsBinary(fin, numTargetLocations, numElementVertices_, vertices_, weights);
+  fclose(fin);
+
+  if (code != 0)
+    printf("Error reading from file %s.\n", filename);
+
+  return code;
+}
+
+int VolumetricMesh::loadInterpolationWeightsBinary(FILE * fin, int * numTargetLocations, int * numElementVertices_, int ** vertices_, double ** weights)
+{
+  int buffer[2];
+  int readItems = (int)fread(buffer, sizeof(int), 2, fin);
+  if (readItems < 2)
+    return 1;
+
+  *numTargetLocations = buffer[0];
+  *numElementVertices_ = buffer[1];
+
+  // allocate interpolation arrays
+  *vertices_ = (int*) malloc (sizeof(int) * *numElementVertices_ * *numTargetLocations);
+  *weights = (double*) malloc (sizeof(double) * *numElementVertices_ * *numTargetLocations);
+
+  readItems = (int)fread(*vertices_, sizeof(int), *numElementVertices_ * *numTargetLocations, fin);
+  if (readItems < *numElementVertices_ * *numTargetLocations)
+    return 1;
+
+  readItems = (int)fread(*weights, sizeof(double), *numElementVertices_ * *numTargetLocations, fin);
+  if (readItems < *numElementVertices_ * *numTargetLocations)
+    return 1;
 
   return 0;
 }
 
-int VolumetricMesh::saveInterpolationWeights(char * filename, int numTargetLocations, int numElementVertices_, int * vertices_, double * weights)
+int VolumetricMesh::saveInterpolationWeights(const char * filename, int numTargetLocations, int numElementVertices_, int * vertices_, double * weights)
 {
-  FILE * fin = fopen(filename, "w");
-  if (!fin)
+  FILE * fout = fopen(filename, "w");
+  if (!fout)
   {
     printf("Error: unable to open file %s.\n", filename);
     return 1;
   }
 
-  // read the elements one by one and accumulate entries
   for(int currentVertex=0; currentVertex < numTargetLocations; currentVertex++)
   {
-    fprintf(fin, "%d", currentVertex);
+    fprintf(fout, "%d", currentVertex);
 
     for(int j=0; j<numElementVertices_; j++)
-      fprintf(fin," %d %lf", vertices_[currentVertex * numElementVertices_ + j], 
+      fprintf(fout," %d %lf", vertices_[currentVertex * numElementVertices_ + j], 
         weights[currentVertex * numElementVertices_ + j]);
 
-    fprintf(fin,"\n");
+    fprintf(fout,"\n");
   }
 
-  fclose(fin);
+  fclose(fout);
+  return 0;
+}
+
+int VolumetricMesh::saveInterpolationWeightsBinary(const char * filename, int numTargetLocations, int numElementVertices_, int * vertices_, double * weights)
+{
+  FILE * fout = fopen(filename, "wb");
+  if (!fout)
+  {
+    printf("Error: unable to open file %s.\n", filename);
+    return 1;
+  }
+
+  int code = saveInterpolationWeightsBinary(fout, numTargetLocations, numElementVertices_, vertices_, weights);
+  fclose(fout);
+  if (code != 0)
+    printf("Error reading from file %s.\n", filename);
+  return code;
+}
+
+int VolumetricMesh::saveInterpolationWeightsBinary(FILE * fout, int numTargetLocations, int numElementVertices_, int * vertices_, double * weights)
+{
+  int buffer[2];
+  buffer[0] = numTargetLocations;
+  buffer[1] = numElementVertices_;
+
+  int writtenItems = (int)fwrite(buffer, sizeof(int), 2, fout);
+  if (writtenItems < 2)
+    return 1;
+
+  writtenItems = (int)fwrite(vertices_, sizeof(int), numElementVertices_ * numTargetLocations, fout);
+  if (writtenItems < numElementVertices_ * numTargetLocations)
+    return 1;
+
+  writtenItems = (int)fwrite(weights, sizeof(double), numElementVertices_ * numTargetLocations, fout);
+  if (writtenItems < numElementVertices_ * numTargetLocations)
+    return 1;
 
   return 0;
 }
 
-void VolumetricMesh::interpolate(double * u, double * uTarget, 
-  int numTargetLocations, int numElementVertices_, int * vertices_, double * weights)
+void VolumetricMesh::interpolate(double * u, double * uTarget, int numTargetLocations, int numElementVertices_, int * vertices_, double * weights)
 {
   for(int i=0; i< numTargetLocations; i++)
   {
@@ -1392,25 +2454,33 @@ int VolumetricMesh::interpolateGradient(const double * U, int numFields, Vec3d p
 
 void VolumetricMesh::exportMeshGeometry(int * numVertices_, double ** vertices_, int * numElements_, int * numElementVertices_, int ** elements_) const
 {
-  *numVertices_ = numVertices;
-  *numElements_ = numElements;
-  *numElementVertices_ = numElementVertices;
+  if (numVertices_ != NULL) 
+    *numVertices_ = numVertices;
+  if (numElements_ != NULL) 
+    *numElements_ = numElements;
+  if (numElementVertices_ != NULL) 
+    *numElementVertices_ = numElementVertices;
 
-  *vertices_ = (double*) malloc (sizeof(double) * 3 * numVertices);
-  *elements_ = (int*) malloc (sizeof(int) * numElementVertices * numElements);
-
-  for(int i=0; i<numVertices; i++)
+  if(vertices_ != NULL) 
   {
-    Vec3d v = *getVertex(i);
-    (*vertices_)[3*i+0] = v[0];
-    (*vertices_)[3*i+1] = v[1];
-    (*vertices_)[3*i+2] = v[2];
+    *vertices_ = (double*) malloc (sizeof(double) * 3 * numVertices);
+    for(int i=0; i<numVertices; i++)
+    {
+      Vec3d v = *getVertex(i);
+      (*vertices_)[3*i+0] = v[0];
+      (*vertices_)[3*i+1] = v[1];
+      (*vertices_)[3*i+2] = v[2];
+    }
   }
 
-  for(int i=0; i<numElements; i++)
+  if(elements_ != NULL) 
   {
-    for(int j=0; j<numElementVertices; j++)
-      (*elements_)[numElementVertices * i + j] = elements[i][j];
+    *elements_ = (int*) malloc (sizeof(int) * numElementVertices * numElements);
+    for(int i=0; i<numElements; i++)
+    {
+      for(int j=0; j<numElementVertices; j++)
+        (*elements_)[numElementVertices * i + j] = elements[i][j];
+    }
   }
 }
 
@@ -1730,7 +2800,7 @@ void VolumetricMesh::setToSubsetMesh(std::set<int> & subsetElements, int removeI
   }
 }
 
-int VolumetricMesh::exportToEle(char * baseFilename, int includeRegions) const
+int VolumetricMesh::exportToEle(const char * baseFilename, int includeRegions) const
 {
   char s[1024];
   sprintf(s, "%s.ele", baseFilename);
@@ -1820,7 +2890,4 @@ int VolumetricMesh::exportToEle(char * baseFilename, int includeRegions) const
   return 0;
 }
 
-void VolumetricMesh::nop()
-{
-}
 

@@ -56,6 +56,9 @@ public:
   inline Vec3d(const double * vec); // create a vector from the array of three doubles pointed to by "vec"
   inline Vec3d(const Vec3d & vec);
 
+  inline void set(double x0, double x1, double x2); // assign vector [x0, x1, x2]
+  inline void set(double value); // set all elements to value
+
   inline Vec3d & operator=(const Vec3d & source);
   inline bool operator==(const Vec3d & vec2) const;
 
@@ -88,6 +91,9 @@ public:
 
   inline double & operator[] (int index); // v[i] returns i-th entry of v
   inline const double & operator[] (int index) const;
+
+  // finds a unit vector orthogonal to this vector
+  Vec3d findOrthonormalVector();
 
   // copies the vector into an array of length 3
   inline void convertToArray(double * vecArray);
@@ -293,6 +299,20 @@ inline void Vec3d::print()
   double c = elt[2];
   
   printf("[%G %G %G]\n", a, b, c);
+}
+
+inline void Vec3d::set(double x0, double x1, double x2) // assign vector [x0, x1, x2]
+{
+  elt[0] = x0;
+  elt[1] = x1;
+  elt[2] = x2;
+}
+
+inline void Vec3d::set(double value) // set all elements to value
+{
+  elt[0] = value;
+  elt[1] = value;
+  elt[2] = value;
 }
 
 #endif

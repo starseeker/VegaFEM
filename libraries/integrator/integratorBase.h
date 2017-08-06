@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC     *
+ * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -123,20 +123,20 @@ public:
 
   // sets the position, velocity, and acceleration
   // note: if you don't set all three at once, old values will persist, which may not be what you want
-  void SetqState(const double * q, const double * qvel=NULL, const double * qaccel=NULL);
+  virtual void SetqState(const double * q, const double * qvel=NULL, const double * qaccel=NULL);
 
   // copies the state into spaces provided by q,qvel,qaccel (each a vector of length r; if NULL is provided for either of q,qvel,qccel, that part of the state is not copied)
-  void GetqState(double * q, double * qvel=NULL, double * qaccel=NULL);
+  virtual void GetqState(double * q, double * qvel=NULL, double * qaccel=NULL);
 
   // set/get invidivual position components:
-  inline void SetQ(int index, double qIndex) { q[index] = qIndex; } 
-  inline double GetQ(int index) { return q[index]; } 
+  inline virtual void SetQ(int index, double qIndex) { q[index] = qIndex; } 
+  inline virtual double GetQ(int index) { return q[index]; } 
 
   // obtain pointers to the internally stored position, velocity, and acceleration
   // (advanced usage)
-  inline double * Getq() { return q; }
-  inline double * Getqvel() { return qvel; }
-  inline double * Getqaccel() { return qaccel; }
+  inline virtual double * Getq() { return q; }
+  inline virtual double * Getqvel() { return qvel; }
+  inline virtual double * Getqaccel() { return qaccel; }
 
   // == set external forces (a vector of r numbers) ===
 
@@ -157,8 +157,8 @@ public:
   virtual void SetInternalForceScalingFactor(double internalForceScalingFactor) { this->internalForceScalingFactor = internalForceScalingFactor; }
 
   // tangential Rayleigh damping parameters
-  inline void SetDampingMassCoef(double dampingMassCoef) { this->dampingMassCoef = dampingMassCoef; }
-  inline void SetDampingStiffnessCoef(double dampingStiffnessCoef) { this->dampingStiffnessCoef = dampingStiffnessCoef;}
+  inline virtual void SetDampingMassCoef(double dampingMassCoef) { this->dampingMassCoef = dampingMassCoef; }
+  inline virtual void SetDampingStiffnessCoef(double dampingStiffnessCoef) { this->dampingStiffnessCoef = dampingStiffnessCoef;}
   inline double GetDampingMassCoef() { return dampingMassCoef; }
   inline double GetDampingStiffnessCoef() { return dampingStiffnessCoef; }
 
@@ -167,7 +167,7 @@ public:
 
   virtual int DoTimestep() = 0;
 
-  // === misc queries ===
+  // === misc ===
 
   inline int GetNumDOFs() { return r; }
   inline int Getr() { return r; }
@@ -177,6 +177,10 @@ public:
 
   virtual double GetForceAssemblyTime() = 0;
   virtual double GetSystemSolveTime() = 0;
+
+  // constrain the system to ||q||^2 < R2
+  // useful to prevent large values from occuring
+  virtual void ConstrainToSphere(double R2);
 
 protected:
 

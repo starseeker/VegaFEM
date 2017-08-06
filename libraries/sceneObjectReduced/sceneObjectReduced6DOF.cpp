@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
- * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC    *
+ * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -28,11 +28,18 @@
 
 #include "sceneObjectReduced6DOF.h"
 
-SceneObjectReduced6DOF::SceneObjectReduced6DOF(char * filenameOBJ, ModalMatrix * modalMatrix): SceneObjectWithRestPosition(filenameOBJ), SceneObjectReduced(filenameOBJ, modalMatrix), SceneObject6DOF(filenameOBJ)
+SceneObjectReduced6DOF::SceneObjectReduced6DOF(const char * filenameOBJ, ModalMatrix * modalMatrix): SceneObjectWithRestPosition(filenameOBJ), SceneObjectReduced(filenameOBJ, modalMatrix), SceneObject6DOF(filenameOBJ), qvel(NULL)
 {
 }
 
-SceneObjectReduced6DOF::~SceneObjectReduced6DOF() {}
+SceneObjectReduced6DOF::SceneObjectReduced6DOF(ObjMesh * objMesh, ModalMatrix * modalMatrix, bool deepCopy): SceneObjectWithRestPosition(objMesh, deepCopy), SceneObjectReduced(objMesh, modalMatrix, deepCopy), SceneObject6DOF(objMesh, deepCopy), qvel(NULL)
+{
+}
+
+SceneObjectReduced6DOF::~SceneObjectReduced6DOF() 
+{
+  free(qvel);
+}
 
 void SceneObjectReduced6DOF::GetSingleVertexPosition(int vertex, double * x, double * y, double * z)
 {
@@ -49,7 +56,7 @@ void SceneObjectReduced6DOF::GetSingleVertexPosition(int vertex, double * x, dou
   *z = R[6] * x0 + R[7] * y0 + R[8] * z0 + centerOfMass[2];
 }
 
-void SceneObjectReduced6DOF::GetSingleVertexVelocity(int vertex, double * objectVel, double * objectAngVel, double * qvel, double * velx, double * vely, double * velz)
+void SceneObjectReduced6DOF::GetSingleVertexVelocity(int vertex, double * objectVel, double * objectAngVel, double * velx, double * vely, double * velz)
 {
   SceneObject6DOF::GetSingleVertexVelocity(vertex, objectVel, objectAngVel, velx, vely, velz);
 
@@ -59,4 +66,13 @@ void SceneObjectReduced6DOF::GetSingleVertexVelocity(int vertex, double * object
   *vely += R[3] * localDefoVel[0] + R[4] * localDefoVel[1] + R[5] * localDefoVel[2];
   *velz += R[6] * localDefoVel[0] + R[7] * localDefoVel[1] + R[8] * localDefoVel[2];
 }
+
+void SceneObjectReduced6DOF::Setqvel(double * qvel_)
+{
+  int r = modalMatrix->Getr();
+  if (qvel == NULL)
+    qvel = (double*) malloc (sizeof(double) * r);
+  memcpy(qvel, qvel_, sizeof(double) * r);
+}
+
 

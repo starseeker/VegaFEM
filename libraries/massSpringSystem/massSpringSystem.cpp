@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.0                               *
+ * Vega FEM Simulation Library Version 2.1                               *
  *                                                                       *
  * "massSpringSystem" library, Copyright (C) 2007 CMU, 2009 MIT,         *
- *                                           2013 USC                    *
+ *                                           2014 USC                    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -261,6 +261,7 @@ MassSpringSystem::~MassSpringSystem()
   free(masses);
   free(restPositions);
   free(restLengths);
+  free(edges);
   free(inverseIndices);
   free(edgeGroups);
   free(groupStiffness);
@@ -770,7 +771,7 @@ double MassSpringSystem::GetCubeVolume(double a[3], double b[3], double c[3], do
   return (g[0] - a[0]) * (g[1] - a[1]) * (g[2] - a[2]);
 }
 
-void MassSpringSystem::CreateObjMesh(char * filename, double * u)
+void MassSpringSystem::CreateObjMesh(const char * filename, double * u)
 {
   FILE * fout = fopen(filename, "w");
 

@@ -26,11 +26,12 @@ public:
   // M = Q * S
   // M is 3x3 input matrix
   // Q is 3x3 orthogonal output matrix, Q Q^T = Q^T Q = I 
-  // S is 3x3 symmetric output matrix
+  // S is 3x3 symmetric positive-definite output matrix
   // Note: det(Q)=sgn(det(M)); this sign can be 1 or -1, depending on M
+  // if forceRotation is 1, the matrix Q will be a rotation, S will be symmetric, but not necessarily positive-definite
   // M is not modified
   // All matrices are row-major
-  static double Compute(const double * M, double * Q, double * S, double tolerance = 1E-6);
+  static double Compute(const double * M, double * Q, double * S, double tolerance=1E-6, int forceRotation=0);
 
 protected:
 

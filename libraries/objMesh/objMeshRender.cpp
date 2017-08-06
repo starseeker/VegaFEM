@@ -1,8 +1,8 @@
 /*************************************************************************
 *                                                                       *
-* Vega FEM Simulation Library Version 2.0                               *
+* Vega FEM Simulation Library Version 2.1                               *
 *                                                                       *
-* "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2013 USC        *
+* "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC        *
 * All rights reserved.                                                  *
 *                                                                       *
 * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder      *
@@ -33,10 +33,11 @@
   #define isnan _isnan
 #endif
 
+#include "openGL-headers.h"
 #include <string.h>
-using namespace std;
 #include "objMeshRender.h"
 #include "imageIO.h"
+using namespace std;
 
 // this file (in the imageIO library) defines what image file formats are supported
 // note: PPM and uncompressed TGA are always supported
@@ -85,10 +86,15 @@ void ObjMeshRender::Texture::loadTexture(string fullPath, int textureMode_)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-  if((textureMode & OBJMESHRENDER_MIPMAPBIT) == OBJMESHRENDER_GL_USEMIPMAP)
+  if((textureMode & OBJMESHRENDER_MIPMAPBIT) == OBJMESHRENDER_GL_USEMIPMAP) 
+  {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-  else
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  } 
+  else {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  }
 
   if((textureMode & OBJMESHRENDER_LIGHTINGMODULATIONBIT) == OBJMESHRENDER_GL_REPLACE)
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
@@ -179,6 +185,7 @@ void ObjMeshRender::Texture::flipImage(int width, int height, int bpp, unsigned 
 
 ObjMeshRender::ObjMeshRender(ObjMesh * mesh_) : mesh(mesh_) 
 {
+  alphaBlendingThreshold = OBJMESHRENDER_DEFAULT_ALPHA_BLENDING_THRESHOLD;
 }
 
 ObjMeshRender::~ObjMeshRender()
@@ -199,7 +206,7 @@ void ObjMeshRender::renderGroup(unsigned int groupIndex, int geometryMode, int r
   render(geometryMode, renderMode, groupIndex);
 }
 
-void ObjMeshRender::renderGroup(char * groupName, int geometryMode, int renderMode)
+void ObjMeshRender::renderGroup(const char * groupName, int geometryMode, int renderMode)
 {
   // get the group
   std::string name(groupName);
@@ -219,16 +226,18 @@ void ObjMeshRender::render(int geometryMode, int renderMode, int renderSingleGro
   
     // pass 1
     glEnable(GL_ALPHA_TEST);
-    glAlphaFunc(GL_EQUAL, 1.0);
+    // glAlphaFunc(GL_EQUAL, 1.0);
+    glAlphaFunc(GL_GREATER, alphaBlendingThreshold);
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
     render(geometryMode, modifiedRenderMode, renderSingleGroup);
 
     glEnable(GL_LIGHTING);
- 
+    
     // pass 2
     glEnable(GL_ALPHA_TEST);
-    glAlphaFunc(GL_LESS, 1.0);
+    //glAlphaFunc(GL_LESS, 1.0);
+    glAlphaFunc(GL_LEQUAL, alphaBlendingThreshold);
     glDepthMask(GL_FALSE);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -237,7 +246,7 @@ void ObjMeshRender::render(int geometryMode, int renderMode, int renderSingleGro
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
     glDisable(GL_ALPHA_TEST);
-
+    
     return;
   }
 
@@ -282,6 +291,7 @@ void ObjMeshRender::render(int geometryMode, int renderMode, int renderSingleGro
       //glPolygonOffset(2.0, 2.0);
     }
 
+    int faceCount = 0;
     for(unsigned int i=0; i < mesh->getNumGroups(); i++)
     {
       if ((renderSingleGroup >= 0) && ((int)i != renderSingleGroup))     
@@ -297,9 +307,9 @@ void ObjMeshRender::render(int geometryMode, int renderMode, int renderSingleGro
 
       float shininess = materialHandle->getShininess();
       float alpha = materialHandle->getAlpha();
-      float ambient[4] = { Ka[0], Ka[1], Ka[2], alpha };
-      float diffuse[4] = { Kd[0], Kd[1], Kd[2], alpha };
-      float specular[4] = { Ks[0], Ks[1], Ks[2], alpha };
+      float ambient[4] = { (float)Ka[0], (float)Ka[1], (float)Ka[2], alpha };
+      float diffuse[4] = { (float)Kd[0], (float)Kd[1], (float)Kd[2], alpha };
+      float specular[4] = { (float)Ks[0], (float)Ks[1], (float)Ks[2], alpha };
       if(renderMode & OBJMESHRENDER_MATERIAL)
       {
         glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
@@ -333,6 +343,10 @@ void ObjMeshRender::render(int geometryMode, int renderMode, int renderSingleGro
           glEnable(GL_TEXTURE_2D);
         }
       }
+      else
+      {
+        glDisable(GL_TEXTURE_2D);
+      }
 
       //printf("amb: %G %G %G\n", Ka[0], Ka[1], Ka[2]);
       //printf("dif: %G %G %G\n", Kd[0], Kd[1], Kd[2]);
@@ -352,6 +366,15 @@ void ObjMeshRender::render(int geometryMode, int renderMode, int renderSingleGro
           }
           else
             warnMissingFaceNormals = true;
+        }
+
+        Vec3d faceColor(0,0,0);
+        if(renderMode & OBJMESHRENDER_CUSTOMCOLORFACES)
+        {
+          if (customColorsFaces.size() == 0)
+            faceColor = Vec3d(0,0,1);
+          else
+            faceColor = customColorsFaces[faceCount];
         }
 
         for(unsigned int iVertex = 0; iVertex < faceHandle->getNumVertices(); iVertex++)
@@ -395,11 +418,16 @@ void ObjMeshRender::render(int geometryMode, int renderMode, int renderSingleGro
               glColor3f(customColors[vertexPositionIndex][0], customColors[vertexPositionIndex][1], customColors[vertexPositionIndex][2]);
           }
 
+          if(renderMode & OBJMESHRENDER_CUSTOMCOLORFACES)
+            glColor3f(faceColor[0], faceColor[1], faceColor[2]);
+
           // set position
           glVertex3d(v[0],v[1],v[2]);
         }
 
         glEnd();
+
+        faceCount++;
       }
 
       if((renderMode & OBJMESHRENDER_TEXTURE))
@@ -528,7 +556,7 @@ void ObjMeshRender::renderVertex(int index)
   glVertex3f(pos[0], pos[1], pos[2]);
 }
 
-void ObjMeshRender::renderGroupEdges(char * groupName)
+void ObjMeshRender::renderGroupEdges(const char * groupName)
 {
   //get the group
   string name(groupName);
@@ -612,7 +640,7 @@ void ObjMeshRender::loadTextures(int textureMode, std::vector<Texture*> * textur
         std::string poolFullPath = (*texturePool)[j]->getFullPath();
         if (fullPath == poolFullPath)
         {
-          printf("Texture %s discovered in the texture pool. Avoiding reload.\n", fullPath.c_str());
+          //printf("Texture %s discovered in the texture pool. Avoiding reload.\n", fullPath.c_str());
           textures[i] = (*texturePool)[j];
           ownTexture[i] = 0;
           found = 1;
@@ -743,6 +771,22 @@ void ObjMeshRender::setCustomColors(vector<Vec3d> colors)
     customColors.push_back(colors[i]);
 }
 
+void ObjMeshRender::setCustomColorsFaces(Vec3d color)
+{
+  int numFaces = (int)mesh->getNumFaces();
+  customColorsFaces.clear();
+  for(int i=0; i<numFaces; i++)
+    customColorsFaces.push_back(color);
+}
+
+void ObjMeshRender::setCustomColorsFaces(vector<Vec3d> colors)
+{
+  int numFaces = (int)mesh->getNumFaces();
+  customColorsFaces.clear();
+  for(int i=0; i<numFaces; i++)
+    customColorsFaces.push_back(colors[i]);
+}
+
 int ObjMeshRender::maxBytesPerPixelInTextures()
 {
   int maxBytes = 0;
@@ -761,5 +805,11 @@ int ObjMeshRender::maxBytesPerPixelInTextures()
   }
 
   return maxBytes;
+}
+
+ObjMeshRender::Texture::~Texture()
+{
+  if (texture.first) 
+    glDeleteTextures(1, &(texture.second));
 }
 
