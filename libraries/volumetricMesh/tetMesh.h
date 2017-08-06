@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -95,7 +95,7 @@ public:
 
  // === misc queries ===
 
-  static const VolumetricMesh::elementType elementType() { return elementType_; }
+  static VolumetricMesh::elementType elementType() { return elementType_; }
   virtual VolumetricMesh::elementType getElementType() const { return elementType(); }
 
   static double getTetVolume(Vec3d * a, Vec3d * b, Vec3d * c, Vec3d * d);

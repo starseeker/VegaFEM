@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder      *
@@ -43,9 +43,9 @@ public:
   // if generateHalfEdges flag is 1 (default), it also generates the half edges (otherwise class is not fully initialized)
   // if numOrientationFlips is not NULL, returns the number of edges that were flipped to orient the surface coherently
   // if the mesh is non-orientable, throws an exception
-  ObjMeshOrientable(const std::string & filename, int generateHalfEdges=1, int * numOrientationFlips = NULL, int verbose=1);
+  ObjMeshOrientable(const std::string & filename, int generateHalfEdges=1, int * numOrientationFlips = NULL, int verbose=0);
 
-  ObjMeshOrientable(ObjMesh * objMesh, int generateHalfEdges=1, int * numOrientationFlips = NULL, int verbose=1);
+  ObjMeshOrientable(ObjMesh * objMesh, int generateHalfEdges=1, int * numOrientationFlips = NULL, int verbose=0);
 
   ~ObjMeshOrientable();
 
@@ -127,7 +127,7 @@ public:
   // returns the number of edges that were flipped to orient the surface coherently
   // (which will be zero if the input mesh already is oriented coherently)
   // if the data structure cannot be generated (non-manifold geometry), returns -1
-  int GenerateHalfEdgeDataStructure(int verbose=1); // generates the whole datastructure, assuming the base objMesh class has been initialized
+  int GenerateHalfEdgeDataStructure(int verbose=0); // generates the whole datastructure, assuming the base objMesh class has been initialized
 
   void CopyHalfEdgeTopologyFrom(ObjMeshOrientable * source); // makes the half-edge topological info equal to that of source
 

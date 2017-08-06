@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "sparseMatrix" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC   *
+ * "sparseMatrix" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC   *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -200,6 +200,7 @@ public:
   SparseMatrix & operator*=(const double alpha);
   SparseMatrix & operator+=(const SparseMatrix & mat2);
   SparseMatrix & operator-=(const SparseMatrix & mat2);
+  bool operator==(const SparseMatrix & mat2);
   void ScalarMultiply(const double alpha, SparseMatrix * dest=NULL); // dest = alpha * dest (if dest=NULL, operation is applied to this object)
   void ScalarMultiplyAdd(const double alpha, SparseMatrix * dest=NULL); // dest += alpha * dest (if dest=NULL, operation is applied to this object)
   void MultiplyRow(int row, double scalar); // multiplies all elements in row 'row' with scalar 'scalar'
@@ -266,13 +267,14 @@ public:
   void RemoveColumnsSlow(int numRemovedColumns, int * removedColumns, int oneIndexed=0); // columns need not be sorted 
 
   void IncreaseNumRows(int numAddedRows); // increases the number of matrix rows (new rows are added at the bottom of the matrix, and are all empty)
-  void SetRows(SparseMatrix * source, int startRow, int startColumn=0); // starting with startRow, overwrites the rows with those of matrix "source"; data is written into columns starting at startColumn
-  void AppendRowsColumns(SparseMatrix * source); // appends the matrix "source" at the bottom of matrix, and trans(source) to the right of the matrix
+  void SetRows(const SparseMatrix * source, int startRow, int startColumn=0); // starting with startRow, overwrites the rows with those of matrix "source"; data is written into columns starting at startColumn
+  void AppendRowsColumns(const SparseMatrix * source); // appends the matrix "source" at the bottom of matrix, and trans(source) to the right of the matrix
 
   // transposition (note: the matrix need not be symmetric)
   void BuildTranspositionIndices();
   void FreeTranspositionIndices();
   // returns the list position of the transposed element (row, list position j)
+  // must first call BuildTranspositionIndices()
   inline int TransposedIndex(int row, int j) const { return transposedIndices[row][j]; }
 
   // returns the transposed matrix
@@ -280,13 +282,18 @@ public:
   // this is important in case there are zero columns at the end of the matrix
   // if numColumns=-1 (default), GetNumColumns() will be called; however, this will lead to a transposed matrix with a fewer number of rows in case of empty columns at the end of the original matrix
   SparseMatrix * Transpose(int numColumns=-1);
+  // assign a transposed matrix AT to this matrix; topology of AT must be transpose of topology of this matrix
+  // note: this function calls BuildTranspositionIndices internally, so you don't need to call BuildTranspositionIndices first
+  void AssignTransposedMatrix(SparseMatrix & AT);
 
   // checks if the matrix is skew-symmetric
   // the non-zero entry locations must form a symmetric pattern
   // returns max ( abs ( A^T + A ) ) = || A^T + A ||_{\infty}
+  // note: this function calls BuildTranspositionIndices internally, so you don't need to call BuildTranspositionIndices first
   double SkewSymmetricCheck(); 
   // makes matrix symmetric by copying upper triangle + diagonal into the lower triangle
   // the non-zero entry locations must form a symmetric pattern
+  // note: this function calls BuildTranspositionIndices internally, so you don't need to call BuildTranspositionIndices first
   void SymmetrizeMatrix();
 
   // pre-computes the sparse columns of diagonal matrix entries
@@ -297,24 +304,30 @@ public:
   void AddDiagonalMatrix(double * diagonalMatrix);
   void AddDiagonalMatrix(double constDiagonalElement);
 
-  // Build submatrix indices is used for pair of matrices where the sparsity of one matrix is a subset of another matrix (for example, mass matrix and 
-  // stiffness matrix). Also, the two matrics have to have the same dimensions (i.e., number of rows and columns).
+  // Build submatrix indices is used for pair of matrices where the sparsity of one matrix is a subset of another matrix (for example, mass matrix and stiffness matrix). 
+  // It allows you to assign/add a submatrix to the current matrix.
+  // The submatrix begins at row "startRow" and column "startColumn" of this matrix.
+  // submatrixID allows you to keep several submatrices at once
   // Call this once to establish the correspondence:
-  void BuildSubMatrixIndices(SparseMatrix & submatrix, int subMatrixID=0);
+  void BuildSubMatrixIndices(const SparseMatrix & submatrix, int subMatrixID=0, int startRow=0, int startColumn=0);
   void FreeSubMatrixIndices(int subMatrixID=0);
+  // assign a submatrix to the current matrix, whose elements are a subset of the elements of the current matrix
+  // note: the other entries of the current matrix are unmodified
+  void AssignSubMatrix(const SparseMatrix & submatrix, int subMatrixID=0);
   // add a matrix to the current matrix, whose elements are a subset of the elements of the current matrix
   // += factor * mat2
   // returns *this
   SparseMatrix & AddSubMatrix(double factor, SparseMatrix & submatrix, int subMatrixID=0);
 
   // Build supermatrix indices is used for pair of matrices with rows/columns removed.
+  // It allows you to assign a super matrix to the current matrix.
   // oneIndexed: tells whether the fixed rows and columns are specified 1-indexed or 0-indexed
   // First, call BuildSuperMatrixIndices once to inialize (all fixed rows and columns are indexed with respect the superMatrix):
-  void BuildSuperMatrixIndices(int numFixedRowColumns, int * fixedRowColumns, SparseMatrix * superMatrix, int oneIndexed=0); // use this version if the indices of removed rows and columns are the same
-  void BuildSuperMatrixIndices(int numFixedRows, int * fixedRows, int numFixedColumns, int * fixedColumns, SparseMatrix * superMatrix, int oneIndexed=0); // allows arbitrary row and column indices
+  void BuildSuperMatrixIndices(int numFixedRowColumns, int * fixedRowColumns, const SparseMatrix * superMatrix, int oneIndexed=0); // use this version if the indices of removed rows and columns are the same
+  void BuildSuperMatrixIndices(int numFixedRows, int * fixedRows, int numFixedColumns, int * fixedColumns, const SparseMatrix * superMatrix, int oneIndexed=0); // allows arbitrary row and column indices
   // Then, call this (potentially many times) to quickly assign the values at the appropriate places in the submatrix.
   // For example, you can use this to copy data from a matrix into a submatrix obtained by a previous call to RemoveRowColumns.
-  void AssignSuperMatrix(SparseMatrix * superMatrix);
+  void AssignSuperMatrix(const SparseMatrix & superMatrix);
 
   // returns the total number of non-zero entries in the lower triangle (including diagonal)
   int GetNumLowerTriangleEntries() const;
@@ -362,17 +375,15 @@ protected:
 
   /*
     numSubMatrixIDs specifies how many sub-matrix relationships we have
-    length(subMatrixIndices) == length(subMatrixIndexLengths) == (numSubMatrixIDs + 1)
-
-    length(subMatrixIndexLengths[subMatrixID]) ==
-    length(subMatrixIndices[subMatrixID]) == number of rows = numRows
-
-    length(subMatrixIndices[subMatrixID][rowIndex]) ==
-    subMatrixIndexLengths[subMatrixID][rowIndex]
-   */
+    length(subMatrixIndices) == length(subMatrixIndexLengths) == length(subMatrixStartRow) == (numSubMatrixIDs + 1)
+    length(subMatrixIndexLengths[subMatrixID]) == length(subMatrixIndices[subMatrixID]) == number of rows = numRows
+    length(subMatrixIndices[subMatrixID][rowIndex]) == subMatrixIndexLengths[subMatrixID][rowIndex]
+  */
   int numSubMatrixIDs;
   int *** subMatrixIndices;
   int ** subMatrixIndexLengths;
+  int * subMatrixStartRow;
+  int * subMatrixNumRows;
 
   int ** superMatrixIndices;
   int * superRows;

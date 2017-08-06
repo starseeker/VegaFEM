@@ -1,11 +1,11 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC *
  * All rights reserved.                                                  *
  *                                                                       *
- * Code author: Jernej Barbic                                            *
+ * Code authors: Jernej Barbic, Yijing Li                                *
  * http://www.jernejbarbic.com/code                                      *
  *                                                                       *
  * Research: Jernej Barbic, Fun Shing Sin, Daniel Schroeder,             *
@@ -90,7 +90,7 @@ public:
   // exports the mesh geometry to memory arrays (say, for external usage)
   // all parameters are output parameters
   // vertices and elements will be allocated inside the routine
-  void exportMeshGeometry(int * numVertices, double ** vertices, int * numElements, int * numElementVertices, int ** elements) const;
+  void exportMeshGeometry(int * numVertices, double ** vertices, int * numElements = NULL, int * numElementVertices = NULL, int ** elements = NULL) const;
 
   // === vertex and element access ===
 
@@ -196,18 +196,18 @@ public:
   // If elements is not NULL, the closest elements for each target location will be returned in the integer list "*elements" (allocated inside the function)
   // If elements is not NULL, the function will allocate an integer array *elements, and return the closest element to each target location in it.
   // Returns the number of target points that do not lie inside any element.
-  int generateInterpolationWeights(int numTargetLocations, double * targetLocations, int ** vertices, double ** weights, double zeroThreshold = -1.0, int ** elements = NULL, int verbose=0) const; // this is the "master" function, meant to be typically used to create the interpolant
+  int generateInterpolationWeights(int numTargetLocations, const double * targetLocations, int ** vertices, double ** weights, double zeroThreshold = -1.0, int ** elements = NULL, int verbose=0) const; // this is the "master" function, meant to be typically used to create the interpolant
 
   // interpolates 3D vector data from vertices of the 
   //   volumetric mesh (data given in u) to the target locations (output goes into uTarget)
   //   e.g., use this to interpolate deformation from the volumetric mesh to a triangle mesh
-  static void interpolate(double * u, double * uTarget, int numTargetLocations, int numElementVertices, int * vertices, double * weights);
+  static void interpolate(const double * u, double * uTarget, int numTargetLocations, int numElementVertices, const int * vertices, const double * weights);
 
   // the following are less often used, more specialized functions
   // same as "generateInterpolationWeights" above, except here the elements that contain the target locations are assumed to be known, and are provided in array "elements"; returns 0 on success, 1 otherwise
-  int generateInterpolationWeights(int numTargetLocations, double * targetLocations, int * elements, int ** vertices, double ** weights, double zeroThreshold = -1.0, int verbose=0) const; 
+  int generateInterpolationWeights(int numTargetLocations, const double * targetLocations, int * elements, int ** vertices, double ** weights, double zeroThreshold = -1.0, int verbose=0) const; 
   // generates the integer list "elements" of the elements that contain given vertices; if closestElementIfOutside==1, then vertices outside of the mesh are assigned the closest element, otherwise -1 is assigned; returns the number of target locations outside of the mesh
-  int generateContainingElements(int numTargetLocations, double * targetLocations, int ** elements, int useClosestElementIfOutside=1, int verbose=0) const; 
+  int generateContainingElements(int numTargetLocations, const double * targetLocations, int ** elements, int useClosestElementIfOutside=1, int verbose=0) const; 
   static int getNumInterpolationElementVertices(const char * filename); // looks at the first line of "filename" to determine "numElementVertices" for this particular interpolant
   static int loadInterpolationWeights(const char * filename, int numTargetLocations, int numElementVertices, int ** vertices, double ** weights); // ASCII version; returns 0 on success
   static int saveInterpolationWeights(const char * filename, int numTargetLocations, int numElementVertices, int * vertices, double * weights); // ASCII version
@@ -235,8 +235,9 @@ public:
   {
   public:
 
-    Set(const std::string name);
+    Set(const std::string & name);
     Set(const Set & set);
+    Set(const std::string & name, const std::set<int> & elements);
 
     inline std::string getName() const;
     inline int getNumElements() const;
@@ -373,8 +374,9 @@ protected:
   static unsigned int readFromMemory(void * buf, unsigned int elementSize, unsigned int numElements, void * memoryLocation);
 };
 
-inline VolumetricMesh::Set::Set(const std::string name_) { name = name_; }
+inline VolumetricMesh::Set::Set(const std::string & name_) { name = name_; }
 inline VolumetricMesh::Set::Set(const Set & set) { elements = set.elements; name = set.getName(); }
+inline VolumetricMesh::Set::Set(const std::string & name_, const std::set<int> & elements_) : name(name_), elements(elements_) {}
 inline std::string VolumetricMesh::Set::getName() const { return name; }
 inline int VolumetricMesh::Set::getNumElements() const { return (int)(this->elements.size()); }
 inline void VolumetricMesh::Set::getElements(std::set<int> & elements) const { elements = this->elements; }

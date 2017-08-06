@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder      *
@@ -212,7 +212,7 @@ ObjMeshOctree<TriangleWithCollisionInfoAndPseudoNormals>::ObjMeshOctree( ObjMesh
 
 template ObjMeshOctree<TriangleBasic>::ObjMeshOctree( ObjMesh * objMesh, int maxNumTrianglesInLeafNode_, int maxTreeDepth_, int printInfo );  
 template ObjMeshOctree<TriangleWithCollisionInfo>::ObjMeshOctree( ObjMesh * objMesh, int maxNumTrianglesInLeafNode_, int maxTreeDepth_, int printInfo );  
-#ifndef WIN32
-  template ObjMeshOctree<TriangleWithCollisionInfoAndPseudoNormals>::ObjMeshOctree( ObjMesh * objMesh, int maxNumTrianglesInLeafNode_, int maxTreeDepth_, int printInfo );  
+#if defined(_WIN32) || defined(WIN32)  
+  //template ObjMeshOctree<TriangleWithCollisionInfoAndPseudoNormals>::ObjMeshOctree( ObjMesh * objMesh, int maxNumTrianglesInLeafNode_, int maxTreeDepth_, int printInfo );  
 #endif
 

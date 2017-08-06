@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
  * "quaternion" library , Copyright (C) 2007 CMU                         *
  * All rights reserved.                                                  *
@@ -74,23 +74,17 @@ public:
   inline real Gety() const;
   inline real Getz() const;
 
-  inline Quaternion operator+ (const Quaternion q2) const; // q3 = q1+q2
-  inline Quaternion operator- (const Quaternion q2) const; // q3 = q1-q2
-  inline Quaternion operator* (const Quaternion q2) const; // q3 = q1 * q2
-  inline Quaternion operator/ (const Quaternion q2) const; // q3 = q1 / q2
-
-  // Multiply quaternion with a scalar; e.g. q1 = alpha * q2;
-  friend Quaternion<real> operator* (real alpha, const Quaternion<real> q2)
-  {
-    return Quaternion<real>(alpha * q2.s, alpha * q2.x, alpha * q2.y, alpha * q2.z);
-  }
+  inline Quaternion operator+ (const Quaternion & q2) const; // q3 = q1+q2
+  inline Quaternion operator- (const Quaternion & q2) const; // q3 = q1-q2
+  inline Quaternion operator* (const Quaternion & q2) const; // q3 = q1 * q2
+  inline Quaternion operator/ (const Quaternion & q2) const; // q3 = q1 / q2
 
   inline Quaternion conj(); // q2 = q1.conj()
 
-  inline Quaternion & operator= (const Quaternion rhs); // q2 = q1;
+  inline Quaternion & operator= (const Quaternion & rhs); // q2 = q1;
   inline Quaternion & operator= (real s); // sets quaternion equal to the scalar quaternion s
-  inline int operator== (const Quaternion rhs) const; // q2 == q1
-  inline int operator!= (const Quaternion rhs) const; // q2 != q1
+  inline bool operator== (const Quaternion & rhs) const; // q2 == q1
+  inline bool operator!= (const Quaternion & rhs) const; // q2 != q1
 
   void Normalize(); // q.Normalize() scales q such that it is unit size
 
@@ -125,6 +119,35 @@ public:
 
   // Prints the quaternion to stdout.
   inline void Print() const;
+
+  // Multiply quaternion with a scalar; e.g. q1 = alpha * q2;
+  friend Quaternion operator* (real alpha, const Quaternion & q2)
+  {
+    return Quaternion(alpha * q2.s, alpha * q2.x, alpha * q2.y, alpha * q2.z);
+  }
+
+  // Dot product of two quaternions
+  friend double dot(const Quaternion & q1, const Quaternion & q2) 
+  {
+    return q1.s * q2.s + q1.x * q2.x + q1.y * q2.y + q1.z * q2.z;
+  }
+
+  // Negate a quaternion
+  friend Quaternion operator- (const Quaternion & q) 
+  {
+    return (-1) * q;
+  }
+
+  // Inverse quaternion
+  friend Quaternion inv(const Quaternion & q) 
+  {
+    Quaternion nq;
+    nq.s = q.s;
+    nq.x = -q.x;
+    nq.y = -q.y;
+    nq.z = -q.z;
+    return nq / q.Norm2();
+  }
 
 protected:
   real s,x,y,z; 
@@ -185,7 +208,7 @@ template <typename real>
 inline real Quaternion<real>::Getz() const { return z; }
 
 template <typename real>
-inline Quaternion<real> & Quaternion<real>::operator= (const Quaternion<real> rhs)
+inline Quaternion<real> & Quaternion<real>::operator= (const Quaternion<real> & rhs)
 {
   s = rhs.s;
   x = rhs.x;
@@ -207,14 +230,14 @@ inline Quaternion<real> & Quaternion<real>::operator= (real s_g)
 }
 
 template <typename real>
-inline int Quaternion<real>::operator== (const Quaternion<real> rhs) const
+inline bool Quaternion<real>::operator== (const Quaternion<real> & rhs) const
 {
   return ((s == rhs.s) && (x == rhs.x) &&
           (y == rhs.y) && (z == rhs.z));
 }
 
 template <typename real>
-inline int Quaternion<real>::operator!= (const Quaternion<real> rhs) const
+inline bool Quaternion<real>::operator!= (const Quaternion<real> & rhs) const
 {
   return ((s != rhs.s) || (x != rhs.x) ||
           (y != rhs.y) || (z != rhs.z));
@@ -240,7 +263,7 @@ inline real Quaternion<real>::Norm2() const
 }
 
 template <typename real>
-inline Quaternion<real> Quaternion<real>::operator+ (const Quaternion<real> q2) const
+inline Quaternion<real> Quaternion<real>::operator+ (const Quaternion<real> & q2) const
 {
   Quaternion<real> w(s + q2.s, x + q2.x, y + q2.y, z + q2.z);
 
@@ -248,14 +271,14 @@ inline Quaternion<real> Quaternion<real>::operator+ (const Quaternion<real> q2) 
 }
 
 template <typename real>
-inline Quaternion<real> Quaternion<real>::operator- (const Quaternion<real> q2) const
+inline Quaternion<real> Quaternion<real>::operator- (const Quaternion<real> & q2) const
 {
   Quaternion<real> w(s - q2.s, x - q2.x, y - q2.y, z - q2.z);
   return w;  
 }
 
 template <typename real>
-inline Quaternion<real> Quaternion<real>::operator* (const Quaternion<real> q2) const 
+inline Quaternion<real> Quaternion<real>::operator* (const Quaternion<real> & q2) const 
 {
   Quaternion<real> w(
         s * q2.s - x * q2.x - y    * q2.y - z * q2.z,
@@ -267,7 +290,7 @@ inline Quaternion<real> Quaternion<real>::operator* (const Quaternion<real> q2) 
 }
 
 template <typename real>
-inline Quaternion<real> Quaternion<real>::operator/ (const Quaternion<real> q2) const
+inline Quaternion<real> Quaternion<real>::operator/ (const Quaternion<real> & q2) const
 {
   // compute invQ2 = q2^{-1}
   Quaternion<real> invQ2; 

@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC     *
+ * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -55,6 +55,7 @@ public:
   virtual ~ImplicitNewmarkDense();
 
   inline virtual void SetTimestep(double timestep) { this->timestep = timestep; UpdateAlphas(); }
+  inline void SetSolverType(solverType solver_) { this->solver = solver_; }
 
   // performs one timestep of simulation (returns 0 on success, and 1 on failure)
   // failure can occur, for example, if you are using the positive definite solver and the system matrix has negative eigenvalues
@@ -64,6 +65,9 @@ public:
   inline virtual void SetNewmarkGamma(double NewmarkGamma) { this->NewmarkGamma = NewmarkGamma; UpdateAlphas(); }
   inline void SetMaxIterations(int maxIterations) { this->maxIterations = maxIterations; }
   inline void SetEpsilon(double epsilon) { this->epsilon = epsilon; }
+
+  // sets a new reduced coordinate, and adjusts velocity and acceleration
+  void Setq(double * q);
 
 protected:
 

@@ -32,9 +32,6 @@
 #include <float.h>
 #include "configFile.h"
 #include "lighting.h"
-#ifdef WIN32
-  #include <windows.h>
-#endif
 #include "openGL-headers.h"
 
 Lighting::Lighting(const char * configFilename)

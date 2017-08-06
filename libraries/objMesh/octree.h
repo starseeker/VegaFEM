@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder      *
@@ -28,10 +28,6 @@
 
 #ifndef _OCTREE_H_
 #define _OCTREE_H_
-
-#ifdef WIN32
-  #include <windows.h>
-#endif
 
 //  An octree storing triangles. Can be intersected with a sphere or a line segment. 
 //  Jernej Barbic, CMU

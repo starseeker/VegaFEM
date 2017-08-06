@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC     *
+ * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -48,6 +48,7 @@ IntegratorBaseDense::IntegratorBaseDense(int r, double timestep, double * massMa
   this->reducedForceModel = reducedForceModel;
 
   tangentStiffnessMatrixOffset = (double*) calloc (r2, sizeof(double));
+  dampingMatrixOffset = (double*) calloc (r2, sizeof(double));
   IPIV = new IPIVC(r);
 
   ResetToRest();
@@ -94,9 +95,28 @@ void IntegratorBaseDense::SetTangentStiffnessMatrixOffset(double * tangentStiffn
   memcpy(this->tangentStiffnessMatrixOffset, tangentStiffnessMatrixOffset, sizeof(double) * r * r);
 }
 
+void IntegratorBaseDense::AddTangentStiffnessMatrixOffset(double * tangentStiffnessMatrixOffset)
+{
+  int r2 = r * r;
+  for(int i=0; i<r2; i++)
+    (this->tangentStiffnessMatrixOffset)[i] += tangentStiffnessMatrixOffset[i];
+}
+
 void IntegratorBaseDense::ClearTangentStiffnessMatrixOffset()
 {
   memset(this->tangentStiffnessMatrixOffset, 0, sizeof(double) * r * r);
+}
+
+void IntegratorBaseDense::ClearDampingMatrixOffset()
+{
+  memset(this->dampingMatrixOffset, 0, sizeof(double) * r * r);
+}
+
+void IntegratorBaseDense::AddDampingMatrixOffset(double * dampingMatrixOffset)
+{
+  int r2 = r * r;
+  for(int i=0; i<r2; i++)
+    (this->dampingMatrixOffset)[i] += dampingMatrixOffset[i];
 }
 
 double IntegratorBaseDense::GetKineticEnergy()

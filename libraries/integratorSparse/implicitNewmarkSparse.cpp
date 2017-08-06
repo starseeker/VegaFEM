@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC     *
+ * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -145,7 +145,7 @@ int ImplicitNewmarkSparse::SetState(double * q_, double * qvel_)
   tangentStiffnessMatrix->ResetToZero();
   tangentStiffnessMatrix->AddSubMatrix(1.0, *massMatrix);
   tangentStiffnessMatrix->AddSubMatrix(1.0, *dampingMatrix, 1);
-  systemMatrix->AssignSuperMatrix(tangentStiffnessMatrix); // must go via a matrix with tangentStiffnessMatrix's topology, because the AssignSuperMatrix indices were computed with respect to such topology
+  systemMatrix->AssignSuperMatrix(*tangentStiffnessMatrix); // must go via a matrix with tangentStiffnessMatrix's topology, because the AssignSuperMatrix indices were computed with respect to such topology
 
   memset(buffer, 0, sizeof(double) * r);
 
@@ -243,11 +243,17 @@ int ImplicitNewmarkSparse::DoTimestep()
       rayleighDampingMatrix->AddSubMatrix(dampingMassCoef, *massMatrix);
 
       rayleighDampingMatrix->ScalarMultiplyAdd(alpha4, tangentStiffnessMatrix);
+
+      if (tangentStiffnessMatrixOffset != NULL)
+        tangentStiffnessMatrix->AddSubMatrix(1.0, *tangentStiffnessMatrixOffset, 2);
+
+      // form the system matrix
+
       //*tangentStiffnessMatrix += alpha4 * *rayleighDampingMatrix;
       tangentStiffnessMatrix->AddSubMatrix(alpha4, *dampingMatrix, 1);
 
       tangentStiffnessMatrix->AddSubMatrix(alpha1, *massMatrix);
-      
+
       // compute force residual, store it into aux variable qresidual
       // qresidual = M * qaccel + C * qvel - externalForces + internalForces
 
@@ -304,7 +310,7 @@ int ImplicitNewmarkSparse::DoTimestep()
 
     //tangentStiffnessMatrix->Save("Keff");
     RemoveRows(r, bufferConstrained, qdelta, numConstrainedDOFs, constrainedDOFs);
-    systemMatrix->AssignSuperMatrix(tangentStiffnessMatrix);
+    systemMatrix->AssignSuperMatrix(*tangentStiffnessMatrix);
 
     // solve: systemMatrix * buffer = bufferConstrained
 
@@ -398,4 +404,13 @@ void ImplicitNewmarkSparse::UseStaticSolver(bool useStaticSolver_)
     memcpy(q_1, q, sizeof(double) * r);
   }
 } 
+
+void ImplicitNewmarkSparse::SetTangentStiffnessMatrixOffset(SparseMatrix * tangentStiffnessMatrixOffset_, int reuseTopology)
+{
+  if (tangentStiffnessMatrixOffset == NULL)
+    reuseTopology = 0;
+  IntegratorBaseSparse::SetTangentStiffnessMatrixOffset(tangentStiffnessMatrixOffset_, reuseTopology);
+  if (!reuseTopology)
+    tangentStiffnessMatrix->BuildSubMatrixIndices(*tangentStiffnessMatrixOffset, 2);
+}
 

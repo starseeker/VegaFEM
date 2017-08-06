@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
  * "objMeshGPUDeformer" library , Copyright (C) 2007 CMU, 2009 MIT,      *
- *                                                        2014 USC       *
+ *                                                        2015 USC       *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -36,7 +36,9 @@
 #define GLH_EXT_SINGLE_FILE
 #include "glh_extensions.h"
 
-#ifndef WIN32
+#if defined(_WIN32) || defined(WIN32)
+#else
+//#ifndef WIN32
   #define GL_GLEXT_PROTOTYPES 1
 #endif
 
@@ -956,7 +958,7 @@ void ObjMeshGPUDeformer::PrintGLerror( const char *msg )
   }
 }
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(WIN32)
   #include <malloc.h>
 
   void ObjMeshGPUDeformer::heap_check_()

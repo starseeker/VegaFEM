@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "glslPhong" library , Copyright (C) 2014 USC                          *
+ * "glslPhong" library , Copyright (C) 2015 USC                          *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -35,7 +35,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#if defined(WIN32) || defined(linux)
+#if defined(_WIN32) || defined(WIN32) || defined(linux)
   #define USE_GLEW
 #elif defined(__APPLE__)
   #include "openGL-headers.h"

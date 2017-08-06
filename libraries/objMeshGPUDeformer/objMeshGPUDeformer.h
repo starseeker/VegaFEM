@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
  * "objMeshGPUDeformer" library , Copyright (C) 2007 CMU, 2009 MIT,      *
- *                                                        2014 USC       *
+ *                                                        2015 USC       *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -30,7 +30,7 @@
 #ifndef _OBJMESHGPUDEFORMER__H_
 #define _OBJMESHGPUDEFORMER__H_
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(WIN32)
   #include <windows.h>
 #else
   #define GL_GLEXT_PROTOTYPES 1
@@ -38,7 +38,7 @@
 
 #include "openGL-headers.h"
 
-#if defined(WIN32) || defined(linux)
+#if defined(_WIN32) || defined(linux)
   #include <GL/glext.h>
 #elif defined(__APPLE__)
   #include <OpenGL/glext.h>
@@ -132,7 +132,7 @@ protected:
   int * vboNormalEnabled;
   int * vboTex1Enabled;
 
-  #ifdef WIN32
+  #if defined(_WIN32) || defined(WIN32)
     void heap_check_();
   #endif
 

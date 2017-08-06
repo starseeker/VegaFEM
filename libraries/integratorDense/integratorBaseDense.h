@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC     *
+ * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -61,7 +61,11 @@ public:
 
   void SetMassMatrix(double * massMatrix);
   void SetTangentStiffnessMatrixOffset(double * tangentStiffnessMatrixOffset);
+  void AddTangentStiffnessMatrixOffset(double * tangentStiffnessMatrixOffset);
+  void AddDampingMatrixOffset(double * dampingMatrixOffset);
+
   void ClearTangentStiffnessMatrixOffset();
+  void ClearDampingMatrixOffset();
 
   // dynamic solver is default (i.e. useStaticSolver=false)
   // with the static solver, all dynamic terms are neglected, and the system only computes the static equilibrium under the currently applied external forces
@@ -106,6 +110,7 @@ protected:
 
   bool useStaticSolver;
   double * tangentStiffnessMatrixOffset;
+  double * dampingMatrixOffset;
 
   // plastic deformations
   int usePlasticDeformations;

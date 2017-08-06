@@ -70,7 +70,7 @@
 /*  Additions by Jernej Barbic, Carnegie Mellon University, 2005:    */
 /*    delim ' ' between opt and value added, eg: /s string           */
 /*    note: function returns argc upon success                       */
-      
+
 /*********************************************************************/
 
 #include "getopts.h"
@@ -82,96 +82,107 @@
 
 int getopts(int argc, char **argv, opt_t opttable[])
 {
-    int i,j,l;
-    bool bool_;
-    //char header[] = "$Id: GETOPTS.C 1.3 1995/05/01 14:30:33 Reini Exp $";
-    //char credits[] = "written by Paul Edwards, improved by Reini Urban and Jernej Barbic";
+  int i = 0;
+  //char header[] = "$Id: GETOPTS.C 1.3 1995/05/01 14:30:33 Reini Exp $";
+  //char credits[] = "written by Paul Edwards, improved by Reini Urban and Jernej Barbic";
 
-    argv++;
-    argc--;
-    for (i=1;i<=argc;i++)
+  //skip the first arg
+  argv++;
+  argc--;
+  for (i=1;i<=argc;i++)
+  {
+    char * arg = *argv;
+    //printf("%d %s\n",i, arg);
+    if ((*arg != '-') && (*arg != '/')) return (i);
+    arg++;
+
+    for (int j=0; opttable[j].sw != NULL;j++) //find options for this arg
     {
-        //printf("%d\n", i);
-	char * arg = *argv;
-	if ((*arg != '-') && (*arg != '/')) return (i);
-	arg++;
-	while ( *arg )
-	{
-	    for (j=0;opttable[j].sw != NULL;j++)
-	    {
-	      //options are case sensitive!!
-	      l = strlen(opttable[j].sw);
-              //printf("%s\n", opttable[j].sw);
-	      if (strncmp(arg,opttable[j].sw, l) == 0)
-	      {
-	        switch ((int)opttable[j].opttyp)
-	        {
-              	    case OPTINT :
-			if ( ( *(arg+l)=='=' ) || (*(arg+l)==' ') ) // accept '=' or ' ' after the switch
-	               	  *((int *)opttable[j].var) = (int)strtol(arg+l+1,NULL,10);
-                        else
-	               	  *((int *)opttable[j].var) = (int)strtol(arg+l,NULL,10);
-	               	if (errno == ERANGE)
-	               		return (i);
-	                break;
-	            case OPTSUBOPT :
-	            	//option with more than 1 char as suboptions:
-	            	// /oail or /op
-	            	strcpy((char *)opttable[j].var, arg+l);
-	            	arg += strlen(arg)-1;
-	            	break;
-	            case OPTSTR :
-	            	if ( ((int)strlen(arg) == l) &&
-			     ( **(argv+1) != '-') )//&&
-			     //( **(argv+1) != '/') )
-			{	//copy the next arg: /s string
-			    argv++; i++;
-			    strcpy((char *)opttable[j].var,*argv);
-                            //printf("**:%s\n",opttable[j].var);
-			}
-			else
-			//copy the rest: /sstring
-			{	
-			    if ( ( *(arg+l)=='=' ) || (*(arg+l)==' ') ) // accept '=' or ' ' after a string
-			    	strcpy((char *)opttable[j].var, arg+l+1);
-			    else
-			    	strcpy((char *)opttable[j].var, arg+l);
-                            //printf("$$:%s\n",opttable[j].var);
-			}
-			arg += strlen(arg)-1;
-			break;
-		    case OPTBOOL :
-			//check a + or - after the sw: "/a-/b+"
-			if ( *(arg+l)=='-' )
-			{
-			    arg++; //advance argv after -
-			    bool_ = false;
-			}
-			else
-			    if ( *(arg+l)=='+' )
-		  	    {
-				arg++; //advance argv after -
-				bool_ = true;
-			    }
-			    else
-				bool_ = true;
-	               	*((bool *)opttable[j].var) = bool_;
-	               	break;
-	            case OPTLONG :
-	                *((vegalong *)opttable[j].var) = strtol(arg+l,NULL,10);
-	                if (errno == ERANGE)
-	                    return (i);
-	                break;
-	        }
-	    	arg += l-1; //next arg within the same arg, "/a/b" or "/ab"
-	      	break;      //break the for
-	      }
-	    }
-	    arg++;	//try the next char
-	    if ((*arg == '-') || (*arg == '/')) arg++;
+      //options are case sensitive!!
+      int l = strlen(opttable[j].sw);
+      bool bool_ = true;
+      
+      //printf("%s\n", opttable[j].sw);
+      if (strncmp(arg,opttable[j].sw, l) == 0) //found this option
+      {
+      	char * var = NULL; //pointers to the input data for this option
+
+        if ( ((int)strlen(arg) == l) &&
+            ( (i+1 <= argc) && (**(argv+1) != '-') ) )//&&
+          //( **(argv+1) != '/') )
+        { //copy the next arg: /i int
+          argv++; i++;
+          var = *argv;
+          //printf("next arg\n");
+          //printf("**:%s\n",opttable[j].var);
         }
-        argv++;  //try the next arg, eg: "/a /b"
-    }
-    return (i);
+        else
+        { //copy the rest: /iint
+          if ( ( *(arg+l)=='=' ) || (*(arg+l)==' ') ) // accept '=' or ' ' after the switch
+            var = arg + l + 1;
+          else
+            var = arg + l;
+          //printf("$$:%s\n",opttable[j].var);
+        }
+
+        // if (*var == '\0')
+        //   continue;
+        //printf("%d %s\n",i, var);
+        switch ((int)opttable[j].opttyp)
+        {
+        case OPTINT :
+          // if ( ( *(arg+l)=='=' ) || (*(arg+l)==' ') ) // accept '=' or ' ' after the switch
+          //   *((int *)opttable[j].var) = (int)strtol(arg+l+1,NULL,10);
+          // else
+          //   *((int *)opttable[j].var) = (int)strtol(arg+l,NULL,10);
+          // if (errno == ERANGE)
+          //   return (i);
+          // break;
+          if (*var != '\0')
+          {
+            *((int *)opttable[j].var) = (int)strtol(var,NULL,10);
+
+            if (errno == ERANGE)
+              return (i);
+          }
+          break;
+
+        case OPTLONG :
+          if (*var != '\0')
+          {
+            *((vegalong *)opttable[j].var) = strtol(var,NULL,10);
+            if (errno == ERANGE)
+              return (i);
+          }
+          break;
+
+          // case OPTSUBOPT :
+          //   //option with more than 1 char as suboptions:
+          //   // /oail or /op
+          //   strcpy((char *)opttable[j].var, arg+l);
+          //   arg += strlen(arg)-1;
+          //   break;
+        case OPTSTR :
+          if (*var != '\0')
+            strcpy((char *)opttable[j].var, var);
+          break;
+
+        case OPTBOOL :
+          //check a + or - after the sw: "/a- /b+"
+          if ( *var == '-' )
+            bool_ = false;
+          else
+            bool_ = true;
+
+          *((bool *)opttable[j].var) = bool_;
+          break;
+        }
+        break;      //break the for
+      } // end if (strncmp(arg,opttable[j].sw, l) == 0) 
+    } // end for (int j=0; opttable[j].sw != NULL;j++)
+
+    argv++;  //try the next arg, eg: "/a /b"
+  }
+  return (i);
 }
 

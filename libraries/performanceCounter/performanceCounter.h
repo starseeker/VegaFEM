@@ -86,6 +86,8 @@ inline void PerformanceCounter::StartCounter()
 
   startCountSec = tv.tv_sec;
   startCountMicroSec = tv.tv_usec;
+  stopCountSec = startCountSec;
+  stopCountMicroSec = startCountMicroSec;
 }
 
 inline void PerformanceCounter::StopCounter()
@@ -101,13 +103,13 @@ inline void PerformanceCounter::StopCounter()
 
 inline double PerformanceCounter::GetElapsedTime()
 {
-  float elapsedTime = 1.0 * (stopCountSec-startCountSec) + 1E-6 * (stopCountMicroSec - startCountMicroSec);
+  double elapsedTime = 1.0 * (stopCountSec-startCountSec) + 1E-6 * (stopCountMicroSec - startCountMicroSec);
   return elapsedTime;
 }
 
 #endif
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(WIN32)
 
 /**************** WINDOWS COUNTER *******************/
 

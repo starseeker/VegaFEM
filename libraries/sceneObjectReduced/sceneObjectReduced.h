@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC    *
+ * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -69,6 +69,7 @@ public:
   void SetZeroq();
   double * Getqp() { return q; }
   virtual void Setq(double * q) = 0; // copies q into internal state
+  void Scaleq(double scale); // scales the current q
   virtual void Compute_uUq() = 0;
 
 protected:

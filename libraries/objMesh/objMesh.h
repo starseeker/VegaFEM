@@ -1,12 +1,12 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder,     *
- *               Yili Zhao                                               *
+ *               Yili Zhao, Yijing Li                                    *
  * http://www.jernejbarbic.com/code                                      *
  *                                                                       *
  * Research: Jernej Barbic, Fun Shing Sin, Daniel Schroeder,             *
@@ -29,10 +29,6 @@
 
 #ifndef _OBJMESH_H_
 #define _OBJMESH_H_
-
-#ifdef WIN32
-  #include <windows.h>
-#endif
 
 #include <math.h>
 #include <string>
@@ -57,7 +53,8 @@
             f 1/1/1 2/2/2 3/3/3
          These numbers are references to the vertices, normals, and texture
          coordinates, all of which were specified (as mentioned above) in
-         a global 1-based namespace.  
+         a global 1-based namespace. The values can be negative. A value of -1
+         means the *last* vertex, -2 is next-to-last vertex and so on.
   
    To access a group/face/vertex from the ObjMesh file once it has been constructed, do the following:
      1.  Get the list of groups out of the .obj file using the "getGroupNames" function.
@@ -188,6 +185,7 @@ public:
       inline Vec3d getFaceNormal() const { assert(faceNormal.first); return faceNormal.second; }
           
       inline void addVertex(const Vertex & v) { vertices.push_back(v); }
+      inline void removeVertex(unsigned int i) { vertices.erase(vertices.begin() + i); }
       inline void reverseVertices() { reverse(vertices.begin(), vertices.end()); }
       inline void printVertices() const { for(unsigned int i=0; i<vertices.size(); i++) std::cout << vertices[i].getPositionIndex() << " "; }
 
@@ -282,7 +280,7 @@ public:
 
   inline Material getMaterial(unsigned int materialIndex) const { return materials[materialIndex]; }
   unsigned int getMaterialIndex(const std::string name) const; // obtain a material index by its name
-  inline const Material * getMaterialHandle(unsigned int materialIndex) { return &materials[materialIndex]; }
+  inline const Material * getMaterialHandle(unsigned int materialIndex) const { return &materials[materialIndex]; }
   void setMaterialAlpha(double alpha);
   void setSingleMaterial(const Material & material); // erases all materials and sets a single material for the entire mesh
   int usesTextureMapping(); // 0 = no group uses a material that references a texture image, 1 = otherwise
@@ -406,7 +404,14 @@ public:
   int removeIsolatedVertices(); // removes vertices that don't appear in any triangle
   int removeIsolatedTextureCoordinates(); // removes texture coordinates that are not referenced
   int removeIsolatedNormals(); // removes normals that are not referenced
-  int removeZeroAreaFaces();
+  int removeZeroAreaFaces(int verbose=0);
+  // removes faces that have an edge shared by two other faces AND an edge not shared by any other face (making the mesh more manifold)
+  // this function does one iteration of this process; you may need to call it again to continue removing faces, until the function returns 0
+  int removeHangingFaces();
+  // collapses edges that are shared by more than two faces
+  // this function does one iteration of this process; you may need to call it again to continue removing faces, until the function returns 0
+  int removeNonManifoldEdges();
+  void collapseEdge(unsigned int vertexA, unsigned int vertexB, int removeIsolatedVertices=1); // collapses the edge between vertices vertexA and vertexB
 
   // generates vertex normals by averaging normals for adjacent faces
   // any pre-specified normals are overwritten by these new normals
@@ -426,6 +431,8 @@ public:
 
   void removeEmptyGroups();
 
+  void appendMesh(ObjMesh * mesh); // appends "mesh" to this mesh
+
   // ======= mesh cloning (with modifications) =======
 
   // creates a cloned mesh, keeping the specified faces in groups
@@ -434,7 +441,7 @@ public:
   // splits the mesh into groups, one per each connected component
   // if withinGroupsOnly=0, splitting is global, which means that some groups may be fused into one bigger group
   // if withinGroupsOnly=1, splitting is performed within each group only
-  ObjMesh * splitIntoConnectedComponents(int withinGroupsOnly=0, int verbose=1) const;
+  ObjMesh * splitIntoConnectedComponents(int withinGroupsOnly=0, int verbose=0) const;
   // extracts a specified group
   ObjMesh * extractGroup(unsigned int group, int keepOnlyUsedNormals = 1, int keepOnlyUsedTextureCoordinates = 1) const;
 

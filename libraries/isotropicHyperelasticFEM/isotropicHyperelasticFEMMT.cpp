@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "isotropic hyperelastic FEM" library , Copyright (C) 2014 USC         *
+ * "isotropic hyperelastic FEM" library , Copyright (C) 2015 USC         *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Fun Shing Sin                            *
@@ -95,6 +95,7 @@ void IsotropicHyperelasticFEMMT::Initialize()
   GetStiffnessMatrixTopology(&sparseMatrix);
   for(int i=0; i<numThreads; i++)
     tangentStiffnessMatrixBuffer[i] = new SparseMatrix(*sparseMatrix);
+  free(sparseMatrix);
 
   // split the workload
   int numElements = tetMesh->getNumElements();
@@ -119,10 +120,10 @@ void IsotropicHyperelasticFEMMT::Initialize()
     }
   }
 
-  printf("Total elements: %d \n", numElements);
-  printf("Num threads: %d \n", numThreads);
-  printf("Canonical job size: %d \n", jobSize);
-  printf("Num threads with job size augmented by one edge: %d \n", remainder);
+  //printf("Total elements: %d \n", numElements);
+  //printf("Num threads: %d \n", numThreads);
+  //printf("Canonical job size: %d \n", jobSize);
+  //printf("Num threads with job size augmented by one edge: %d \n", remainder);
 }
 
 int IsotropicHyperelasticFEMMT::GetEnergyAndForceAndTangentStiffnessMatrixHelper(double * u, double * energy, double * internalForces, SparseMatrix * tangentStiffnessMatrix, int computationMode)

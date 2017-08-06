@@ -1,4 +1,8 @@
-#if defined(WIN32) || defined(linux)
+#if defined(_WIN32) || defined(WIN32)
+  #include <Windows.h>
+#endif
+
+#if defined(_WIN32) || defined(WIN32) || defined(linux)
   #include <GL/gl.h> 
   #include <GL/glu.h> 
   #include <GL/glut.h>

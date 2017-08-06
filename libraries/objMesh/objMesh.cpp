@@ -1,12 +1,12 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder,     *
- *               Yili Zhao                                               *
+ *               Yili Zhao, Yijing Li                                    *
  * http://www.jernejbarbic.com/code                                      *
  *                                                                       *
  * Research: Jernej Barbic, Fun Shing Sin, Daniel Schroeder,             *
@@ -27,7 +27,7 @@
  *                                                                       *
  *************************************************************************/
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(WIN32)
   #pragma warning(disable : 4996)
   #pragma warning(disable : 4267)
   #pragma warning(disable : 4244)
@@ -196,9 +196,9 @@ ObjMesh::ObjMesh(const ObjMesh & objMesh_)
     for (unsigned int faceIndex=0; faceIndex < numFaces; faceIndex++)
     {
       const Face * objMeshFace = objMesh_.groups[groupIndex].getFaceHandle(faceIndex);
-      unsigned int numFaceVerices = objMeshFace->getNumVertices();
+      unsigned int numFaceVertices = objMeshFace->getNumVertices();
       Face currentFace;
-      for (unsigned int vertexIndex=0; vertexIndex < numFaceVerices; vertexIndex++)
+      for (unsigned int vertexIndex=0; vertexIndex < numFaceVertices; vertexIndex++)
         currentFace.addVertex(objMeshFace->getVertex(vertexIndex));
 
       groups[groupIndex].addFace(currentFace);
@@ -384,33 +384,44 @@ int ObjMesh::loadFromAscii(const string & filename, int verbose)
           whiteSpace = true;
         }
 
-        unsigned int pos;
-        unsigned int nor;
-        unsigned int tex;
+        int pos;
+        int nor;
+        int tex;
         std::pair< bool, unsigned int > texPos;
         std::pair< bool, unsigned int > normal;
 
         // now, parse curPos
         if (strstr(curPos,"//") != NULL) 
         {
-          // v//n
-          if (sscanf(curPos, "%u//%u", &pos, &nor) < 2)
+          if (sscanf(curPos, "%d//%d", &pos, &nor) < 2)
           {
             throw ObjMeshException( "Invalid face", filename, lineNum);
           }
+
+          // v//n
+          if (pos < 0)
+            pos = (int)vertexPositions.size() + pos + 1;
+          if (nor < 0)
+            nor = (int)normals.size() + nor + 1;
+
           texPos = make_pair(false, 0);
-          normal = make_pair(true, nor);
+          normal = make_pair(true, (unsigned int)nor);
         }
         else 
         {
-          if (sscanf(curPos, "%u/%u/%u", &pos, &tex, &nor) != 3)
+          if (sscanf(curPos, "%d/%d/%d", &pos, &tex, &nor) != 3)
           {
             if (strstr(curPos, "/") != NULL)
             {
-              // v/t
-              if (sscanf(curPos, "%u/%u", &pos, &tex) == 2)
+              if (sscanf(curPos, "%d/%d", &pos, &tex) == 2)
               {
-                texPos = make_pair(true, tex);
+                // v/t
+                if (pos < 0)
+                  pos = (int)vertexPositions.size() + pos + 1;
+                if (tex < 0)
+                  tex = (int)textureCoordinates.size() + tex + 1;
+
+                texPos = make_pair(true, (unsigned int)tex);
                 normal = make_pair(false, 0);
               }
               else
@@ -419,9 +430,13 @@ int ObjMesh::loadFromAscii(const string & filename, int verbose)
               }
             }
             else
-            { // v
-              if (sscanf(curPos, "%u", &pos) == 1)
+            { 
+              if (sscanf(curPos, "%d", &pos) == 1)
               {
+                // v
+                if (pos < 0)
+                  pos = (int)vertexPositions.size() + pos + 1;
+
                 texPos = make_pair(false, 0);
                 normal = make_pair(false, 0);
               }
@@ -432,26 +447,34 @@ int ObjMesh::loadFromAscii(const string & filename, int verbose)
             }
           }
           else
-          { // v/t/n
-            texPos = make_pair(true, tex);
-            normal = make_pair(true, nor);
+          { 
+            // v/t/n
+            if (pos < 0)
+              pos = (int)vertexPositions.size() + pos + 1;
+            if (tex < 0)
+              tex = (int)textureCoordinates.size() + tex + 1;
+            if (nor < 0)
+              nor = (int)normals.size() + nor + 1;
+
+            texPos = make_pair(true, (unsigned int)tex);
+            normal = make_pair(true, (unsigned int)nor);
           }
         }
 
         // sanity check
-        if ((pos < 1) || (pos > vertexPositions.size()))
+        if ((pos < 1) || (pos > (int)vertexPositions.size()))
         {
           printf("Error: vertex %d is out of bounds.\n", pos);
           throw 51;
         }
 
-        if (texPos.first && ((tex < 1) || (tex > textureCoordinates.size())))
+        if (texPos.first && ((tex < 1) || (tex > (int)textureCoordinates.size())))
         {
           printf("Error: texture %d is out of bounds.\n", tex);
           throw 53;
         }
 
-        if (normal.first && ((nor < 1) || (nor > normals.size())))
+        if (normal.first && ((nor < 1) || (nor > (int)normals.size())))
         {
           printf("Error: normal %d is out of bounds.\n", nor);
           throw 52;
@@ -464,7 +487,7 @@ int ObjMesh::loadFromAscii(const string & filename, int verbose)
         if (normal.first)
           normal.second--;
 
-        face.addVertex(Vertex(pos, texPos, normal));
+        face.addVertex(Vertex((unsigned int)pos, texPos, normal));
 
         if (whiteSpace)
         {
@@ -859,7 +882,8 @@ int ObjMesh::saveToBinary(const std::string & filename_, int outputMaterials, in
   {
     printf("Error in ObjMesh::saveToBinary: cannot open file %s to write.\n", filename_.c_str());
   }
-  int code = saveToBinary(fout, outputMaterials, NULL, verbose);
+  bool countBytesOnly = false;
+  int code = saveToBinary(fout, outputMaterials, NULL, countBytesOnly, verbose);
   fclose(fout);
   return code;
 }
@@ -1642,11 +1666,11 @@ ObjMesh * ObjMesh::splitIntoConnectedComponents(int withinGroupsOnly, int verbos
   // build vertex connections
   for(unsigned int i=0; i < groups.size(); i++) // over all groups
   {
-    if (verbose == 0)
-    {
-      printf("%d ", i);
-      fflush(NULL);
-    }
+    // if (verbose == 0)
+    // {
+    //   printf("%d ", i);
+    //   fflush(NULL);
+    // }
 
     for (unsigned int j=0; j < groups[i].getNumFaces(); j++) // over all faces
     {
@@ -1665,8 +1689,8 @@ ObjMesh * ObjMesh::splitIntoConnectedComponents(int withinGroupsOnly, int verbos
       }
     }
   }
-  if (verbose == 0)
-    printf("\n");
+  // if (verbose == 0)
+  //   printf("\n");
 
   // determine group for every face
   int numOutputGroups = 0;
@@ -1689,11 +1713,11 @@ ObjMesh * ObjMesh::splitIntoConnectedComponents(int withinGroupsOnly, int verbos
   vector<vector<int> > faceGroup;
   for(unsigned int i=0; i < groups.size(); i++) // over all groups
   {
-    if (verbose == 0)
-    {
-      printf("%d ", i);
-      fflush(NULL);
-    }
+    // if (verbose == 0)
+    // {
+    //   printf("%d ", i);
+    //   fflush(NULL);
+    // }
 
     faceGroup.push_back(vector<int>());
     for (unsigned int j=0; j < groups[i].getNumFaces(); j++) // over all faces
@@ -1721,8 +1745,8 @@ ObjMesh * ObjMesh::splitIntoConnectedComponents(int withinGroupsOnly, int verbos
     }
   }
 
-  if (verbose == 0)
-    printf("\n");
+  // if (verbose == 0)
+  //   printf("\n");
 
   // build output mesh
   ObjMesh * output = new ObjMesh();
@@ -3059,7 +3083,7 @@ void ObjMesh::computeEdgePseudoNormals()
   }
 }
 
-int ObjMesh::removeZeroAreaFaces()
+int ObjMesh::removeZeroAreaFaces(int verbose)
 {
   int numZeroAreaFaces = 0;
 
@@ -3068,6 +3092,12 @@ int ObjMesh::removeZeroAreaFaces()
   {
     for(unsigned int iFace = 0; iFace < groups[i].getNumFaces(); iFace++ )
     {
+      if ((verbose == 1) && (iFace % 100 == 0))
+      {
+        printf("Processing face %d in group %d...\n", iFace, i);
+        fflush(NULL);
+      }      
+
       ObjMesh::Face face = groups[i].getFace(iFace); // get face whose number is iFace
       Vec3d pos0 = getPosition(face.getVertex(0));
       Vec3d pos1 = getPosition(face.getVertex(1));
@@ -3092,6 +3122,234 @@ int ObjMesh::removeZeroAreaFaces()
   }
 
   return numZeroAreaFaces;
+}
+
+int ObjMesh::removeHangingFaces()
+{
+  map< pair<unsigned int,unsigned int>, vector<pair<unsigned int, unsigned int> > > facesAdjacentToEdge;
+
+  // build facesAdjacentToEdge
+  // over all faces
+  for(unsigned int iGroup = 0; iGroup < groups.size(); iGroup++ )
+  {
+    for(unsigned int iFace = 0; iFace < groups[iGroup].getNumFaces(); iFace++ )
+    {
+      ObjMesh::Face face = groups[iGroup].getFace(iFace); // get face whose number is iFace
+      for(unsigned int j=0; j<face.getNumVertices(); j++) // over all vertices of this face
+      {
+        unsigned int vtxIndexA = face.getVertex(j).getPositionIndex();
+        unsigned int vtxIndexB = face.getVertex((j + 1) % face.getNumVertices()).getPositionIndex();
+        if (vtxIndexA > vtxIndexB)
+          std::swap(vtxIndexA, vtxIndexB);
+
+        std::pair<unsigned int, unsigned int> myPair(vtxIndexA, vtxIndexB);
+        if (facesAdjacentToEdge.find(myPair) == facesAdjacentToEdge.end())
+          facesAdjacentToEdge.insert(make_pair(myPair, vector<pair<unsigned int, unsigned int> >())); 
+        facesAdjacentToEdge[myPair].push_back(make_pair(iGroup, iFace));
+      }
+    }
+  }
+
+  set<pair<unsigned int, unsigned int> > eraseList;
+
+  // check the map for edges with more than two neighbors
+  for(map< pair<unsigned int,unsigned int>, vector<pair<unsigned int, unsigned int> > > :: iterator iter = facesAdjacentToEdge.begin(); iter != facesAdjacentToEdge.end(); iter++)
+  {
+    if ((iter->second).size() > 2)
+    {
+      // edge has more than two neighboring faces
+
+      // check all adjacent faces, to see if any of them has an edge that has no other neighbor
+      for(unsigned int i=0; i<(iter->second).size(); i++)
+      {
+        unsigned int iGroup = (iter->second)[i].first;
+        unsigned int iFace = (iter->second)[i].second;
+
+        ObjMesh::Face face = groups[iGroup].getFace(iFace); // get face whose number is iFace
+        for(unsigned int j=0; j<face.getNumVertices(); j++) // over all vertices
+        {
+          unsigned int vtxIndexA = face.getVertex(j).getPositionIndex();
+          unsigned int vtxIndexB = face.getVertex((j + 1) % face.getNumVertices()).getPositionIndex();
+          if (vtxIndexA > vtxIndexB)
+            std::swap(vtxIndexA, vtxIndexB);
+
+          std::pair<unsigned int, unsigned int> myPair(vtxIndexA, vtxIndexB);
+          if (facesAdjacentToEdge[myPair].size() == 1)
+          {
+            // found an edge with only one neighboring face (this face)
+            // erase the face
+            eraseList.insert((iter->second)[i]);
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  // erase faces whose all three edges are not shared by any other face
+  // over all faces
+  for(unsigned int iGroup = 0; iGroup < groups.size(); iGroup++ )
+  {
+    for(unsigned int iFace = 0; iFace < groups[iGroup].getNumFaces(); iFace++ )
+    {
+      int eraseFace = 1;
+      ObjMesh::Face face = groups[iGroup].getFace(iFace); // get face whose number is iFace
+      for(unsigned int j=0; j<face.getNumVertices(); j++) // over all vertices of this face
+      {
+        unsigned int vtxIndexA = face.getVertex(j).getPositionIndex();
+        unsigned int vtxIndexB = face.getVertex((j + 1) % face.getNumVertices()).getPositionIndex();
+        if (vtxIndexA > vtxIndexB)
+          std::swap(vtxIndexA, vtxIndexB);
+
+        std::pair<unsigned int, unsigned int> myPair(vtxIndexA, vtxIndexB);
+        if (facesAdjacentToEdge[myPair].size() > 1)
+        {
+          eraseFace = 0;
+          break;
+        }
+      }
+
+      if (eraseFace)
+        eraseList.insert(make_pair(iGroup, iFace));
+    }
+  }
+
+  //printf("Erase list size is: %d\n", (int)eraseList.size());
+
+  // erase the scheduled faces
+  // must iterate from the back to front, to have correct indexing
+  for(set<pair<unsigned int, unsigned int> > :: reverse_iterator iter = eraseList.rbegin(); iter != eraseList.rend(); iter++)
+  {
+    unsigned int iGroup = iter->first;
+    unsigned int iFace = iter->second;
+    Group * groupHandle = (Group*) getGroupHandle(iGroup);
+    groupHandle->removeFace(iFace);
+  }
+
+  return (int) eraseList.size();
+}
+
+int ObjMesh::removeNonManifoldEdges()
+{
+  map< pair<unsigned int,unsigned int>, vector<pair<unsigned int, unsigned int> > > facesAdjacentToEdge;
+
+  // build facesAdjacentToEdge
+  // over all faces
+  for(unsigned int iGroup = 0; iGroup < groups.size(); iGroup++ )
+  {
+    for(unsigned int iFace = 0; iFace < groups[iGroup].getNumFaces(); iFace++ )
+    {
+      ObjMesh::Face face = groups[iGroup].getFace(iFace); // get face whose number is iFace
+      for(unsigned int j=0; j<face.getNumVertices(); j++) // over all vertices of this face
+      {
+        unsigned int vtxIndexA = face.getVertex(j).getPositionIndex();
+        unsigned int vtxIndexB = face.getVertex((j + 1) % face.getNumVertices()).getPositionIndex();
+        if (vtxIndexA > vtxIndexB)
+          std::swap(vtxIndexA, vtxIndexB);
+
+        std::pair<unsigned int, unsigned int> myPair(vtxIndexA, vtxIndexB);
+        if (facesAdjacentToEdge.find(myPair) == facesAdjacentToEdge.end())
+          facesAdjacentToEdge.insert(make_pair(myPair, vector<pair<unsigned int, unsigned int> >())); 
+        facesAdjacentToEdge[myPair].push_back(make_pair(iGroup, iFace));
+      }
+    }
+  }
+
+  vector<pair<unsigned int, unsigned int> > eraseList;
+
+  // check the map for edges with more than two neighbors
+  for(map<pair<unsigned int,unsigned int>, vector<pair<unsigned int, unsigned int> > > :: iterator iter = facesAdjacentToEdge.begin(); iter != facesAdjacentToEdge.end(); iter++)
+  {
+    if ((iter->second).size() > 2)
+      eraseList.push_back(iter->first);
+  }
+
+  sort(eraseList.begin(), eraseList.end());
+  //printf("Erase list size: %d\n", eraseList.size());
+
+  int removedEdges = 0;
+
+  for(unsigned int i=0; i<eraseList.size(); i++)
+  {
+    if (eraseList[i].first == eraseList[i].second)
+      continue;
+
+    //printf("Removing edge: %d to %d.\n", eraseList[i].first, eraseList[i].second);
+
+    int removeIsolatedVertices_ = 0;
+    collapseEdge(eraseList[i].first, eraseList[i].second, removeIsolatedVertices_);
+    removedEdges++;
+
+    // renumber all future pairs
+    for(unsigned int j=i+1; j<eraseList.size(); j++)
+    {
+      if (eraseList[j].first == eraseList[i].second)
+        eraseList[j].first = eraseList[i].first;
+      if (eraseList[j].second == eraseList[i].second)
+        eraseList[j].second = eraseList[i].first;
+
+      if (eraseList[j].first > eraseList[j].second)
+        std::swap(eraseList[j].first, eraseList[j].second);
+    }
+  }
+
+  removeIsolatedVertices();
+
+  return removedEdges;
+}
+
+void ObjMesh::collapseEdge(unsigned int vertexA, unsigned int vertexB, int removeIsolatedVertices_)
+{
+  if (vertexA > vertexB)
+    std::swap(vertexA, vertexB);
+
+  // over all faces
+  for(unsigned int iGroup = 0; iGroup < groups.size(); iGroup++)
+  {
+    Group * group = (Group*) getGroupHandle(iGroup);
+    vector<unsigned int> eraseList;
+    for(unsigned int iFace = 0; iFace < groups[iGroup].getNumFaces(); iFace++)
+    {
+      int eraseFace = 0;
+      Face * face = (Face*) group->getFaceHandle(iFace); // get face whose number is iFace
+      for(unsigned int j=0; j<face->getNumVertices(); j++) // over all vertices of this face
+      {
+        unsigned int vtxIndex = face->getVertex(j).getPositionIndex();
+        if (vtxIndex == vertexB)
+        {
+          Vertex * vertex = (Vertex*) face->getVertexHandle(j);
+          vertex->setPositionIndex(vertexA);
+        }
+      }
+
+      // remove consecutive vertices
+      for(unsigned int j=0; j<face->getNumVertices(); j++) // over all vertices of this face
+      {
+        unsigned int vtxIndexA = face->getVertex(j).getPositionIndex();
+        unsigned int vtxIndexB = face->getVertex((j + 1) % face->getNumVertices()).getPositionIndex();
+        if (vtxIndexA == vtxIndexB)
+        {
+          if (face->getNumVertices() <= 3)
+            eraseFace = 1;
+          else
+            face->removeVertex(j);
+          break;
+        }
+      }
+
+      if (eraseFace)
+        eraseList.push_back(iFace);
+    }
+
+    for(int i=(int)eraseList.size()-1; i>=0; i--)
+    {
+      //printf("Erasing face %d\n", eraseList[i]);
+      group->removeFace(eraseList[i]);
+    }
+  }
+
+  if (removeIsolatedVertices_)
+    removeIsolatedVertices();
 }
 
 // returns 1 on success, 0 otherwise
@@ -4027,6 +4285,54 @@ void ObjMesh::removeEmptyGroups()
   }
 }
 
+void ObjMesh::appendMesh(ObjMesh * mesh)
+{
+  // add vertices
+  int numVerticesCurrent = getNumVertices();
+  for(unsigned int i=0; i<mesh->getNumVertices(); i++)
+    addVertexPosition(mesh->getPosition(i));
+
+  // add normals
+  int numNormalsCurrent = getNumNormals();
+  for(unsigned int i=0; i<mesh->getNumNormals(); i++)
+    addVertexNormal(mesh->getNormal(i));
+
+  // add texture coordinates
+  int numTextureCoordinatesCurrent = getNumTextureCoordinates();
+  for(unsigned int i=0; i<mesh->getNumTextureCoordinates(); i++)
+    addTextureCoordinate(mesh->getTextureCoordinate(i));
+
+  // add materials
+  int numMaterialsCurrent = getNumMaterials();
+  for(unsigned int i=0; i<mesh->getNumMaterials(); i++)
+    addMaterial(mesh->getMaterial(i));
+
+  for(unsigned int i=0; i<mesh->getNumGroups(); i++)
+  {
+    const ObjMesh::Group * group = mesh->getGroupHandle(i);
+    addGroup(group->getName());
+    unsigned int newGroupID = getNumGroups() - 1;
+    ObjMesh::Group * newGroup = (ObjMesh::Group*) getGroupHandle(newGroupID);
+    newGroup->setMaterialIndex(numMaterialsCurrent + group->getMaterialIndex());
+
+    // over all faces in the group of the current obj file
+    for(unsigned int j=0; j<group->getNumFaces(); j++)
+    {
+      const ObjMesh::Face * face = group->getFaceHandle(j);
+      for(unsigned int k=0; k<face->getNumVertices(); k++)
+      {
+        ObjMesh::Vertex * vertex = (ObjMesh::Vertex*) face->getVertexHandle(k);
+        vertex->setPositionIndex(vertex->getPositionIndex() + numVerticesCurrent);
+        if (vertex->hasNormalIndex())
+          vertex->setNormalIndex(vertex->getNormalIndex() + numNormalsCurrent);
+        if (vertex->hasTextureCoordinateIndex())
+          vertex->setTextureCoordinateIndex(vertex->getTextureCoordinateIndex() + numTextureCoordinatesCurrent);
+      }
+      addFaceToGroup(*face,newGroupID);
+    }
+  }
+}
+
 // removes all whitespace characters from string s
 void ObjMesh::removeWhitespace(char * s)
 {
@@ -4140,7 +4446,7 @@ int ObjMesh::usesTextureMapping()
   for(std::vector<Group>::const_iterator itr = groups.begin(); itr != groups.end(); itr++)
   {
     const Material * material = getMaterialHandle(itr->getMaterialIndex());
-    result = result | material->hasTextureFilename();
+    result = result | ((int)material->hasTextureFilename());
   }
   return result;
 }
@@ -4374,7 +4680,7 @@ int ObjMesh::loadFromBinary(void * binaryInputStream_, streamType stream, int ve
       Vec3d Ka(&doubleVec[offset]);
       Vec3d Kd(&doubleVec[offset+3]);
       Vec3d Ks(&doubleVec[offset+6]);
-      double shininess = doubleVec[offset+9];
+      double shininess = doubleVec[offset+9] * 128.0 / 1000.0;
       materials[materialIndex].setKa(Ka);
       materials[materialIndex].setKd(Kd);
       materials[materialIndex].setKs(Ks);

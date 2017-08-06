@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "isotropic hyperelastic FEM" library , Copyright (C) 2014 USC         *
+ * "isotropic hyperelastic FEM" library , Copyright (C) 2015 USC         *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Fun Shing Sin                            *
@@ -109,7 +109,7 @@ IsotropicHyperelasticFEM::IsotropicHyperelasticFEM(TetMesh * tetMesh_, Isotropic
   // DS = D_s
   // dDSdU = d D_s / d U
   // set dDSdU here, it's a constant matrix (does not change during the simulation)
-  memset(dDSdU, 0.0, sizeof(double) * 108);
+  memset(dDSdU, 0, sizeof(double) * 108);
   dDSdU[tensor9x12Index(0,0,0,0)] = -1.0;
   dDSdU[tensor9x12Index(1,0,0,1)] = -1.0;
   dDSdU[tensor9x12Index(2,0,0,2)] = -1.0;
@@ -379,7 +379,7 @@ void IsotropicHyperelasticFEM::GetEnergyAndForceAndTangentStiffnessMatrixHelperP
     else
     {
       // zero out the forces
-      memset(internalForces, 0.0, sizeof(double) * numVertices3);
+      memset(internalForces, 0, sizeof(double) * numVertices3);
     }
   }
 
@@ -631,7 +631,7 @@ void IsotropicHyperelasticFEM::Compute_dGdF(Vec3d * b0, Vec3d * b1, Vec3d * b2,
                                             double dPdF[81], double dGdF[81])
 {
   //Both G and F are 3x3 matrices, so dGdF has 81 entries
-    memset(dGdF, 0.0, sizeof(double) * 81);
+    memset(dGdF, 0, sizeof(double) * 81);
 
   /*
            | ga_x gb_x gc_x |   | 0 1 2 |
@@ -960,7 +960,7 @@ void IsotropicHyperelasticFEM::Compute_dPdF(int el, double dPdF[81], int clamped
   x3223 = beta23;
 
   double dPdF_atFhat[81];
-  memset(dPdF_atFhat, 0.0, sizeof(double) * 81);
+  memset(dPdF_atFhat, 0, sizeof(double) * 81);
   dPdF_atFhat[tensor9x9Index(0,0,0,0)] = x1111;
   dPdF_atFhat[tensor9x9Index(0,0,1,1)] = x2211;
   dPdF_atFhat[tensor9x9Index(0,0,2,2)] = x3311;
@@ -1015,8 +1015,8 @@ void IsotropicHyperelasticFEM::Compute_dPdF(int el, double dPdF[81], int clamped
   */
 
   double eiejVector[9];
-  memset(eiejVector, 0.0, sizeof(double) * 9);
-  memset(dPdF, 0.0, sizeof(double) * 81);
+  memset(eiejVector, 0, sizeof(double) * 9);
+  memset(dPdF, 0, sizeof(double) * 81);
   for (int column=0; column<9; column++)
   {
     eiejVector[column] = 1.0;

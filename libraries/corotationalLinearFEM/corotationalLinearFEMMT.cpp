@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "corotational linear FEM" library , Copyright (C) 2014 USC            *
+ * "corotational linear FEM" library , Copyright (C) 2015 USC            *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -39,6 +39,8 @@ using namespace std;
 
 CorotationalLinearFEMMT::CorotationalLinearFEMMT(TetMesh * tetMesh, int numThreads_) : CorotationalLinearFEM(tetMesh), numThreads(numThreads_)
 {
+  if(numThreads < 1)
+    numThreads = 1;
   Initialize();
 }
 
@@ -89,7 +91,8 @@ void CorotationalLinearFEMMT::Initialize()
 
   SparseMatrix * sparseMatrix;
   GetStiffnessMatrixTopology(&sparseMatrix);
-  for(int i=0; i<numThreads; i++)
+  stiffnessMatrixBuffer[0] = sparseMatrix;
+  for(int i=1; i<numThreads; i++)
     stiffnessMatrixBuffer[i] = new SparseMatrix(*sparseMatrix);
 
   // split the workload

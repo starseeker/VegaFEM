@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC     *
+ * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -132,7 +132,7 @@ int EulerSparse::DoTimestep()
 
   // solve: M * qdelta = qresidual
 
-  memset(qdelta, 0.0, sizeof(double)*r);
+  memset(qdelta, 0, sizeof(double)*r);
 
   #ifdef PARDISO
     int info = pardisoSolver->SolveLinearSystem(qdelta, qresidual);

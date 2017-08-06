@@ -12,7 +12,7 @@ R ?= ../..
 POLARDECOMPOSITION_OBJECTS=polarDecomposition.o polarDecompositionGradient.o
 
 # the libraries this library depends on
-POLARDECOMPOSITION_LIBS=
+POLARDECOMPOSITION_LIBS=minivector
 
 # the headers in this library
 POLARDECOMPOSITION_HEADERS=polarDecompositionGradient.h polarDecomposition.h

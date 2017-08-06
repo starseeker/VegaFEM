@@ -1,12 +1,12 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
  * "Large Modal Deformation Factory",                                    *
  * a pre-processing utility for model reduction of                       *
  * deformable objects undergoing large deformations.                     *
  *                                                                       *
- *  Copyright (C) 2007 CMU, 2009 MIT, 2014 USC                           *
+ *  Copyright (C) 2007 CMU, 2009 MIT, 2015 USC                           *
  *                                                                       *
  * All rights reserved.                                                  *
  *                                                                       *
@@ -149,9 +149,9 @@ bool MyApp::OnInit()
 MyFrame::MyFrame(const wxString& title, const wxPoint& pos, const wxSize& size)
 : wxFrame((wxFrame *)NULL, -1, title, pos, size)
 {
-  versionString = _T("3.4");
+  versionString = _T("3.5");
   printf("Large modal deformation factory. Version %s .\n", (const char*)versionString.mb_str());
-  printf("By Jernej Barbic, CMU, MIT, USC, 2007-2014.\n");
+  printf("By Jernej Barbic, CMU, MIT, USC, 2007-2015.\n");
 
   printf("Initializing application...");
   precomputationState.renderingMeshAvailable = false;
@@ -261,14 +261,14 @@ MyFrame::MyFrame(const wxString& title, const wxPoint& pos, const wxSize& size)
   menuInterpolate->Append( ID_SaveInterpolant, _T("&Export interpolant...") );
 
   wxMenu * menuMesh = new wxMenu;
-  menuMesh->Append( ID_LoadMesh, _T("&Load triangle mesh..."));
+  menuMesh->Append( ID_LoadMesh, _T("&Load triangle mesh (.obj)..."));
   menuMesh->Append( ID_RemoveTriangleMesh, _T("&Remove triangle mesh"));
   menuMesh->Append( ID_Voxelize, _T("&Voxelize...") );
   menuMesh->AppendSubMenu(menuInterpolate, 
     _T("&Interpolate to triangle mesh"), _T("Interpolate various matrices from simulation mesh to triangle mesh"));
 
   menuMesh->AppendSeparator();
-  menuMesh->Append( ID_LoadVoxelization, _T("L&oad simulation mesh..."));
+  menuMesh->Append( ID_LoadVoxelization, _T("L&oad simulation mesh (.veg)..."));
   menuMesh->Append( ID_SaveVoxelization, _T("&Save simulation mesh..."));
   menuMesh->Append( ID_ExportSurfaceMesh, _T("&Export surface of simulation mesh..."));
   menuMesh->Append( ID_MaterialProperties, _T("Set &material properties..."));
@@ -478,7 +478,7 @@ void MyFrame::OnAbout(wxCommandEvent& WXUNUSED(event))
         "- Reduced cubic polynomials for geometrically nonlinear simulations\n"
         "- A cubic (voxel) mesh to the input triangle geometry\n"
         "\n"
-        "By Jernej Barbic, CMU, MIT, USC, 2007-2013.\n"
+        "By Jernej Barbic, CMU, MIT, USC, 2007-2015.\n"
   );
 
   wxMessageBox(message,

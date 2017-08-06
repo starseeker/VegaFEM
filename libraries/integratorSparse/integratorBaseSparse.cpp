@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC     *
+ * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -42,6 +42,8 @@ IntegratorBaseSparse::IntegratorBaseSparse(int r, double timestep, SparseMatrix 
   ownDampingMatrix = 1;
   SparseMatrixOutline outline(r);
   dampingMatrix = new SparseMatrix(&outline);
+
+  tangentStiffnessMatrixOffset = NULL;
 }
 
 IntegratorBaseSparse::~IntegratorBaseSparse()
@@ -49,6 +51,7 @@ IntegratorBaseSparse::~IntegratorBaseSparse()
   free(constrainedDOFs);
   if (ownDampingMatrix)
     delete(dampingMatrix);
+  delete(tangentStiffnessMatrixOffset);
 }
 
 void IntegratorBaseSparse::SetDampingMatrix(SparseMatrix * dampingMatrix_)
@@ -68,5 +71,27 @@ double IntegratorBaseSparse::GetKineticEnergy()
 double IntegratorBaseSparse::GetTotalMass()
 {
   return massMatrix->SumEntries();
+}
+
+void IntegratorBaseSparse::SetTangentStiffnessMatrixOffset(SparseMatrix * tangentStiffnessMatrixOffset_, int reuseTopology)
+{
+  if (reuseTopology && (tangentStiffnessMatrixOffset != NULL))
+    *tangentStiffnessMatrixOffset = *tangentStiffnessMatrixOffset_;
+  else
+  {
+    delete(tangentStiffnessMatrixOffset);
+    tangentStiffnessMatrixOffset = new SparseMatrix(*tangentStiffnessMatrixOffset_);
+  }
+}
+
+void IntegratorBaseSparse::AddTangentStiffnessMatrixOffset(SparseMatrix * tangentStiffnessMatrixOffset_)
+{
+  *tangentStiffnessMatrixOffset += *tangentStiffnessMatrixOffset_;
+}
+
+void IntegratorBaseSparse::ClearTangentStiffnessMatrixOffset()
+{
+  delete(tangentStiffnessMatrixOffset);
+  tangentStiffnessMatrixOffset = NULL;
 }
 

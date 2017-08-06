@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC    *
+ * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -73,7 +73,7 @@ void SceneObjectDeformable::SetVertexDeformations(float * u)
   // set the deformations
   for(int i = 0; i < n; i++)
   {
-    mesh->setPosition(i, mesh->getPosition(i) + Vec3d(restPosition[3 * i + 0] + u[3 * i + 0], restPosition[3 * i + 1] + u[3 * i + 1], restPosition[3 * i + 2] + u[3 * i + 2]));
+    mesh->setPosition(i, Vec3d(restPosition[3 * i + 0] + u[3 * i + 0], restPosition[3 * i + 1] + u[3 * i + 1], restPosition[3 * i + 2] + u[3 * i + 2]));
   }
 }
 

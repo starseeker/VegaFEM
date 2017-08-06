@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
  * "elasticForceModel" library , Copyright (C) 2007 CMU, 2009 MIT,       *
- *                                                       2014 USC        *
+ *                                                       2015 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -29,7 +29,7 @@
 
 #include "reducedStVKForceModel.h"
 
-ReducedStVKForceModel::ReducedStVKForceModel(StVKReducedInternalForces * stVKReducedInternalForces_, StVKReducedStiffnessMatrix * stVKStiffnessMatrix_): stVKReducedInternalForces(stVKReducedInternalForces_), stVKStiffnessMatrix(stVKStiffnessMatrix_), own_stVKStiffnessMatrix(false)
+ReducedStVKForceModel::ReducedStVKForceModel(StVKReducedInternalForces * stVKReducedInternalForces_, StVKReducedStiffnessMatrix * stVKStiffnessMatrix_): stVKReducedInternalForces(stVKReducedInternalForces_), stVKStiffnessMatrix(stVKStiffnessMatrix_), useScale(0), scale(1.0), own_stVKStiffnessMatrix(false)
 {
   r = stVKReducedInternalForces->Getr();
   if (stVKStiffnessMatrix == NULL)
@@ -47,11 +47,22 @@ ReducedStVKForceModel::~ReducedStVKForceModel()
 
 void ReducedStVKForceModel::GetInternalForce(double * q, double * internalForces)
 {
-  stVKReducedInternalForces->Evaluate(q,internalForces);
+  stVKReducedInternalForces->Evaluate(q, internalForces);
+  if (useScale)
+  {
+    for(int i=0; i<r; i++)
+      internalForces[i] *= scale;
+  }
 }
 
 void ReducedStVKForceModel::GetTangentStiffnessMatrix(double * q, double * tangentStiffnessMatrix)
 {
-  stVKStiffnessMatrix->Evaluate(q,tangentStiffnessMatrix);
+  stVKStiffnessMatrix->Evaluate(q, tangentStiffnessMatrix);
+  if (useScale)
+  {
+    int r2 = r * r;
+    for(int i=0; i<r2; i++)
+      tangentStiffnessMatrix[i] *= scale;
+  }
 }
 

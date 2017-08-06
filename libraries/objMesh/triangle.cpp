@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder      *
@@ -31,11 +31,7 @@
   Jernej Barbic, CMU
 */
 
-#ifdef WIN32
-  #include <windows.h>
-#endif
-
-#ifdef WIN32
+#if defined(_WIN32) || defined(WIN32)
   #pragma warning(disable : 4996)
   #pragma warning(disable : 4267)
   #pragma warning(disable : 4244)

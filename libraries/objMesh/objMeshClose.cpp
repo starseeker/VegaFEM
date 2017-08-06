@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -43,7 +43,7 @@ int ObjMeshClose::Close(ObjMesh * objMesh)
     int verbose=0;
     objMeshOrientable = new ObjMeshOrientable(objMesh, 1, numOrientationFlips, verbose);
   }
-  catch (int exceptionCode)
+  catch (int)
   {
     printf("Mesh is non-orientable.\n");
     return 1;

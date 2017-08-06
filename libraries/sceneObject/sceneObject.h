@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC    *
+ * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -33,10 +33,6 @@
 
 #ifndef _SCENEOBJECT_H_
 #define _SCENEOBJECT_H_
-
-#ifdef WIN32
-  #include <windows.h>
-#endif
 
 #include "openGL-headers.h"
 
@@ -93,7 +89,7 @@ public:
   // compute mesh centroid and smallest enclosing radius
   void ComputeMeshGeometricParameters(Vec3d * centroid, double * radius);
   // export mesh data
-  void ExportMeshGeometry(int * numVertices, double ** vertices, int * numTriangles, int ** triangles);
+  void ExportMeshGeometry(int * numVertices, double ** vertices, int * numTriangles=NULL, int ** triangles=NULL);
 
   // finds the closest vertex using an exhaustive search
   // returns distance in "distance", if distance is not NULL

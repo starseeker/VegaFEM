@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
  * "objMeshGPUDeformer" library , Copyright (C) 2007 CMU, 2009 MIT,      *
- *                                                        2014 USC       *
+ *                                                        2015 USC       *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -31,7 +31,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "objMeshGPUDeformer_coarseToFine_fbo.h"
-#include "GL/glext.h"
+
+#include "glh_extensions.h"
 
 #if defined(linux)
   GLAPI void APIENTRY glGenFramebuffersEXT (GLsizei, GLuint *);
@@ -40,7 +41,6 @@
   GLAPI GLenum APIENTRY glCheckFramebufferStatusEXT (GLenum);
 #endif
 
-#include "glh_extensions.h"
 
 ObjMeshGPUDeformer_coarseToFine_fbo::~ObjMeshGPUDeformer_coarseToFine_fbo() {}
 
@@ -134,7 +134,7 @@ void ObjMeshGPUDeformer_coarseToFine_fbo::CheckFramebufferStatus()
 
 int ObjMeshGPUDeformer_coarseToFine_fbo::InitExtensions()
 {
-  #ifdef WIN32
+  #if defined(_WIN32) || defined(WIN32) 
     if (!glh_init_extensions("GL_EXT_framebuffer_object "
                            "GL_ARB_multitexture "))
     {

@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC        *
+ * "objMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Christopher Twigg, Daniel Schroeder      *
@@ -26,7 +26,7 @@
  *                                                                       *
  *************************************************************************/
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(WIN32)
   #pragma warning(disable : 4996)
   #pragma warning(disable : 4267)
   #pragma warning(disable : 4244)
@@ -406,9 +406,14 @@ int ObjMeshOrientable::GenerateHalfEdgeDataStructure(int verbose)
           int faceID = halfEdges_[loop].face();
 
           ObjMesh::Group * currentGroup = (ObjMesh::Group*) objMesh->getGroupHandle(groupID);
-          currentGroup->getFace(faceID).printVertices();
+          
+          if (verbose)
+            currentGroup->getFace(faceID).printVertices();
+
           currentGroup->reverseFace(faceID);
-          currentGroup->getFace(faceID).printVertices();
+
+          if (verbose)
+            currentGroup->getFace(faceID).printVertices();
         }
 
         // check if new orientation is consistent eveywhere along the face

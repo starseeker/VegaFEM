@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -101,7 +101,7 @@ public:
 
   // === misc queries ===
 
-  static const VolumetricMesh::elementType elementType() { return elementType_; }
+  static VolumetricMesh::elementType elementType() { return elementType_; }
   virtual VolumetricMesh::elementType getElementType() const { return elementType(); }
 
   inline double getCubeSize() const { return cubeSize; }
@@ -151,7 +151,6 @@ protected:
   // computes the normalized location of "pos" inside el
   // when inside the element, one has 0 <= alpha <= 1, 0 <= beta <= 1, 0 <= gamma <= 1
   void computeAlphaBetaGamma(int el, Vec3d pos, double * alpha, double * beta, double * gamma) const;
-  void inverse3x3(double * A, double * AInv) const;
 
   friend class VolumetricMeshExtensions;
 };

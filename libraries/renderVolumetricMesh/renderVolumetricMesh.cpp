@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
  * "renderVolumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT,    *
- *                                                          2014 USC     *
+ *                                                          2015 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -28,10 +28,6 @@
  *************************************************************************/
 
 #include <float.h>
-
-#ifdef WIN32
-  #include <windows.h>
-#endif
 
 #include "openGL-headers.h"
 #include "renderVolumetricMesh.h"

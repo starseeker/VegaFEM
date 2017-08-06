@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "clothBW" library , Copyright (C) 2014 USC                            *
+ * "clothBW" library , Copyright (C) 2015 USC                            *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Andy Pierce, Yu Yu Xu, Jernej Barbic                     *

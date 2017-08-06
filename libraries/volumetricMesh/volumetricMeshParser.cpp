@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -32,7 +32,7 @@
 VolumetricMeshParser::VolumetricMeshParser(const char * includeToken_)
 {
   fin = NULL;
-  fileStackDepth = -1;
+  //fileStackDepth = -1;
   fileStack.empty();
   if (includeToken_ == NULL)
   {
@@ -89,7 +89,7 @@ int VolumetricMeshParser::open(const char * filename)
   if (!fin)
     return 1;
 
-  fileStackDepth=0;
+  //fileStackDepth=0;
   fileStack.push_back(fin);
 
   return 0;
@@ -102,14 +102,13 @@ VolumetricMeshParser::~VolumetricMeshParser()
 
 void VolumetricMeshParser::rewindToStart()
 {
-  if (fileStackDepth < 0) // no files currently opened
+  if (fileStack.empty()) // no files currently opened
     return;
 
-  while (fileStackDepth > 0)
+  while (fileStack.size() > 1)
   {
-    fclose(fileStack[fileStackDepth]);
+    fclose(fileStack[fileStack.size() - 1]);
     fileStack.pop_back();
-    fileStackDepth--;
   }
 
   // now, we have fileStackDepth == 0
@@ -119,11 +118,10 @@ void VolumetricMeshParser::rewindToStart()
 
 void VolumetricMeshParser::close()
 {
-  while (fileStackDepth >= 0)
+  while (fileStack.size() > 0)
   {
-    fclose(fileStack[fileStackDepth]);
+    fclose(fileStack[fileStack.size() - 1]);
     fileStack.pop_back();
-    fileStackDepth--;
   }
 }
 
@@ -151,12 +149,11 @@ char * VolumetricMeshParser::getNextLine(char * s, int numRetainedSpaces, int re
   char * code;
   do
   {
-    while (((code = fgets(s, 4096, fin)) == NULL) && (fileStackDepth > 0)) // if EOF, pop previous file from stack
+    while (((code = fgets(s, 4096, fin)) == NULL) && (fileStack.size() > 1)) // if EOF, pop previous file from stack
     {
-      fileStackDepth--;
       fclose(fin);
       fileStack.pop_back();
-      fin = fileStack[fileStackDepth];
+      fin = fileStack[fileStack.size() - 1];
     }
 
     if (code == NULL) // reached end of main file
@@ -181,7 +178,9 @@ char * VolumetricMeshParser::getNextLine(char * s, int numRetainedSpaces, int re
     if (!finNew)
     {
       printf("Error: couldn't open include file %s.\n", newFileCompleteName);
-      exit(1);
+      //exit(1);
+      close();
+      throw -1;
     }
 
     if ((code = fgets(s,4096,finNew)) != NULL) // new file is not empty
@@ -189,7 +188,6 @@ char * VolumetricMeshParser::getNextLine(char * s, int numRetainedSpaces, int re
       beautifyLine(s, numRetainedSpaces, removeWhitespace_);
 
       // register the new file
-      fileStackDepth++;
       fileStack.push_back(finNew);
       fin = finNew;
     }

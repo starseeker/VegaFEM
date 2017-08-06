@@ -1,11 +1,11 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC *
  * All rights reserved.                                                  *
  *                                                                       *
- * Code author: Jernej Barbic                                            *
+ * Code authors: Jernej Barbic, Yijing Li                                *
  * http://www.jernejbarbic.com/code                                      *
  *                                                                       *
  * Research: Jernej Barbic, Fun Shing Sin, Daniel Schroeder,             *
@@ -96,6 +96,8 @@ VolumetricMesh::~VolumetricMesh()
   for(int i=0; i<numRegions; i++)
     delete(regions[i]);
   free(regions);
+
+  free(elementMaterial);
 }
 
 void VolumetricMesh::assignMaterialsToElements(int verbose)
@@ -714,7 +716,13 @@ void VolumetricMesh::loadFromAscii(const char * filename, elementType * elementT
       while ((pch != NULL) && (isdigit(*pch)))
       {
         int newElement = atoi(pch);
-        sets[countNumSets-1]->insert(newElement-oneIndexedElements); // sets are 0-indexed, but .veg files may be 1-indexed (oneIndexedElements == 1)
+        int ind = newElement-oneIndexedElements;
+        if(ind >= numElements || ind < 0) 
+        {
+          printf("Error: set element index: %d out of bounds.\n", newElement);
+          throw 21;
+        }
+        sets[countNumSets-1]->insert(ind); // sets are 0-indexed, but .veg files may be 1-indexed (oneIndexedElements == 1)
         pch = strtok(NULL, ",");
       }
     }
@@ -1466,9 +1474,8 @@ int VolumetricMesh::saveToBinary(FILE * binaryOutputStream, unsigned int * bytes
   // output materials
   for(int materialIndex = 0; materialIndex < numMaterials; materialIndex++)
   {
-    char * name = (char*) malloc (sizeof(char) * (materials[materialIndex]->getName().length()+1));
-    strcpy(name, materials[materialIndex]->getName().c_str());
-    unsigned int length = strlen(name);
+    string name = materials[materialIndex]->getName();
+    unsigned int length = name.size();
 
     // output material name
     itemsWritten = 1;
@@ -1480,7 +1487,7 @@ int VolumetricMesh::saveToBinary(FILE * binaryOutputStream, unsigned int * bytes
     
     itemsWritten = length;
     if (!countBytesOnly)
-      itemsWritten = fwrite(name, sizeof(char), length, binaryOutputStream);
+      itemsWritten = fwrite(name.c_str(), sizeof(char), length, binaryOutputStream);
     if (itemsWritten < length)
       return 1;
     totalBytesWritten += itemsWritten * sizeof(char);
@@ -1568,12 +1575,11 @@ int VolumetricMesh::saveToBinary(FILE * binaryOutputStream, unsigned int * bytes
       default:
       {
         printf("Error: material type %d is unknown.\n", matType);
-        exit(0);
+          return 1;
       }
       break;
     }
 
-    free(name);
   }  // for materialIndex
 
   // output the number of sets
@@ -2115,7 +2121,7 @@ void VolumetricMesh::propagateRegionsToElements()
 }
 
 int VolumetricMesh::generateInterpolationWeights(int numTargetLocations, 
-        double * targetLocations, int * elements, int ** vertices_, double ** weights, 
+        const double * targetLocations, int * elements, int ** vertices_, double ** weights, 
         double zeroThreshold, int verbose) const
 {
   // allocate interpolation arrays  
@@ -2181,7 +2187,7 @@ int VolumetricMesh::generateInterpolationWeights(int numTargetLocations,
   return 0;
 }
 
-int VolumetricMesh::generateContainingElements(int numTargetLocations, double * targetLocations, int ** elements, int useClosestElementIfOutside, int verbose) const
+int VolumetricMesh::generateContainingElements(int numTargetLocations, const double * targetLocations, int ** elements, int useClosestElementIfOutside, int verbose) const
 {
   int numExternalVertices = 0;
 
@@ -2208,7 +2214,7 @@ int VolumetricMesh::generateContainingElements(int numTargetLocations, double * 
   return numExternalVertices;
 }
 
-int VolumetricMesh::generateInterpolationWeights(int numTargetLocations, double * targetLocations, int ** vertices_, double ** weights, double zeroThreshold, int ** containingElements, int verbose) const
+int VolumetricMesh::generateInterpolationWeights(int numTargetLocations, const double * targetLocations, int ** vertices_, double ** weights, double zeroThreshold, int ** containingElements, int verbose) const
 {  
   int * elements = NULL;
    
@@ -2419,7 +2425,7 @@ int VolumetricMesh::saveInterpolationWeightsBinary(FILE * fout, int numTargetLoc
   return 0;
 }
 
-void VolumetricMesh::interpolate(double * u, double * uTarget, int numTargetLocations, int numElementVertices_, int * vertices_, double * weights)
+void VolumetricMesh::interpolate(const double * u, double * uTarget, int numTargetLocations, int numElementVertices_, const int * vertices_, const double * weights)
 {
   for(int i=0; i< numTargetLocations; i++)
   {
@@ -2578,7 +2584,7 @@ VolumetricMesh::VolumetricMesh(const VolumetricMesh & volumetricMesh, int numEle
       if (iter2 == vertexMap.end())
       {
         printf("Internal error 1.\n");
-        exit(1);
+        throw 1;
       }
       elements[i][j] = iter2->second;
     }

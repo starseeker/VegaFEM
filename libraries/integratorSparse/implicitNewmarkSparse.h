@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC     *
+ * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -89,6 +89,9 @@ public:
   // returns 0 on succes, 1 if solver fails to converge
   // note: there are also other state setting routines in the base class
   virtual int SetState(double * q, double * qvel=NULL);
+
+  // see parent class for usage
+  virtual void SetTangentStiffnessMatrixOffset(SparseMatrix * tangentStiffnessMatrixOffset, int reuseTopology=1);
 
   // performs one step of simulation (returns 0 on sucess, and 1 on failure)
   // failure can occur, for example, if you are using the positive definite solver and the system matrix has negative eigenvalues

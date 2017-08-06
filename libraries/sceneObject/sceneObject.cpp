@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC    *
+ * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -111,7 +111,7 @@ void SceneObject::BuildDisplayList()
   if (errorCode != GL_NO_ERROR)
   {
     errorString = gluErrorString(errorCode);
-    printf("OpenGL Error (start of BuildDisplayList): %s\n", errorString);
+    //printf("OpenGL Error (start of BuildDisplayList): %s\n", errorString);
   }
 
   if (displayListExists)
@@ -130,7 +130,7 @@ void SceneObject::BuildDisplayList()
   if (errorCode != GL_NO_ERROR)
   {
     errorString = gluErrorString(errorCode);
-    printf("OpenGL Error (end of BuildDisplayList): %s\n", errorString);
+    //printf("OpenGL Error (end of BuildDisplayList): %s\n", errorString);
   }
 }
 

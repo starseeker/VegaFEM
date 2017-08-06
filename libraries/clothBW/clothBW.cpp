@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "clothBW" library , Copyright (C) 2014 USC                            *
+ * "clothBW" library , Copyright (C) 2015 USC                            *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Andy Pierce, Yu Yu Xu, Jernej Barbic                     *
@@ -30,12 +30,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <iostream>
 #include <map>
-using namespace std;
 #include "clothBW.h"
 #include "macros.h"
 #include "matrixMultiplyMacros.h"
 #include "minivector.h"
+ using namespace std;
 //#include "performanceCounter.h"
 
 // constructor without triangleUVs
@@ -84,7 +85,15 @@ ClothBW::ClothBW(int numParticles_, double * masses_, double * restPositions_, i
     triangleUVs_[6*i+5] = sqrt(lengthAC * lengthAC - triangleUVs_[6*i+4] * triangleUVs_[6*i+4]);	// for the vertex C v
     
   }
-  GenerateBW(numParticles_, masses_, restPositions_, numTriangles_, triangles_, triangleUVs_, triangleGroups_, numMaterialGroups_, groupTensileStiffness_, groupShearStiffness_, groupBendStiffnessU_, groupBendStiffnessV_, groupDamping_, addGravity_);
+  try
+  {
+    GenerateBW(numParticles_, masses_, restPositions_, numTriangles_, triangles_, triangleUVs_, triangleGroups_, numMaterialGroups_, groupTensileStiffness_, groupShearStiffness_, groupBendStiffnessU_, groupBendStiffnessV_, groupDamping_, addGravity_);
+  } catch (int errorCode)
+  {
+    free(triangleUVs_);
+    throw errorCode;
+  }
+  free(triangleUVs_);
 }
 
 // constructor with trianglesUVs
@@ -279,7 +288,18 @@ void ClothBW::GenerateBW(int numParticles_, double * masses_, double * restPosit
     }
   }
   if (edgeError != 0)
+  {
+    free(masses);
+    free(restPositions);
+    free(triangles);
+    free(triangleGroups);
+    free(groupTensileStiffness);
+    free(groupShearStiffness);
+    free(groupBendStiffnessU);
+    free(groupBendStiffnessV);
+    free(groupDamping);
     throw 1;
+  }
   
   numQuads = edgeInfo.size();
 
@@ -430,7 +450,7 @@ void ClothBW::GenerateBW(int numParticles_, double * masses_, double * restPosit
     
     sinTheta = dot(NANB, En);
     
-    restAngles[i] = atan2(sinTheta, cosTheta);
+    restAngles[i] = atan2(sinTheta, cosTheta); 
   }
 
   // build inverse indices for stiffness matrix access
@@ -546,7 +566,7 @@ void ClothBW::ComputeForce(double *u, double *f, bool addForce)
   AddForce(u, f, 0, numTriangles, 0, numQuads);
   
   if (addGravity)
-    ComputeGravity(f, true);	
+    ComputeGravity(f, true);
 }
 
 void ClothBW::AddForce(const double * u, double * f, int startTriangle, int endTriangle, int startQuad, int endQuad)
@@ -1441,10 +1461,14 @@ void ClothBW::AddBendStiffnessMatrix(double *u, SparseMatrix *K, int startQuad, 
             int entry_row;
             int entry_col;
             // old order: CABD
-            if     ( m == 0 )	entry_row = 3*particleA+s;
-            else if( m == 1 )	entry_row = 3*particleB+s;
-            else if( m == 2 )	entry_row = 3*particleC+s;
-            else if( m == 3 )	entry_row = 3*particleD+s;
+            if (m == 0)
+              entry_row = 3*particleA+s;
+            else if (m == 1)
+              entry_row = 3*particleB+s;
+            else if (m == 2)
+              entry_row = 3*particleC+s;
+            else 
+              entry_row = 3*particleD+s; // must be m == 3
             // ------------------------------------------
             entry_col = 3 * inverseIndicesQuad[i*16+ m*4+ n] + t;
             K->AddEntry(entry_row, entry_col, dFdz);

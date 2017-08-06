@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "imageIO" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC        *
+ * "imageIO" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Yili Zhao, Jernej Barbic                                 *
@@ -39,7 +39,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(WIN32)
   #pragma warning(disable : 4996)
 #endif
 

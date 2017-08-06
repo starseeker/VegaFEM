@@ -1,6 +1,6 @@
 #include "vbo.h"
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(WIN32)
 
 PFNGLBINDBUFFERARBPROC glBindBufferARB = NULL;
 PFNGLBUFFERDATAARBPROC glBufferDataARB = NULL;

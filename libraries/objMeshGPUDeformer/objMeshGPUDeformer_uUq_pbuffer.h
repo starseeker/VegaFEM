@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
  * "objMeshGPUDeformer" library , Copyright (C) 2007 CMU, 2009 MIT,      *
- *                                                        2014 USC       *
+ *                                                        2015 USC       *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -32,7 +32,7 @@
 #ifndef _OBJMESHGPUDEFORMER_UUQ_PBUFFER_H_
 #define _OBJMESHGPUDEFORMER_UUQ_PBUFFER_H_
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(WIN32)
 
 #ifdef _MSC_VER
   #pragma comment( lib, "cg.lib" )

@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.0                               *
  *                                                                       *
  * OBJ mesh visualization utility                                        *
- * Copyright (C) 2007 CMU, 2009 MIT, 2014 USC                            *
+ * Copyright (C) 2007 CMU, 2009 MIT, 2013 USC                            *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -93,6 +93,7 @@ Vec3d lightBoxMin, lightBoxMax;
 int numLights =2;
 int showSpecularLight = 0;
 int displayRuntimeInfo = 0;
+double lineThickness = 2.0;
 
 char screenShotFilename[FILENAME_MAX] = "__default";
 #define SCREEN_SHOT_DEFAULT_WIDTH 800
@@ -106,7 +107,7 @@ int renderObject = 1;
 int renderLights = 1;
 int enableGLSLPhong = 1;
 int showAxes = 1;
-int lightOn[8] = {1, 0, 0, 0, 0, 1, 0, 1 };
+int lightOn[8] = {1, 1, 1, 1, 1, 1, 1, 1 };
 int showNormals = 0;
 float lightIntensity = 0.5;
 double lastPrintOuttime = 0.0;
@@ -176,7 +177,11 @@ void MakeDisplayList(unsigned int fileIndex)
     }
   }
   else
+  {
     renderMode = OBJMESHRENDER_CUSTOMCOLOR;
+    if (useFieldColors)
+      objMeshRenders[fileIndex]->setCustomColors(fieldColors);
+  }
 
   int geometryMode = OBJMESHRENDER_TRIANGLES;
   GLuint objMeshList = objMeshRenders[fileIndex]->createDisplayList(geometryMode, renderMode);
@@ -523,14 +528,6 @@ void MouseDrag(int x, int y)
 
   if ((g_iMiddleMouseButton) || (g_iAlt && g_iLeftMouseButton)) // handle camera zoom
     camera->ZoomIn(mouseDeltaY*radius*0.05);
-
-/*
-  if (g_iMiddleMouseButton)
-  {
-    camera->MoveIn(mouseDeltaY*radius*0.025);
-    camera->ZoomIn(mouseDeltaY*radius*0.025);
-  }
-*/
 }
 
 void MouseButtonActivity(int button, int state, int x, int y)
@@ -702,6 +699,16 @@ void KeyboardFunc (unsigned char key, int x, int y)
 
     case 'a': 
       showAxes = 1 - showAxes;
+      break;
+
+    case ',': 
+      lineThickness *= 0.8;
+      printf("Line thickness is now %G .\n", lineThickness);
+      break;
+
+    case '.': 
+      lineThickness /= 0.8;
+      printf("Line thickness is now %G .\n", lineThickness);
       break;
 
     case 't': 
@@ -892,7 +899,7 @@ void Display()
   // turns off stencil modifications
   glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
-  glLineWidth(2.0);
+  glLineWidth(lineThickness);
   if (showAxes)
   {
     glBegin(GL_LINES);
@@ -1125,6 +1132,7 @@ int main( int argc, char** argv )
   char renderNormalLengthString[4096] = "__default";
   char renderExternalVerticesBinaryFilename[4096] = "__default";
   char renderExternalVerticesZeroIndexedFilename[4096] = "__default";
+  char lineThicknessString[4096] = "__default";
   char renderExternalVerticesOneIndexedFilename[4096] = "__default";
   renderMaterials = false;
   bool useFaceNormals = false;
@@ -1147,6 +1155,7 @@ int main( int argc, char** argv )
     { (char*)"t", OPTBOOL, &renderToTerminal_ },
     { (char*)"v", OPTSTR, &renderExternalVerticesBinaryFilename },
     { (char*)"w", OPTBOOL, &displayEdges },
+    { (char*)"W", OPTSTR, &lineThicknessString },
     { (char*)"y", OPTBOOL, &autoRotateModelFlag },
     { (char*)"z", OPTBOOL, &rotateZUpToYUpFlag },
     { (char*)"0", OPTSTR, &renderExternalVerticesZeroIndexedFilename },
@@ -1179,6 +1188,11 @@ int main( int argc, char** argv )
   {
     windowWidth = SCREEN_SHOT_DEFAULT_WIDTH;
     windowHeight = SCREEN_SHOT_DEFAULT_HEIGHT;    
+  }
+
+  if (strcmp(lineThicknessString, "__default") != 0)
+  {
+    lineThickness = strtod(lineThicknessString, NULL);
   }
 
   //windowWidth = 800;
@@ -1303,10 +1317,10 @@ int main( int argc, char** argv )
     }
     objMeshes.insert(std::make_pair(i,objMesh));
     objMeshRenders.insert(std::make_pair(i, new ObjMeshRender(objMesh)));
-    int textureMode = OBJMESHRENDER_GL_USEANISOTROPICFILTERING | OBJMESHRENDER_GL_USEMIPMAP | OBJMESHRENDER_GL_MODULATE;
+    //int textureMode = OBJMESHRENDER_GL_USEANISOTROPICFILTERING | OBJMESHRENDER_GL_USEMIPMAP | OBJMESHRENDER_GL_MODULATE;
     //int textureMode = OBJMESHRENDER_GL_USEMIPMAP | OBJMESHRENDER_GL_MODULATE;
     //int textureMode = OBJMESHRENDER_GL_USEMIPMAP | OBJMESHRENDER_GL_REPLACE;
-    //int textureMode = OBJMESHRENDER_GL_NOMIPMAP | OBJMESHRENDER_GL_MODULATE;
+    int textureMode = OBJMESHRENDER_GL_NOMIPMAP | OBJMESHRENDER_GL_MODULATE;
     int numFileTextures = objMeshRenders[i]->numTextures();
     numTextures += numFileTextures;
     if (numFileTextures > 0)
@@ -1375,7 +1389,9 @@ int main( int argc, char** argv )
   useFieldColors = false;
   if (strcmp(fieldColorFilename,"__default") != 0)
   {
+    renderMaterials = false;
     useFieldColors = true;
+    enableGLSLPhong = 0;
 
     if (renderObjList)
     {
@@ -1417,8 +1433,8 @@ int main( int argc, char** argv )
       fieldColors.push_back(JetColorMap(value));
     }
 
-    printf("Max field value was: %G\n",maxColor);
-    printf("Min field value was: %G\n",minColor);
+    printf("Min field value was: %G\n", minColor);
+    printf("Max field value was: %G\n", maxColor);
 
     free(colors);
   }

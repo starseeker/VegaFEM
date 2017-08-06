@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC     *
+ * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -118,8 +118,12 @@ int ImplicitBackwardEulerSparse::DoTimestep()
     }
     else
     {
+      // compute D_Rayleigh = dampingStiffnessCoef * tangentStiffnessMatrix + dampingMassCoef * massMatrix
       tangentStiffnessMatrix->ScalarMultiply(dampingStiffnessCoef, rayleighDampingMatrix);
       rayleighDampingMatrix->AddSubMatrix(dampingMassCoef, *massMatrix);
+
+      if (tangentStiffnessMatrixOffset != NULL)
+        tangentStiffnessMatrix->AddSubMatrix(1.0, *tangentStiffnessMatrixOffset, 2);
 
       // build effective stiffness: 
       // Keff = M + h D + h^2 * K
@@ -136,14 +140,13 @@ int ImplicitBackwardEulerSparse::DoTimestep()
       }
 
       //add mass matrix and damping matrix to tangentStiffnessMatrix
-      *tangentStiffnessMatrix *= timestep;
-
-      *tangentStiffnessMatrix += *rayleighDampingMatrix;
-      tangentStiffnessMatrix->AddSubMatrix(1.0, *dampingMatrix, 1); // at this point, tangentStiffnessMatrix = h * K + D
+      *tangentStiffnessMatrix *= timestep; // h * K
+      *tangentStiffnessMatrix += *rayleighDampingMatrix; // h * K + D_Rayleigh
+      tangentStiffnessMatrix->AddSubMatrix(1.0, *dampingMatrix, 1); // at this point, tangentStiffnessMatrix = h * K + (D_Rayleigh + D_exteral)
       tangentStiffnessMatrix->MultiplyVectorAdd(qvel, qresidual);
-      *tangentStiffnessMatrix *= timestep;
-      tangentStiffnessMatrix->AddSubMatrix(1.0, *massMatrix);
-      
+      *tangentStiffnessMatrix *= timestep; // h^2 * K + h * (D_Rayleigh + D_externnal)
+      tangentStiffnessMatrix->AddSubMatrix(1.0, *massMatrix); // h^2 * K + h * (D_Rayleigh + D_external) + M
+
       // add externalForces, internalForces
       for(int i=0; i<r; i++)
       {
@@ -206,7 +209,7 @@ int ImplicitBackwardEulerSparse::DoTimestep()
     if (errorQuotient < epsilon * epsilon)
       break;
 
-    systemMatrix->AssignSuperMatrix(tangentStiffnessMatrix);
+    systemMatrix->AssignSuperMatrix(*tangentStiffnessMatrix);
 
     // solve: systemMatrix * buffer = bufferConstrained
 

@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -523,26 +523,6 @@ void CubicMesh::interpolateGradient(int element, const double * U, int numFields
       }
   }
 }
-
-void CubicMesh::inverse3x3(double * A, double * AInv) const
-{
-  // converted to C from Mathematica output   
-  AInv[0] = -A[5] * A[7] + A[4] * A[8];
-  AInv[1] = A[2] * A[7] - A[1] * A[8];
-  AInv[2] = -A[2] * A[4] + A[1] * A[5];
-  AInv[3] = A[5] * A[6] - A[3] * A[8];
-  AInv[4] = -A[2] * A[6] + A[0] * A[8];
-  AInv[5] = A[2] * A[3] - A[0] * A[5];
-  AInv[6] = -A[4] * A[6] + A[3] * A[7];
-  AInv[7] = A[1] * A[6] - A[0] * A[7];
-  AInv[8] = -A[1] * A[3] + A[0] * A[4];
-
-  double invDet = 1.0 / (A[0] * AInv[0] + A[1] * AInv[3] + A[2] * AInv[6]);
-
-  for(int i=0; i<9; i++)
-    AInv[i] *= invDet;
-}
-
 
 void CubicMesh::computeAlphaBetaGamma(int el, Vec3d pos, double * alpha, double * beta, double * gamma) const
 {

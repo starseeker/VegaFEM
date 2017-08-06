@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC    *
+ * "sceneObject" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC    *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code authors: Jernej Barbic, Daniel Schroeder                         *
@@ -59,3 +59,10 @@ void SceneObjectReduced::SetZeroq()
 {
   memset(q, 0, sizeof(double) * r);
 }
+
+void SceneObjectReduced::Scaleq(double scale)
+{
+  for(int i=0; i<r; i++)
+    q[i] *= scale;
+}
+

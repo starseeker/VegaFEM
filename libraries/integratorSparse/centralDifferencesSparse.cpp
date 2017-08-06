@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC     *
+ * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -109,7 +109,7 @@ void CentralDifferencesSparse::DecomposeSystemMatrix()
   // system matrix = mass matrix + 0.5 * timestep * damping matrix (and remove constrained rows and columns)
   rayleighDampingMatrix->ScalarMultiply(0.5 * timestep, tangentStiffnessMatrix);
   tangentStiffnessMatrix->AddSubMatrix(1.0, *massMatrix);
-  systemMatrix->AssignSuperMatrix(tangentStiffnessMatrix);
+  systemMatrix->AssignSuperMatrix(*tangentStiffnessMatrix);
 
   //systemMatrix->SaveToMatlabFormat("system.mat");
   

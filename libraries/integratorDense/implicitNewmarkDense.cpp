@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC     *
+ * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -165,6 +165,8 @@ int ImplicitNewmarkDense::DoTimestep()
       for(i=0; i<r2; i++)
       {
         dampingMatrix[i] = dampingMassCoef * massMatrix[i] + dampingStiffnessCoef * tangentStiffnessMatrix[i];
+        dampingMatrix[i] += dampingMatrixOffset[i];
+
         tangentStiffnessMatrix[i] += alpha4 * dampingMatrix[i];
         //tangentStiffnessMatrix[i] += alpha3 * massMatrix[i] + gamma * alpha1 * dampingMatrix[i]; // static Rayleigh damping
 
@@ -347,12 +349,18 @@ int ImplicitNewmarkDense::DoTimestep()
 */
 
     // update state
+/*
     for(i=0; i<r; i++)
     {
       q[i] += qdelta[i];
       qaccel[i] = alpha1 * (q[i] - q_1[i]) - alpha2 * qvel_1[i] - alpha3 * qaccel_1[i];
       qvel[i] = alpha4 * (q[i] - q_1[i]) + alpha5 * qvel_1[i] + alpha6 * qaccel_1[i];
     }
+*/
+
+    for(i=0; i<r; i++)
+      q[i] += qdelta[i];
+    Setq(q);
 
     numIter++;
   }
@@ -370,4 +378,16 @@ int ImplicitNewmarkDense::DoTimestep()
 
   return 0;
 }
+
+void ImplicitNewmarkDense::Setq(double * q)
+{
+  // set the new state, and update velocity and acceleration
+  for(int i=0; i<r; i++)
+  {
+    (this->q)[i] = q[i];
+    qaccel[i] = alpha1 * (q[i] - q_1[i]) - alpha2 * qvel_1[i] - alpha3 * qaccel_1[i];
+    qvel[i] = alpha4 * (q[i] - q_1[i]) + alpha5 * qvel_1[i] + alpha6 * qaccel_1[i];
+  }
+}
+
 

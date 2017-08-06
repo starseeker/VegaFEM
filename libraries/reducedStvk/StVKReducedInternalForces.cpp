@@ -28,7 +28,7 @@
 
 #include "lapack-headers.h"
 #include "matrixIO.h"
-#if defined(WIN32) || defined(linux)
+#if defined(_WIN32) || defined(WIN32) || defined(linux)
   #include "mkl_service.h"
 #endif
 #include "matrixMacros.h"
@@ -62,7 +62,7 @@ StVKReducedInternalForces::StVKReducedInternalForces(int r, double * U, Volumetr
   InitGravity();
 }
 
-StVKReducedInternalForces::StVKReducedInternalForces(const char * filename, int rTarget, int bigEndianMachine, int verbose_) : verbose(verbose_)
+StVKReducedInternalForces::StVKReducedInternalForces(const char * filename, int rTarget, int bigEndianMachine, int verbose_) : unitReducedGravityForce(NULL), reducedGravityForce(NULL), addGravity(false), g(9.81), useSingleThread(0), shallowCopy(0), verbose(verbose_)
 {
   FILE * fin = fopen(filename, "rb");
   if (!fin)
@@ -75,7 +75,7 @@ StVKReducedInternalForces::StVKReducedInternalForces(const char * filename, int 
   fclose(fin);
 }
 
-StVKReducedInternalForces::StVKReducedInternalForces(FILE * fin, int rTarget, int bigEndianMachine, int verbose_) : verbose(verbose_)
+StVKReducedInternalForces::StVKReducedInternalForces(FILE * fin, int rTarget, int bigEndianMachine, int verbose_) : unitReducedGravityForce(NULL), reducedGravityForce(NULL), addGravity(false), g(9.81), useSingleThread(0), shallowCopy(0), verbose(verbose_)
 {
   LoadFromStream(fin, rTarget, bigEndianMachine); 
 }
@@ -254,6 +254,7 @@ int StVKReducedInternalForces::LoadFromStream(FILE * fin, int rTarget, int bigEn
   reducedGravityForce = NULL;
   precomputedIntegrals = NULL;
   numElementVertices = 0;
+  muLame = NULL;
 
   InitBuffers();
 
@@ -296,7 +297,7 @@ void StVKReducedInternalForces::InitGravity(VolumetricMesh * volumetricMesh_, do
   if ((mesh == NULL) || (UB ==NULL))
   {
     printf("Error: cannot init gravity. Mesh or basis is not specified.\n");
-    exit(1);
+    return;
   }
 
   if (reducedGravityForce == NULL)
@@ -824,7 +825,7 @@ void StVKReducedInternalForces::Evaluate(double * q, double * fq)
 
   if (useSingleThread)
   {
-    #if defined(WIN32) || defined(linux)
+    #if defined(_WIN32) || defined(WIN32) || defined(linux)
       mkl_max_threads = mkl_get_max_threads();
       mkl_dynamic = mkl_get_dynamic();
       mkl_set_num_threads(1);
@@ -895,7 +896,7 @@ void StVKReducedInternalForces::Evaluate(double * q, double * fq)
 
   if (useSingleThread)
   {
-    #if defined(WIN32) || defined(linux)
+    #if defined(_WIN32) || defined(WIN32) || defined(linux)
       mkl_set_num_threads(mkl_max_threads);
       mkl_set_dynamic(mkl_dynamic);
     #elif defined(__APPLE__)

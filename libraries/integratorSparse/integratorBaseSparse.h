@@ -1,8 +1,8 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC     *
+ * "integrator" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC     *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -56,6 +56,11 @@ public:
   // damping matrix provides damping in addition to mass and stiffness damping (it does not replace it)
   virtual void SetDampingMatrix(SparseMatrix * dampingMatrix);
 
+  // add an offset to the tangent stiffness matrix (default: no offset)
+  virtual void SetTangentStiffnessMatrixOffset(SparseMatrix * tangentStiffnessMatrixOffset, int reuseTopology=1); // you must use reuseTopology=0 if the offset has been previously already set, and the topology of the new tangentStiffnessMatrixOffset matrix is different from the old one
+  virtual void AddTangentStiffnessMatrixOffset(SparseMatrix * tangentStiffnessMatrixOffset); // the operand must have same topology as the previously set tangent stiffness matrix
+  virtual void ClearTangentStiffnessMatrixOffset();
+
   // performs one step of simulation (returns 0 on sucess, and 1 on failure)
   // failure can occur, for example, if you are using the positive definite solver and the system matrix has negative eigenvalues
   virtual int DoTimestep() = 0;
@@ -72,6 +77,8 @@ protected:
   ForceModel * forceModel;
   int ownDampingMatrix;
   SparseMatrix * dampingMatrix;
+  
+  SparseMatrix * tangentStiffnessMatrixOffset;
 
   int numConstrainedDOFs;
   int * constrainedDOFs;

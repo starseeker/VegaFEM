@@ -1,9 +1,9 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
  * "elasticForceModel" library , Copyright (C) 2007 CMU, 2009 MIT,       *
- *                                                       2014 USC        *
+ *                                                       2015 USC        *
  * All rights reserved.                                                  *
  *                                                                       *
  * Code author: Jernej Barbic                                            *
@@ -58,9 +58,16 @@ public:
   virtual void * GetReducedInternalForceClass() { return (void*)stVKReducedInternalForces; }
   virtual void * GetReducedStiffnessMatrixClass() { return (void*)stVKStiffnessMatrix; }
 
+  // set a scaling factor for forces and stiffness matrix
+  void SetScale(double scale_) { scale = scale_; }
+  void UseScale(int useScale_) { useScale = useScale_; } // default: do not use scale
+
 protected:
   StVKReducedInternalForces * stVKReducedInternalForces;
   StVKReducedStiffnessMatrix * stVKStiffnessMatrix;
+
+  int useScale;
+  double scale;
 
   bool own_stVKStiffnessMatrix;
 };

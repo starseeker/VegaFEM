@@ -5,7 +5,7 @@
 #ifndef _VBO_H_
 #define _VBO_H_
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(WIN32)
 
 #include <windows.h>
 

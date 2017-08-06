@@ -9,13 +9,13 @@ include ../../Makefile-headers/Makefile-header
 R ?= ../..
 
 # the object files to be compiled for this library
-MODALMATRIX_OBJECTS=modalMatrix.o
+MODALMATRIX_OBJECTS=modalMatrix.o modalMatrixTransposed.o
 
 # the libraries this library depends on
 MODALMATRIX_LIBS=
 
 # the headers in this library
-MODALMATRIX_HEADERS=modalMatrix.h
+MODALMATRIX_HEADERS=modalMatrix.h modalMatrixTransposed.h
 
 MODALMATRIX_OBJECTS_FILENAMES=$(addprefix $(L)/modalMatrix/, $(MODALMATRIX_OBJECTS))
 MODALMATRIX_HEADER_FILENAMES=$(addprefix $(L)/modalMatrix/, $(MODALMATRIX_HEADERS))

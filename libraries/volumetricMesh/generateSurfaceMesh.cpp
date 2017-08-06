@@ -1,11 +1,11 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
- * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2014 USC *
+ * "volumetricMesh" library , Copyright (C) 2007 CMU, 2009 MIT, 2015 USC *
  * All rights reserved.                                                  *
  *                                                                       *
- * Code author: Jernej Barbic                                            *
+ * Code authors: Jernej Barbic, Yijing Li                                *
  * http://www.jernejbarbic.com/code                                      *
  *                                                                       *
  * Research: Jernej Barbic, Fun Shing Sin, Daniel Schroeder,             *
@@ -38,24 +38,59 @@ class TopologicalFaceI
 {
 public:
   inline TopologicalFaceI(int p1, int p2, int p3, int p4)
-    { vertices_.push_back(p1);
-      vertices_.push_back(p2);
-      vertices_.push_back(p3);
-      vertices_.push_back(p4); }
+  {
+    vertices[0] = p1;
+    vertices[1] = p2;
+    vertices[2] = p3;
+    vertices[3] = p4;
+    size = 4;
+    sortVertices();
+  }
 
   inline TopologicalFaceI(int p1, int p2, int p3)
-    { vertices_.push_back(p1);
-      vertices_.push_back(p2);
-      vertices_.push_back(p3); }
-
+  {
+    vertices[0] = p1;
+    vertices[1] = p2;
+    vertices[2] = p3;
+    size = 3;
+    sortVertices();
+  }
+    
   //accessor
-  int vertex(int i) const { return vertices_[i];} 
-  int faceDegree() const { return (int)vertices_.size(); } 
+  int vertex(int i) const { return vertices[i];} 
+  int sortedVertex(int i) const { return sortedVertices[i]; }
+  int faceDegree() const { return size; } 
+  const int * index() const { return vertices; }
 
-  inline void sortVertices() { sort(vertices_.begin(),vertices_.end()); }
+  TopologicalFaceI(const TopologicalFaceI & face)
+  {
+    size = face.size;
+    memcpy(vertices, face.vertices, sizeof(int) * size);
+    memcpy(sortedVertices, face.sortedVertices, sizeof(int) * size);
+  }
+
+  TopologicalFaceI & operator = (const TopologicalFaceI & face)
+  {
+    if (&face == this) 
+      return *this;
+    size = face.size;
+    memcpy(vertices, face.vertices, sizeof(int) * size);
+    memcpy(sortedVertices, face.sortedVertices, sizeof(int) * size);
+    return *this;
+  }
 
 protected:
-  std::vector<int> vertices_;
+
+  inline void sortVertices() 
+  { 
+    memcpy(sortedVertices, vertices, sizeof(int) * size);
+    sort(sortedVertices, sortedVertices + size);
+  }
+
+  int size;
+  int vertices[4];
+  int sortedVertices[4];
+  //std::vector<int> vertices_;
 };
 
 class FaceOrder
@@ -66,20 +101,14 @@ public:
 
 bool FaceOrder::operator()(const TopologicalFaceI & x, const TopologicalFaceI & y) const
 {
-  // first, sort the vertices on each face (order of vertices is irrelevant when comparing if two faces are equal)
-  TopologicalFaceI xSorted = x; 
-  xSorted.sortVertices();
-  TopologicalFaceI ySorted = y; 
-  ySorted.sortVertices();
-
   int degx = x.faceDegree();
   int degy = y.faceDegree();
   int mindeg = (degx < degy) ? degx : degy;
 
-  for (int i=0; i<mindeg; i++)
+  for (int i = 0; i < mindeg; i++)
   {
-    int x1 = xSorted.vertex(i);
-    int y1 = ySorted.vertex(i);
+    int x1 = x.sortedVertex(i);
+    int y1 = y.sortedVertex(i);
 
     if (x1 < y1)
       return true;
@@ -102,19 +131,13 @@ ObjMesh * GenerateSurfaceMesh::ComputeMesh(VolumetricMesh * mesh, bool triangula
   // add all vertices
   for(int i=0; i<mesh->getNumVertices(); i++)
   {
-    Vec3d posm = *(mesh->getVertex(i));
-    Vec3d pos;
-    pos[0] = posm[0]; 
-    pos[1] = posm[1]; 
-    pos[2] = posm[2];
+    Vec3d pos = *(mesh->getVertex(i));
     objMesh->addVertexPosition(pos);
   }
 
   set<TopologicalFaceI,FaceOrder> surfaceFaces;
   //set<TopologicalFaceI,FaceOrder> interiorFaces; // not needed
 
-  // create a unique list of faces
-  surfaceFaces.clear();
   //interiorFaces.clear();
 
   int numElementVertices = mesh->getNumElementVertices();
@@ -144,22 +167,18 @@ ObjMesh * GenerateSurfaceMesh::ComputeMesh(VolumetricMesh * mesh, bool triangula
       // compute determinant to establish orientation
       double det = dot(*(mesh->getVertex(i, 1)) - *(mesh->getVertex(i, 0)), cross(*(mesh->getVertex(i, 2)) - *(mesh->getVertex(i, 0)), *(mesh->getVertex(i, 3)) - *(mesh->getVertex(i, 0))));
 
-      TopologicalFaceI * face;
-
         //surfaceFaces.erase(*face);
         //interiorFaces.insert(*face);
   
-      #define PROCESS_FACE3(q0,q1,q2)\
-      face = new TopologicalFaceI(mesh->getVertexIndex(i,q0),mesh->getVertexIndex(i,q1),mesh->getVertexIndex(i,q2));\
-      if (surfaceFaces.find(*face) != surfaceFaces.end())\
-      {\
-        surfaceFaces.erase(*face);\
-      }\
-      else\
-      {\
-        surfaceFaces.insert(*face);\
-      }\
-      delete(face);
+      #define PROCESS_FACE3(q0,q1,q2) \
+          { \
+            TopologicalFaceI face(mesh->getVertexIndex(i,q0),mesh->getVertexIndex(i,q1),mesh->getVertexIndex(i,q2)); \
+            if (surfaceFaces.find(face) != surfaceFaces.end()) \
+              surfaceFaces.erase(face); \
+            else \
+              surfaceFaces.insert(face); \
+          }
+          
   
       if (det >= 0)
       {
@@ -182,24 +201,17 @@ ObjMesh * GenerateSurfaceMesh::ComputeMesh(VolumetricMesh * mesh, bool triangula
 
   if (numElementVertices == 8) // cubic mesh
   {
-    for (int i=0; i<mesh->getNumElements(); i++)
+    for (int i = 0; i < mesh->getNumElements(); i++)
     {
-      TopologicalFaceI * face;
-
-        //surfaceFaces.erase(*face);
-        //interiorFaces.insert(*face);
   
-      #define PROCESS_FACE4(q0,q1,q2,q3)\
-      face = new TopologicalFaceI(mesh->getVertexIndex(i,q0),mesh->getVertexIndex(i,q1),mesh->getVertexIndex(i,q2),mesh->getVertexIndex(i,q3));\
-      if (surfaceFaces.find(*face) != surfaceFaces.end())\
-      {\
-        surfaceFaces.erase(*face);\
-      }\
-      else\
-      {\
-        surfaceFaces.insert(*face);\
-      }\
-      delete(face);
+      #define PROCESS_FACE4(q0,q1,q2,q3) \
+          { \
+            TopologicalFaceI face(mesh->getVertexIndex(i,q0),mesh->getVertexIndex(i,q1),mesh->getVertexIndex(i,q2),mesh->getVertexIndex(i,q3)); \
+          if (surfaceFaces.find(face) != surfaceFaces.end()) \
+            surfaceFaces.erase(face); \
+          else \
+            surfaceFaces.insert(face); \
+          }
   
       PROCESS_FACE4(0,3,2,1)
       PROCESS_FACE4(4,5,6,7)
@@ -214,12 +226,13 @@ ObjMesh * GenerateSurfaceMesh::ComputeMesh(VolumetricMesh * mesh, bool triangula
 
   // now, surfaceFaces contains a unique list of all surface faces
   // add all faces to the surface mesh 
-  int * index = (int*) malloc (sizeof(int) * faceDegree);
+  //int * index = (int*) malloc (sizeof(int) * faceDegree);
   set<TopologicalFaceI,FaceOrder>::iterator face;
   for (face = surfaceFaces.begin(); face != surfaceFaces.end(); ++face) // all surface faces
   {
-    for (int i=0; i<faceDegree; i++)
-      index[i] = face->vertex(i);
+    //for (int i = 0; i < faceDegree; i++)
+    //  index[i] = face->vertex(i);
+    const int * index = face->index();
 
     std::pair< bool, unsigned int > texPos(false,0); // no textures
     std::pair< bool, unsigned int > normal(false,0); // no normals
@@ -249,7 +262,7 @@ ObjMesh * GenerateSurfaceMesh::ComputeMesh(VolumetricMesh * mesh, bool triangula
     }
   }
 
-  free(index);
+  //free(index);
 
   if (mesh->getElementType() == CubicMesh::elementType())
   {
@@ -351,22 +364,17 @@ ObjMesh * GenerateSurfaceMesh::ComputeMesh(VolumetricMesh * mesh, ObjMesh * supe
       // compute determinant to establish orientation
       double det = dot(*(mesh->getVertex(i, 1)) - *(mesh->getVertex(i, 0)), cross(*(mesh->getVertex(i, 2)) - *(mesh->getVertex(i, 0)), *(mesh->getVertex(i, 3)) - *(mesh->getVertex(i, 0))));
 
-      TopologicalFaceI * face;
-
         //surfaceFaces.erase(*face);
         //interiorFaces.insert(*face);
   
-      #define PROCESS_FACE3(q0,q1,q2)\
-      face = new TopologicalFaceI(mesh->getVertexIndex(i,q0),mesh->getVertexIndex(i,q1),mesh->getVertexIndex(i,q2));\
-      if (surfaceFaces.find(*face) != surfaceFaces.end())\
-      {\
-        surfaceFaces.erase(*face);\
-      }\
-      else\
-      {\
-        surfaceFaces.insert(*face);\
-      }\
-      delete(face);
+      #define PROCESS_FACE3(q0,q1,q2) \
+          { \
+            TopologicalFaceI face(mesh->getVertexIndex(i,q0),mesh->getVertexIndex(i,q1),mesh->getVertexIndex(i,q2)); \
+            if (surfaceFaces.find(face) != surfaceFaces.end()) \
+              surfaceFaces.erase(face);\
+            else \
+              surfaceFaces.insert(face); \
+          }
   
       if (det >= 0)
       {
@@ -391,22 +399,17 @@ ObjMesh * GenerateSurfaceMesh::ComputeMesh(VolumetricMesh * mesh, ObjMesh * supe
   {
     for (int i=0; i<mesh->getNumElements(); i++)
     {
-      TopologicalFaceI * face;
-
         //surfaceFaces.erase(*face);
         //interiorFaces.insert(*face);
   
-      #define PROCESS_FACE4(q0,q1,q2,q3)\
-      face = new TopologicalFaceI(mesh->getVertexIndex(i,q0),mesh->getVertexIndex(i,q1),mesh->getVertexIndex(i,q2),mesh->getVertexIndex(i,q3));\
-      if (surfaceFaces.find(*face) != surfaceFaces.end())\
-      {\
-        surfaceFaces.erase(*face);\
-      }\
-      else\
-      {\
-        surfaceFaces.insert(*face);\
-      }\
-      delete(face);
+      #define PROCESS_FACE4(q0,q1,q2,q3) \
+          { \
+            TopologicalFaceI face(mesh->getVertexIndex(i,q0),mesh->getVertexIndex(i,q1),mesh->getVertexIndex(i,q2),mesh->getVertexIndex(i,q3)); \
+            if (surfaceFaces.find(face) != surfaceFaces.end()) \
+              surfaceFaces.erase(face); \
+            else \
+              surfaceFaces.insert(face); \
+          }
   
       PROCESS_FACE4(0,3,2,1)
       PROCESS_FACE4(4,5,6,7)

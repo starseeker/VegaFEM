@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
  * "reducedStvk" library , Copyright (C) 2007 CMU, 2009 MIT              *
  * All rights reserved.                                                  *
@@ -27,7 +27,7 @@
  *************************************************************************/
 
 #include "lapack-headers.h"
-#if defined(WIN32) || defined(linux)
+#if defined(_WIN32) || defined(WIN32) || defined(linux)
   #include "mkl_service.h"
 #endif
 #include "matrixMacros.h"
@@ -238,7 +238,7 @@ void StVKReducedStiffnessMatrix::Evaluate(double * q, double * Rq)
 
   if (useSingleThread)
   {
-    #if defined(WIN32) || defined(linux)
+    #if defined(_WIN32) || defined(WIN32) || defined(linux)
       mkl_max_threads = mkl_get_max_threads();
       mkl_dynamic = mkl_get_dynamic();
       mkl_set_num_threads(1);
@@ -298,7 +298,7 @@ void StVKReducedStiffnessMatrix::Evaluate(double * q, double * Rq)
 
   if (useSingleThread)
   {
-    #if defined(WIN32) || defined(linux)
+    #if defined(_WIN32) || defined(WIN32) || defined(linux)
       mkl_set_num_threads(mkl_max_threads);
       mkl_set_dynamic(mkl_dynamic);
     #elif defined(__APPLE__)

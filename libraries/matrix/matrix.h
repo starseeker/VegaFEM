@@ -1,6 +1,6 @@
 /*************************************************************************
  *                                                                       *
- * Vega FEM Simulation Library Version 2.1                               *
+ * Vega FEM Simulation Library Version 2.2                               *
  *                                                                       *
  * "matrix" library , Copyright (C) 2007 CMU, 2009 MIT                   *
  * All rights reserved.                                                  *
@@ -250,6 +250,7 @@ public:
       return Matrix<real>(mtx.Getm(), mtx.Getm(), buffer, false);
     #else
       printf("Error: MExp is not enabled.\n");
+      return Matrix<real>();
     #endif
   }
 

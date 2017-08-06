@@ -12,7 +12,7 @@ R ?= ../..
 SIMULATOR_OBJECTS=interactiveDeformableSimulator.o initGraphics.o
 
 # the libraries this utility depends on
-SIMULATOR_LIBS=sceneObject integratorSparse integrator elasticForceModel forceModel sparseMatrix loadList insertRows lighting configFile volumetricMesh getopts camera graph isotropicHyperelasticFEM stvk corotationalLinearFEM polarDecomposition minivector matrixIO massSpringSystem objMesh imageIO sparseSolver matrix
+SIMULATOR_LIBS=sceneObject integratorSparse integrator elasticForceModel forceModel sparseMatrix loadList insertRows lighting configFile volumetricMesh getopts camera graph isotropicHyperelasticFEM stvk corotationalLinearFEM polarDecomposition minivector matrixIO massSpringSystem objMesh imageIO sparseSolver uniqueIntegerID
 
 # the headers in this library
 SIMULATOR_HEADERS=initGraphics.h
