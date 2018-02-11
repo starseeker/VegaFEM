@@ -15,7 +15,7 @@ if(FOUND_CG)
 		sceneObjectDeformableGPU.cpp
 		sceneObjectDeformableGPU6DOF.cpp
 		)
-endif(CG_LIBS)
+endif(FOUND_CG)
 
 add_library(sceneObject ${SCOBJ_SRCS})
 target_link_libraries(sceneObject objMesh lighting minivector)
