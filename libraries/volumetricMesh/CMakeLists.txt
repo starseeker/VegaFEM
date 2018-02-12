@@ -12,6 +12,7 @@ volumetricMeshLoader.cpp
 volumetricMesh.cpp
 volumetricMeshENuMaterial.cpp
 volumetricMeshMooneyRivlinMaterial.cpp
+volumetricMeshOrthotropicMaterial.cpp
 volumetricMeshExtensions.cpp
 )
 
